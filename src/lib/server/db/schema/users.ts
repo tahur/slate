@@ -5,7 +5,6 @@ import { organizations } from './organizations';
 export const users = sqliteTable('users', {
     id: text('id').primaryKey(),
     org_id: text('org_id')
-        .notNull()
         .references(() => organizations.id),
     email: text('email').notNull().unique(),
     password_hash: text('password_hash').notNull(),

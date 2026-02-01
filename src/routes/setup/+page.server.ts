@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { organizations, users, fiscal_years } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
+import { zod4 } from 'sveltekit-superforms/adapters';
 import { setupSchema } from './schema';
 import { seedChartOfAccounts } from '$lib/server/seed';
 import type { Actions, PageServerLoad } from './$types';
@@ -25,13 +25,13 @@ export const load: PageServerLoad = async (event) => {
         }
     }
 
-    const form = await superValidate(zod(setupSchema));
+    const form = await superValidate(zod4(setupSchema));
     return { form };
 };
 
 export const actions: Actions = {
     default: async (event) => {
-        const form = await superValidate(event, zod(setupSchema));
+        const form = await superValidate(event, zod4(setupSchema));
 
         if (!form.valid) {
             return fail(400, { form });
