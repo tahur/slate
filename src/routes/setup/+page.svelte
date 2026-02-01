@@ -9,7 +9,6 @@
         SelectContent,
         SelectItem,
         SelectTrigger,
-        SelectValue,
     } from "$lib/components/ui/select";
     import {
         Card,
@@ -21,11 +20,15 @@
     } from "$lib/components/ui/card";
     import type { PageData } from "./$types";
 
-    let { data }: { data: PageData } = $props();
+    let { data, form }: { data: PageData; form: any } = $props();
 
-    const { form, errors, constraints, enhance, delayed } = superForm(
-        data.form,
-    );
+    const {
+        form: formData,
+        errors,
+        constraints,
+        enhance,
+        delayed,
+    } = superForm(data.form);
 
     // Indian States for Dropdown
     const states = [
@@ -87,7 +90,7 @@
                         id="name"
                         name="name"
                         placeholder="Acme Enterprises"
-                        bind:value={$form.name}
+                        bind:value={$formData.name}
                         {...$constraints.name}
                     />
                     {#if $errors.name}<span class="text-sm text-destructive"
@@ -102,7 +105,7 @@
                             id="email"
                             name="email"
                             type="email"
-                            bind:value={$form.email}
+                            bind:value={$formData.email}
                             {...$constraints.email}
                         />
                         {#if $errors.email}<span
@@ -115,7 +118,7 @@
                         <Input
                             id="phone"
                             name="phone"
-                            bind:value={$form.phone}
+                            bind:value={$formData.phone}
                             {...$constraints.phone}
                         />
                         {#if $errors.phone}<span
@@ -133,7 +136,7 @@
                         id="address"
                         name="address"
                         placeholder="Street Name, Area"
-                        bind:value={$form.address}
+                        bind:value={$formData.address}
                         {...$constraints.address}
                     />
                     {#if $errors.address}<span class="text-sm text-destructive"
@@ -149,16 +152,18 @@
                         >
                         <Select
                             type="single"
-                            bind:value={$form.state_code}
+                            bind:value={$formData.state_code as string}
                             name="state_code"
                         >
                             <SelectTrigger>
-                                {#if $form.state_code}
+                                {#if $formData.state_code}
                                     {states.find(
-                                        (s) => s.code === $form.state_code,
+                                        (s) => s.code === $formData.state_code,
                                     )?.name}
                                 {:else}
-                                    <SelectValue placeholder="Select state" />
+                                    <span class="text-muted-foreground"
+                                        >Select state</span
+                                    >
                                 {/if}
                             </SelectTrigger>
                             <SelectContent class="max-h-[200px]">
@@ -172,7 +177,7 @@
                         <input
                             type="hidden"
                             name="state_code"
-                            value={$form.state_code}
+                            value={$formData.state_code}
                         />
                         {#if $errors.state_code}<span
                                 class="text-sm text-destructive"
@@ -187,7 +192,7 @@
                         <Input
                             id="pincode"
                             name="pincode"
-                            bind:value={$form.pincode}
+                            bind:value={$formData.pincode}
                             {...$constraints.pincode}
                         />
                         {#if $errors.pincode}<span
@@ -203,7 +208,7 @@
                         id="gstin"
                         name="gstin"
                         placeholder="29ABCDE1234F1Z5"
-                        bind:value={$form.gstin}
+                        bind:value={$formData.gstin}
                         {...$constraints.gstin}
                     />
                     {#if $errors.gstin}<span class="text-sm text-destructive"
@@ -211,11 +216,11 @@
                         >{/if}
                 </div>
 
-                {#if data.error}
+                {#if form?.error}
                     <div
                         class="text-center text-sm font-medium text-destructive"
                     >
-                        {data.error}
+                        {form.error}
                     </div>
                 {/if}
             </form>

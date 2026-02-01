@@ -13,11 +13,15 @@
     } from "$lib/components/ui/card";
     import type { PageData } from "./$types";
 
-    let { data }: { data: PageData } = $props();
+    let { data, form }: { data: PageData; form: any } = $props();
 
-    const { form, errors, constraints, enhance, delayed } = superForm(
-        data.form,
-    );
+    const {
+        form: formData,
+        errors,
+        constraints,
+        enhance,
+        delayed,
+    } = superForm(data.form);
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-gray-50">
@@ -37,7 +41,7 @@
                         name="email"
                         type="email"
                         placeholder="m@example.com"
-                        bind:value={$form.email}
+                        bind:value={$formData.email}
                         {...$constraints.email}
                     />
                     {#if $errors.email}<span class="text-sm text-destructive"
@@ -50,18 +54,18 @@
                         id="password"
                         name="password"
                         type="password"
-                        bind:value={$form.password}
+                        bind:value={$formData.password}
                         {...$constraints.password}
                     />
                     {#if $errors.password}<span class="text-sm text-destructive"
                             >{$errors.password}</span
                         >{/if}
                 </div>
-                {#if data.error}
+                {#if form?.error}
                     <div
                         class="text-sm text-destructive font-medium text-center"
                     >
-                        {data.error}
+                        {form.error}
                     </div>
                 {/if}
             </form>
