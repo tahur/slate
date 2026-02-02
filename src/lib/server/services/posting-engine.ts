@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { journal_entries, journal_lines, accounts } from '../db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { getNextNumber } from './number-series';
 
 export type PostingType =
@@ -45,6 +45,10 @@ interface PostingResult {
 async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<string, string>> {
     const result = new Map<string, string>();
 
+    if (codes.length === 0) {
+        return result;
+    }
+
     const accountRows = await db
         .select({
             id: accounts.id,
@@ -54,7 +58,7 @@ async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<
         .where(
             and(
                 eq(accounts.org_id, orgId),
-                sql`${accounts.account_code} IN (${codes.map(c => `'${c}'`).join(',')})`
+                inArray(accounts.account_code, codes)
             )
         );
 
