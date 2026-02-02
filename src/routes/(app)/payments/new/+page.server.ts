@@ -8,7 +8,7 @@ import {
     customer_advances,
     accounts
 } from '$lib/server/db/schema';
-import { eq, and, ne, sql } from 'drizzle-orm';
+import { eq, and, ne, sql, inArray } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postPaymentReceipt } from '$lib/server/services';
 
@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         .where(
             and(
                 eq(accounts.org_id, orgId),
-                sql`${accounts.account_code} IN ('1000', '1100')`
+                inArray(accounts.account_code, ['1000', '1100'])
             )
         );
 
@@ -84,7 +84,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-    default: async ({ request, locals }) => {
+    recordPayment: async ({ request, locals }) => {
         if (!locals.user) {
             redirect(302, '/login');
         }
@@ -234,39 +234,44 @@ export const actions: Actions = {
 
     // API endpoint to get unpaid invoices for a customer
     getInvoices: async ({ request, locals }) => {
-        if (!locals.user) {
-            return fail(401, { error: 'Unauthorized' });
-        }
+        try {
+            if (!locals.user) {
+                return fail(401, { error: 'Unauthorized' });
+            }
 
-        const formData = await request.formData();
-        const customerId = formData.get('customer_id') as string;
+            const formData = await request.formData();
+            const customerId = formData.get('customer_id') as string;
 
-        if (!customerId) {
-            return { invoices: [] };
-        }
+            if (!customerId) {
+                return { invoices: [] };
+            }
 
-        const orgId = locals.user.orgId;
+            const orgId = locals.user.orgId;
 
-        const unpaidInvoices = await db
-            .select({
-                id: invoices.id,
-                invoice_number: invoices.invoice_number,
-                invoice_date: invoices.invoice_date,
-                total: invoices.total,
-                balance_due: invoices.balance_due
-            })
-            .from(invoices)
-            .where(
-                and(
-                    eq(invoices.org_id, orgId),
-                    eq(invoices.customer_id, customerId),
-                    ne(invoices.status, 'paid'),
-                    ne(invoices.status, 'cancelled'),
-                    ne(invoices.status, 'draft')
+            const unpaidInvoices = await db
+                .select({
+                    id: invoices.id,
+                    invoice_number: invoices.invoice_number,
+                    invoice_date: invoices.invoice_date,
+                    total: invoices.total,
+                    balance_due: invoices.balance_due
+                })
+                .from(invoices)
+                .where(
+                    and(
+                        eq(invoices.org_id, orgId),
+                        eq(invoices.customer_id, customerId),
+                        ne(invoices.status, 'paid'),
+                        ne(invoices.status, 'cancelled'),
+                        ne(invoices.status, 'draft')
+                    )
                 )
-            )
-            .orderBy(invoices.invoice_date);
+                .orderBy(invoices.invoice_date);
 
-        return { invoices: unpaidInvoices };
+            return { invoices: unpaidInvoices };
+        } catch (error) {
+            console.error('getInvoices error:', error);
+            return fail(500, { error: error instanceof Error ? error.message : 'Failed to get invoices' });
+        }
     }
 };

@@ -47,12 +47,22 @@
         }
 
         try {
-            const res = await fetch(`?/getInvoices`, {
+            const formData = new FormData();
+            formData.append("customer_id", customerId);
+
+            const res = await fetch("/payments/new?/getInvoices", {
                 method: "POST",
-                body: new URLSearchParams({ customer_id: customerId }),
+                body: formData,
+                headers: {
+                    Accept: "application/json",
+                },
             });
             const result = await res.json();
             if (result.type === "success" && result.data?.invoices) {
+                unpaidInvoices = result.data.invoices;
+                allocations = {};
+            } else if (result.data?.invoices) {
+                // Also handle direct data response
                 unpaidInvoices = result.data.invoices;
                 allocations = {};
             }
@@ -116,6 +126,7 @@
 
     <form
         method="POST"
+        action="?/recordPayment"
         use:enhance={() => {
             isSubmitting = true;
             return async ({ update }) => {
