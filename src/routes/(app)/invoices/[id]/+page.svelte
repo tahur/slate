@@ -2,9 +2,11 @@
     import { Button } from "$lib/components/ui/button";
     import { Badge } from "$lib/components/ui/badge";
     import { Card } from "$lib/components/ui/card";
-    import { ArrowLeft, Printer, Send, Download } from "lucide-svelte";
+    import { ArrowLeft, Printer, Send, Download, XCircle } from "lucide-svelte";
+    import { enhance } from "$app/forms";
 
-    let { data } = $props();
+    let { data, form } = $props();
+    let isSubmitting = $state(false);
 
     function formatCurrency(amount: number | null): string {
         if (amount === null || amount === undefined) return "₹0.00";
@@ -41,6 +43,24 @@
     }
 </script>
 
+{#if form?.error}
+    <div class="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
+        {form.error}
+    </div>
+{/if}
+
+{#if form?.success}
+    <div class="mb-4 p-3 rounded-md bg-green-50 text-green-700 text-sm">
+        {#if form.invoiceNumber}
+            Invoice issued successfully as <span class="font-mono font-medium"
+                >{form.invoiceNumber}</span
+            >
+        {:else}
+            Action completed successfully
+        {/if}
+    </div>
+{/if}
+
 <div class="space-y-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
@@ -71,10 +91,52 @@
         </div>
         <div class="flex items-center gap-2">
             {#if data.invoice.status === "draft"}
-                <Button variant="outline">
-                    <Send class="mr-2 size-4" />
-                    Issue Invoice
-                </Button>
+                <form
+                    method="POST"
+                    action="?/issue"
+                    use:enhance={() => {
+                        isSubmitting = true;
+                        return async ({ update }) => {
+                            await update();
+                            isSubmitting = false;
+                        };
+                    }}
+                >
+                    <Button type="submit" disabled={isSubmitting}>
+                        <Send class="mr-2 size-4" />
+                        {isSubmitting ? "Issuing..." : "Issue Invoice"}
+                    </Button>
+                </form>
+            {/if}
+            {#if data.invoice.status !== "cancelled" && data.invoice.status !== "paid"}
+                <form
+                    method="POST"
+                    action="?/cancel"
+                    use:enhance={({ cancel }) => {
+                        if (
+                            !confirm(
+                                "Are you sure you want to cancel this invoice?",
+                            )
+                        ) {
+                            cancel();
+                            return;
+                        }
+                        isSubmitting = true;
+                        return async ({ update }) => {
+                            await update();
+                            isSubmitting = false;
+                        };
+                    }}
+                >
+                    <Button
+                        type="submit"
+                        variant="destructive"
+                        disabled={isSubmitting}
+                    >
+                        <XCircle class="mr-2 size-4" />
+                        Cancel
+                    </Button>
+                </form>
             {/if}
             <Button variant="outline">
                 <Printer class="mr-2 size-4" />
