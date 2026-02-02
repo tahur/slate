@@ -7,6 +7,7 @@
         Banknote,
         Wallet,
         Users,
+        BarChart3,
         Settings,
         LogOut,
         Building2,
@@ -18,6 +19,7 @@
         { href: "/payments", label: "Payments", icon: Banknote },
         { href: "/expenses", label: "Expenses", icon: Wallet },
         { href: "/customers", label: "Customers", icon: Users },
+        { href: "/reports", label: "Reports", icon: BarChart3 },
         { href: "/settings", label: "Settings", icon: Settings },
     ];
 
