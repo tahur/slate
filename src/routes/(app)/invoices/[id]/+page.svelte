@@ -332,8 +332,14 @@
                 </div>
             </Card>
 
-            {#if data.invoice.status !== "paid" && data.invoice.status !== "cancelled"}
-                <Button class="w-full" variant="default">Record Payment</Button>
+            {#if data.invoice.status !== "paid" && data.invoice.status !== "cancelled" && data.invoice.status !== "draft"}
+                <Button
+                    class="w-full"
+                    variant="default"
+                    href="/payments/new?customer={data.invoice.customer_id}"
+                >
+                    Record Payment
+                </Button>
             {/if}
         </div>
     </div>
