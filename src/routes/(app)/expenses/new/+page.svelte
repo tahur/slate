@@ -3,7 +3,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { ArrowLeft, Check } from "lucide-svelte";
+    import { ArrowLeft, Check, Save } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
 
@@ -31,237 +31,286 @@
     }
 </script>
 
-<div class="max-w-2xl mx-auto space-y-4">
+<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header -->
-    <div class="flex items-center gap-4">
-        <Button variant="ghost" href="/expenses" class="p-2">
-            <ArrowLeft class="size-4" />
-        </Button>
-        <div>
-            <h1 class="text-xl font-semibold">Add Expense</h1>
-            <p class="text-sm text-muted-foreground">
-                Record a business expense
-            </p>
-        </div>
-    </div>
-
-    {#if form?.error}
-        <div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">
-            {form.error}
-        </div>
-    {/if}
-
-    <form
-        method="POST"
-        use:enhance={() => {
-            isSubmitting = true;
-            return async ({ result, update }) => {
-                await update();
-                isSubmitting = false;
-                if (result.type === "failure" && result.data?.error) {
-                    addToast({
-                        type: "error",
-                        message: result.data.error as string,
-                    });
-                }
-            };
-        }}
-        class="grid gap-6 lg:grid-cols-3"
+    <header
+        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
-        <!-- Main Form -->
-        <Card class="p-6 lg:col-span-2 space-y-6">
-            <div class="grid gap-4 md:grid-cols-2">
-                <!-- Date -->
-                <div class="space-y-2">
-                    <Label for="expense_date">Date *</Label>
-                    <Input
-                        type="date"
-                        id="expense_date"
-                        name="expense_date"
-                        value={data.defaults.expense_date}
-                        required
-                    />
-                </div>
-
-                <!-- Category -->
-                <div class="space-y-2">
-                    <Label for="category">Category *</Label>
-                    <select
-                        id="category"
-                        name="category"
-                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        required
-                    >
-                        <option value="">Select category...</option>
-                        {#each data.expenseAccounts as account}
-                            <option value={account.id}>
-                                {account.code} - {account.name}
-                            </option>
-                        {/each}
-                    </select>
-                </div>
+        <div class="flex items-center gap-4">
+            <Button
+                variant="ghost"
+                href="/expenses"
+                size="icon"
+                class="h-8 w-8 text-text-muted hover:text-text-strong"
+            >
+                <ArrowLeft class="size-4" />
+            </Button>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                    Add Expense
+                </h1>
             </div>
+        </div>
+    </header>
 
-            <div class="grid gap-4 md:grid-cols-2">
-                <!-- Amount -->
-                <div class="space-y-2">
-                    <Label for="amount">Amount (excl. GST) *</Label>
-                    <Input
-                        type="number"
-                        id="amount"
-                        name="amount"
-                        bind:value={amount}
-                        step="0.01"
-                        min="0.01"
-                        required
-                        class="font-mono"
-                    />
-                </div>
-
-                <!-- GST Rate -->
-                <div class="space-y-2">
-                    <Label for="gst_rate">GST Rate (%)</Label>
-                    <select
-                        id="gst_rate"
-                        name="gst_rate"
-                        bind:value={gstRate}
-                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                        <option value={0}>0% (No GST)</option>
-                        <option value={5}>5%</option>
-                        <option value={12}>12%</option>
-                        <option value={18}>18%</option>
-                        <option value={28}>28%</option>
-                    </select>
-                </div>
-            </div>
-
-            {#if gstRate > 0}
-                <div class="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        id="is_inter_state"
-                        name="is_inter_state"
-                        bind:checked={isInterState}
-                        class="rounded border-gray-300"
-                    />
-                    <Label for="is_inter_state" class="font-normal"
-                        >Inter-state purchase (IGST)</Label
-                    >
-                </div>
-            {/if}
-
-            <!-- Vendor -->
-            <div class="space-y-2">
-                <Label for="vendor">Vendor</Label>
-                <Input
-                    type="text"
-                    id="vendor"
-                    name="vendor"
-                    placeholder="Vendor or supplier name"
-                />
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-2">
-                <Label for="description">Description</Label>
-                <textarea
-                    id="description"
-                    name="description"
-                    rows="2"
-                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                    placeholder="What was this expense for?"
-                ></textarea>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-                <!-- Paid Through -->
-                <div class="space-y-2">
-                    <Label for="paid_through">Paid Through *</Label>
-                    <select
-                        id="paid_through"
-                        name="paid_through"
-                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        required
-                    >
-                        {#each data.paymentAccounts as account}
-                            <option value={account.id}>{account.name}</option>
-                        {/each}
-                    </select>
-                </div>
-
-                <!-- Reference -->
-                <div class="space-y-2">
-                    <Label for="reference">Reference</Label>
-                    <Input
-                        type="text"
-                        id="reference"
-                        name="reference"
-                        placeholder="Bill/Invoice number"
-                    />
-                </div>
-            </div>
-        </Card>
-
-        <!-- Summary -->
-        <div class="space-y-4">
-            <Card class="p-6">
-                <h3 class="font-medium mb-4">Summary</h3>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-muted-foreground">Amount</span>
-                        <span class="font-mono">{formatCurrency(amount)}</span>
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto px-6 py-8">
+        <form
+            id="expense-form"
+            method="POST"
+            use:enhance={() => {
+                isSubmitting = true;
+                return async ({ result, update }) => {
+                    await update();
+                    isSubmitting = false;
+                    if (result.type === "failure" && result.data?.error) {
+                        addToast({
+                            type: "error",
+                            message: result.data.error as string,
+                        });
+                    }
+                };
+            }}
+            class="mx-auto max-w-5xl space-y-8"
+        >
+            <div
+                class="bg-surface-1 rounded-lg border border-border p-8 shadow-sm space-y-8"
+            >
+                <div class="grid gap-6 md:grid-cols-2">
+                    <!-- Date -->
+                    <div class="space-y-2">
+                        <Label
+                            for="expense_date"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Date *</Label
+                        >
+                        <Input
+                            type="date"
+                            id="expense_date"
+                            name="expense_date"
+                            value={data.defaults.expense_date}
+                            required
+                            class="h-11 border-border-strong bg-surface-0"
+                        />
                     </div>
 
-                    {#if gstRate > 0}
-                        {#if isInterState}
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground"
-                                    >IGST ({gstRate}%)</span
-                                >
-                                <span class="font-mono"
-                                    >{formatCurrency(igst)}</span
-                                >
-                            </div>
-                        {:else}
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground"
-                                    >CGST ({gstRate / 2}%)</span
-                                >
-                                <span class="font-mono"
-                                    >{formatCurrency(cgst)}</span
-                                >
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground"
-                                    >SGST ({gstRate / 2}%)</span
-                                >
-                                <span class="font-mono"
-                                    >{formatCurrency(sgst)}</span
+                    <!-- Category -->
+                    <div class="space-y-2">
+                        <Label
+                            for="category"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Category *</Label
+                        >
+                        <select
+                            id="category"
+                            name="category"
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            required
+                        >
+                            <option value="">Select category...</option>
+                            {#each data.expenseAccounts as account}
+                                <option value={account.id}>
+                                    {account.code} - {account.name}
+                                </option>
+                            {/each}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-3">
+                    <!-- Amount -->
+                    <div class="space-y-2">
+                        <Label
+                            for="amount"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Amount (excl. GST) *</Label
+                        >
+                        <Input
+                            type="number"
+                            id="amount"
+                            name="amount"
+                            bind:value={amount}
+                            step="0.01"
+                            min="0.01"
+                            required
+                            class="h-11 border-border-strong text-text-strong bg-surface-0 font-mono text-base"
+                        />
+                    </div>
+
+                    <!-- GST Rate -->
+                    <div class="space-y-2">
+                        <Label
+                            for="gst_rate"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >GST Rate (%)</Label
+                        >
+                        <select
+                            id="gst_rate"
+                            name="gst_rate"
+                            bind:value={gstRate}
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        >
+                            <option value={0}>0% (No GST)</option>
+                            <option value={5}>5%</option>
+                            <option value={12}>12%</option>
+                            <option value={18}>18%</option>
+                            <option value={28}>28%</option>
+                        </select>
+                    </div>
+
+                    <!-- Inter-state Checkbox (only visible if GST > 0) -->
+                    <div class="space-y-2 flex flex-col justify-end pb-2">
+                        {#if gstRate > 0}
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="is_inter_state"
+                                    name="is_inter_state"
+                                    bind:checked={isInterState}
+                                    class="h-4 w-4 rounded border-border-strong text-primary focus:ring-primary/25"
+                                />
+                                <Label
+                                    for="is_inter_state"
+                                    class="font-normal text-sm cursor-pointer"
+                                    >Inter-state purchase (IGST)</Label
                                 >
                             </div>
                         {/if}
-                    {/if}
-
-                    <div
-                        class="border-t pt-3 flex justify-between font-semibold"
-                    >
-                        <span>Total</span>
-                        <span class="font-mono text-red-600"
-                            >{formatCurrency(total)}</span
-                        >
                     </div>
                 </div>
-            </Card>
 
+                <!-- Vendor -->
+                <div class="space-y-2">
+                    <Label
+                        for="vendor"
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                        >Vendor</Label
+                    >
+                    <Input
+                        type="text"
+                        id="vendor"
+                        name="vendor"
+                        placeholder="Vendor or supplier name"
+                        class="h-11 border-border-strong bg-surface-0"
+                    />
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
+                    <!-- Paid Through -->
+                    <div class="space-y-2">
+                        <Label
+                            for="paid_through"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Paid Through *</Label
+                        >
+                        <select
+                            id="paid_through"
+                            name="paid_through"
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            required
+                        >
+                            {#each data.paymentAccounts as account}
+                                <option value={account.id}
+                                    >{account.name}</option
+                                >
+                            {/each}
+                        </select>
+                    </div>
+
+                    <!-- Reference -->
+                    <div class="space-y-2">
+                        <Label
+                            for="reference"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Reference</Label
+                        >
+                        <Input
+                            type="text"
+                            id="reference"
+                            name="reference"
+                            placeholder="Bill/Invoice number"
+                            class="h-11 border-border-strong bg-surface-0"
+                        />
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="space-y-2">
+                    <Label
+                        for="description"
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                        >Description</Label
+                    >
+                    <textarea
+                        id="description"
+                        name="description"
+                        rows="2"
+                        class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+                        placeholder="What was this expense for?"
+                    ></textarea>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <div
+        class="flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20"
+    >
+        <div class="flex items-center gap-3">
             <Button
                 type="submit"
-                class="w-full"
+                form="expense-form"
                 disabled={isSubmitting || amount <= 0}
+                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
             >
                 <Check class="mr-2 size-4" />
                 {isSubmitting ? "Saving..." : "Save Expense"}
             </Button>
+            <Button
+                href="/expenses"
+                variant="ghost"
+                type="button"
+                class="text-text-muted hover:text-destructive"
+            >
+                Cancel
+            </Button>
         </div>
-    </form>
+
+        <div class="flex items-center gap-6 text-sm">
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Amount</span
+                >
+                <span class="font-mono font-medium text-text-strong"
+                    >{formatCurrency(amount)}</span
+                >
+            </div>
+
+            {#if gstRate > 0}
+                <div class="h-8 w-px bg-border-subtle"></div>
+                <div class="flex flex-col items-end">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                        >Tax ({gstRate}%)</span
+                    >
+                    <span class="font-mono font-medium text-text-strong"
+                        >{formatCurrency(gstAmount)}</span
+                    >
+                </div>
+            {/if}
+
+            <div class="h-8 w-px bg-border-subtle"></div>
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Total</span
+                >
+                <span class="font-mono text-lg font-bold text-destructive"
+                    >{formatCurrency(total)}</span
+                >
+            </div>
+        </div>
+    </div>
 </div>

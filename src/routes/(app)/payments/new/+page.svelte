@@ -3,7 +3,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { ArrowLeft, DollarSign, Check } from "lucide-svelte";
+    import { ArrowLeft, Check, Save } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
 
@@ -63,7 +63,6 @@
                 unpaidInvoices = result.data.invoices;
                 allocations = {};
             } else if (result.data?.invoices) {
-                // Also handle direct data response
                 unpaidInvoices = result.data.invoices;
                 allocations = {};
             }
@@ -105,283 +104,362 @@
     }
 </script>
 
-<div class="max-w-4xl mx-auto space-y-4">
+<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header -->
-    <div class="flex items-center gap-4">
-        <Button variant="ghost" href="/payments" class="p-2">
-            <ArrowLeft class="size-4" />
-        </Button>
-        <div>
-            <h1 class="text-xl font-semibold">Record Payment</h1>
-            <p class="text-sm text-muted-foreground">
-                Record customer payment and allocate to invoices
-            </p>
-        </div>
-    </div>
-
-    {#if form?.error}
-        <div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">
-            {form.error}
-        </div>
-    {/if}
-
-    <form
-        method="POST"
-        action="?/recordPayment"
-        use:enhance={() => {
-            isSubmitting = true;
-            return async ({ result, update }) => {
-                await update();
-                isSubmitting = false;
-                if (result.type === "failure" && result.data?.error) {
-                    addToast({
-                        type: "error",
-                        message: result.data.error as string,
-                    });
-                }
-            };
-        }}
-        class="grid gap-6 lg:grid-cols-3"
+    <header
+        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
-        <!-- Main Form -->
-        <Card class="p-6 lg:col-span-2 space-y-6">
-            <!-- Customer Selection -->
-            <div class="space-y-2">
-                <Label for="customer_id">Customer *</Label>
-                <select
-                    id="customer_id"
-                    name="customer_id"
-                    bind:value={selectedCustomer}
-                    onchange={(e) => loadInvoices(e.currentTarget.value)}
-                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    required
+        <div class="flex items-center gap-4">
+            <Button
+                variant="ghost"
+                href="/payments"
+                size="icon"
+                class="h-8 w-8 text-text-muted hover:text-text-strong"
+            >
+                <ArrowLeft class="size-4" />
+            </Button>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                    Record Payment
+                </h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto px-6 py-8">
+        <form
+            id="payment-form"
+            method="POST"
+            action="?/recordPayment"
+            use:enhance={() => {
+                isSubmitting = true;
+                return async ({ result, update }) => {
+                    await update();
+                    isSubmitting = false;
+                    if (result.type === "failure" && result.data?.error) {
+                        addToast({
+                            type: "error",
+                            message: result.data.error as string,
+                        });
+                    }
+                };
+            }}
+            class="mx-auto max-w-5xl space-y-8"
+        >
+            <div
+                class="bg-surface-1 rounded-lg border border-border p-8 shadow-sm space-y-8"
+            >
+                <!-- Customer Selection -->
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div class="space-y-2">
+                        <Label
+                            for="customer_id"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Customer *</Label
+                        >
+                        <select
+                            id="customer_id"
+                            name="customer_id"
+                            bind:value={selectedCustomer}
+                            onchange={(e) =>
+                                loadInvoices(e.currentTarget.value)}
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            required
+                        >
+                            <option value="">Select customer...</option>
+                            {#each data.customers as customer}
+                                <option value={customer.id}>
+                                    {customer.name}
+                                    {#if customer.company_name}
+                                        ({customer.company_name})
+                                    {/if}
+                                    {#if customer.balance && customer.balance > 0}
+                                        — Outstanding: {formatCurrency(
+                                            customer.balance,
+                                        )}
+                                    {/if}
+                                </option>
+                            {/each}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-3">
+                    <!-- Amount -->
+                    <div class="space-y-2">
+                        <Label
+                            for="amount"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Amount Received *</Label
+                        >
+                        <Input
+                            type="number"
+                            id="amount"
+                            name="amount"
+                            bind:value={amount}
+                            step="0.01"
+                            min="0.01"
+                            required
+                            class="h-11 border-border-strong text-text-strong bg-surface-0 font-mono text-base"
+                        />
+                    </div>
+
+                    <!-- Payment Date -->
+                    <div class="space-y-2">
+                        <Label
+                            for="payment_date"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Payment Date *</Label
+                        >
+                        <Input
+                            type="date"
+                            id="payment_date"
+                            name="payment_date"
+                            value={data.defaults.payment_date}
+                            required
+                            class="h-11 border-border-strong bg-surface-0"
+                        />
+                    </div>
+
+                    <!-- Payment Mode -->
+                    <div class="space-y-2">
+                        <Label
+                            for="payment_mode"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Payment Mode *</Label
+                        >
+                        <select
+                            id="payment_mode"
+                            name="payment_mode"
+                            bind:value={paymentMode}
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
+                            required
+                        >
+                            <option value="bank">Bank Transfer</option>
+                            <option value="upi">UPI</option>
+                            <option value="cash">Cash</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
+                    <!-- Deposit To -->
+                    <div class="space-y-2">
+                        <Label
+                            for="deposit_to"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Deposit To *</Label
+                        >
+                        <select
+                            id="deposit_to"
+                            name="deposit_to"
+                            bind:value={depositTo}
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
+                            required
+                        >
+                            {#each data.depositAccounts as account}
+                                <option value={account.id}>
+                                    {account.name}
+                                </option>
+                            {/each}
+                        </select>
+                    </div>
+
+                    <!-- Reference -->
+                    <div class="space-y-2">
+                        <Label
+                            for="reference"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Reference (UTR / Cheque No.)</Label
+                        >
+                        <Input
+                            type="text"
+                            id="reference"
+                            name="reference"
+                            placeholder="Transaction reference number"
+                            class="h-11 border-border-strong bg-surface-0"
+                        />
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="space-y-2">
+                    <Label
+                        for="notes"
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                        >Notes</Label
+                    >
+                    <textarea
+                        id="notes"
+                        name="notes"
+                        rows="2"
+                        class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+                        placeholder="Internal notes..."
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Invoice Allocation -->
+            <div
+                class="bg-surface-1 rounded-lg border border-border shadow-sm overflow-hidden"
+            >
+                <div
+                    class="px-6 py-4 border-b border-border bg-surface-2/30 flex justify-between items-center"
                 >
-                    <option value="">Select customer...</option>
-                    {#each data.customers as customer}
-                        <option value={customer.id}>
-                            {customer.name}
-                            {#if customer.company_name}
-                                ({customer.company_name})
-                            {/if}
-                            {#if customer.balance && customer.balance > 0}
-                                — Outstanding: {formatCurrency(
-                                    customer.balance,
-                                )}
-                            {/if}
-                        </option>
-                    {/each}
-                </select>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-                <!-- Amount -->
-                <div class="space-y-2">
-                    <Label for="amount">Amount *</Label>
-                    <Input
-                        type="number"
-                        id="amount"
-                        name="amount"
-                        bind:value={amount}
-                        step="0.01"
-                        min="0.01"
-                        required
-                        class="font-mono"
-                    />
-                </div>
-
-                <!-- Payment Date -->
-                <div class="space-y-2">
-                    <Label for="payment_date">Payment Date *</Label>
-                    <Input
-                        type="date"
-                        id="payment_date"
-                        name="payment_date"
-                        value={data.defaults.payment_date}
-                        required
-                    />
-                </div>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2">
-                <!-- Payment Mode -->
-                <div class="space-y-2">
-                    <Label for="payment_mode">Payment Mode *</Label>
-                    <select
-                        id="payment_mode"
-                        name="payment_mode"
-                        bind:value={paymentMode}
-                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        required
+                    <h3
+                        class="text-xs font-bold uppercase tracking-widest text-text-muted"
                     >
-                        <option value="bank">Bank Transfer</option>
-                        <option value="upi">UPI</option>
-                        <option value="cash">Cash</option>
-                        <option value="cheque">Cheque</option>
-                    </select>
-                </div>
-
-                <!-- Deposit To -->
-                <div class="space-y-2">
-                    <Label for="deposit_to">Deposit To *</Label>
-                    <select
-                        id="deposit_to"
-                        name="deposit_to"
-                        bind:value={depositTo}
-                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        required
-                    >
-                        {#each data.depositAccounts as account}
-                            <option value={account.id}>
-                                {account.name}
-                            </option>
-                        {/each}
-                    </select>
-                </div>
-            </div>
-
-            <!-- Reference -->
-            <div class="space-y-2">
-                <Label for="reference">Reference (UTR / Cheque No.)</Label>
-                <Input
-                    type="text"
-                    id="reference"
-                    name="reference"
-                    placeholder="Transaction reference number"
-                />
-            </div>
-
-            <!-- Notes -->
-            <div class="space-y-2">
-                <Label for="notes">Notes</Label>
-                <textarea
-                    id="notes"
-                    name="notes"
-                    rows="2"
-                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                    placeholder="Optional notes..."
-                ></textarea>
-            </div>
-        </Card>
-
-        <!-- Invoice Allocation -->
-        <div class="space-y-4">
-            <Card class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-medium">Allocate to Invoices</h3>
+                        Allocate to Invoices
+                    </h3>
                     {#if unpaidInvoices.length > 0 && amount > 0}
                         <Button
                             type="button"
                             variant="outline"
-                            size="sm"
+                            size="xs"
                             onclick={autoAllocate}
+                            class="h-7 text-xs"
                         >
                             Auto-Allocate
                         </Button>
                     {/if}
                 </div>
 
-                {#if !selectedCustomer}
-                    <p class="text-sm text-muted-foreground">
-                        Select a customer to see unpaid invoices
-                    </p>
-                {:else if unpaidInvoices.length === 0}
-                    <p class="text-sm text-muted-foreground">
-                        No unpaid invoices for this customer
-                    </p>
-                {:else}
-                    <div class="space-y-3">
-                        {#each unpaidInvoices as invoice, idx}
-                            <div class="p-3 rounded border bg-muted/30">
-                                <div
-                                    class="flex items-center justify-between mb-2"
-                                >
-                                    <div>
-                                        <span class="font-mono text-sm">
-                                            {invoice.invoice_number}
-                                        </span>
-                                        <span
-                                            class="text-xs text-muted-foreground ml-2"
-                                        >
-                                            {formatDate(invoice.invoice_date)}
-                                        </span>
-                                    </div>
-                                    <span
-                                        class="text-sm font-mono text-red-600"
-                                    >
-                                        {formatCurrency(invoice.balance_due)} due
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <input
-                                        type="hidden"
-                                        name="allocations[{idx}].invoice_id"
-                                        value={invoice.id}
-                                    />
-                                    <Input
-                                        type="number"
-                                        name="allocations[{idx}].amount"
-                                        bind:value={allocations[invoice.id]}
-                                        step="0.01"
-                                        min="0"
-                                        max={invoice.balance_due}
-                                        class="font-mono text-sm"
-                                        placeholder="0.00"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onclick={() => {
-                                            allocations[invoice.id] =
-                                                invoice.balance_due;
-                                        }}
-                                    >
-                                        Full
-                                    </Button>
-                                </div>
-                            </div>
-                        {/each}
-                    </div>
-                {/if}
-            </Card>
-
-            <!-- Summary Card -->
-            <Card class="p-6">
-                <h3 class="font-medium mb-4">Summary</h3>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-muted-foreground">Payment Amount</span
-                        >
-                        <span class="font-mono">{formatCurrency(amount)}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-muted-foreground">Allocated</span>
-                        <span class="font-mono"
-                            >{formatCurrency(totalAllocated)}</span
-                        >
-                    </div>
-                    {#if hasExcess}
-                        <div class="flex justify-between text-amber-600">
-                            <span>Excess (Advance)</span>
-                            <span class="font-mono"
-                                >{formatCurrency(remainingAmount)}</span
-                            >
+                <div class="p-6">
+                    {#if !selectedCustomer}
+                        <div class="text-center py-8 text-text-muted text-sm">
+                            Select a customer to view outstanding invoices.
                         </div>
-                        <p class="text-xs text-muted-foreground mt-2">
-                            Excess amount will be recorded as customer advance
-                        </p>
+                    {:else if unpaidInvoices.length === 0}
+                        <div class="text-center py-8 text-text-muted text-sm">
+                            No unpaid invoices found for this customer.
+                        </div>
+                    {:else}
+                        <div class="space-y-3">
+                            {#each unpaidInvoices as invoice, idx}
+                                <div
+                                    class="flex items-center gap-4 p-4 rounded-md border border-border bg-surface-0"
+                                >
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="font-bold text-text-strong font-mono"
+                                                >{invoice.invoice_number}</span
+                                            >
+                                            <span
+                                                class="text-xs text-text-muted"
+                                                >{formatDate(
+                                                    invoice.invoice_date,
+                                                )}</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="text-xs text-destructive mt-1 font-medium"
+                                        >
+                                            {formatCurrency(
+                                                invoice.balance_due,
+                                            )} Due
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <input
+                                            type="hidden"
+                                            name="allocations[{idx}].invoice_id"
+                                            value={invoice.id}
+                                        />
+                                        <div class="w-32">
+                                            <Input
+                                                type="number"
+                                                name="allocations[{idx}].amount"
+                                                bind:value={
+                                                    allocations[invoice.id]
+                                                }
+                                                step="0.01"
+                                                min="0"
+                                                max={invoice.balance_due}
+                                                class="h-9 text-right font-mono bg-surface-1"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="xs"
+                                            class="text-xs h-7 text-primary hover:text-primary/80"
+                                            onclick={() => {
+                                                allocations[invoice.id] =
+                                                    invoice.balance_due;
+                                            }}
+                                        >
+                                            Full
+                                        </Button>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
                     {/if}
                 </div>
-            </Card>
+            </div>
+        </form>
+    </main>
 
+    <!-- Bottom Action Bar -->
+    <div
+        class="flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20"
+    >
+        <div class="flex items-center gap-3">
             <Button
                 type="submit"
-                class="w-full"
+                form="payment-form"
                 disabled={isSubmitting || !selectedCustomer || amount <= 0}
+                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
             >
                 <Check class="mr-2 size-4" />
                 {isSubmitting ? "Recording..." : "Record Payment"}
             </Button>
+            <Button
+                href="/payments"
+                variant="ghost"
+                type="button"
+                class="text-text-muted hover:text-destructive"
+            >
+                Cancel
+            </Button>
         </div>
-    </form>
+
+        <div class="flex items-center gap-6 text-sm">
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Payment Amount</span
+                >
+                <span class="font-mono text-lg font-bold text-text-strong"
+                    >{formatCurrency(amount)}</span
+                >
+            </div>
+            <div class="h-8 w-px bg-border-subtle"></div>
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Allocated</span
+                >
+                <span class="font-mono font-medium text-text-strong"
+                    >{formatCurrency(totalAllocated)}</span
+                >
+            </div>
+            {#if hasExcess}
+                <div class="h-8 w-px bg-border-subtle"></div>
+                <div class="flex flex-col items-end text-amber-600">
+                    <span
+                        class="text-[10px] uppercase tracking-wider font-semibold"
+                        >Excess (Advance)</span
+                    >
+                    <span class="font-mono font-bold"
+                        >{formatCurrency(remainingAmount)}</span
+                    >
+                </div>
+            {/if}
+        </div>
+    </div>
 </div>
