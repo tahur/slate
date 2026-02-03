@@ -115,6 +115,30 @@
 - Row height: compact (8–10px vertical padding).
 - Subtle hover surface (`--surface-3`).
 
+### Form Layouts (3-Tier System)
+1. **Large (Invoices)**:
+   - `max-w-7xl` or full width.
+   - For dense tables, multi-item lists, and complex documents.
+   - Example: *Invoice Creation*
+
+2. **Split Screen (Payments & Expenses)**:
+   - `max-w-[variable]` or flex containers.
+   - **2-Column Layout**:
+     - **Left**: Data Entry (Form).
+     - **Right**: Context/Summary (e.g., Unpaid Invoices, Tax Breakdown).
+   - Improves density and allows reference while typing.
+   - Example: *New Payment, New Expense*
+
+3. **Standard (Entities)**:
+   - `max-w-3xl`.
+   - Single column, focused vertical flow.
+   - For simple entities like Customers or Items.
+
+### Sticky Actions
+- Primary actions (Save, Cancel) are **pinned to the bottom** of the viewport.
+- Ensures actions are always accessible without scrolling.
+- Background: `--surface-1` with top border.
+
 ---
 
 ## 5. Component Guidance

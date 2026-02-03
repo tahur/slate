@@ -5,7 +5,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postInvoiceIssuance } from '$lib/server/services';
 
-export const load: PageServerLoad = async ({ locals, params }) => {
+export const load: PageServerLoad = async ({ locals, params, url }) => {
     if (!locals.user) {
         redirect(302, '/login');
     }
@@ -32,7 +32,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         where: eq(customers.id, invoice.customer_id),
     });
 
-    return { invoice, items, customer };
+    const justRecordedPayment = url.searchParams.get('payment') === 'recorded';
+    return { invoice, items, customer, justRecordedPayment };
 };
 
 export const actions: Actions = {

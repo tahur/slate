@@ -62,6 +62,19 @@
     </div>
 {/if}
 
+{#if data.justRecordedPayment}
+    <div class="mb-4 p-3 rounded-md bg-surface-2 text-text-strong text-sm border border-border-subtle">
+        Payment recorded:
+        <span class="font-mono font-medium"
+            >{formatCurrency(data.invoice.amount_paid || 0)}</span
+        >
+        · Balance due
+        <span class="font-mono font-medium"
+            >{formatCurrency(data.invoice.balance_due)}</span
+        >
+    </div>
+{/if}
+
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header control bar -->
     <header
@@ -334,6 +347,18 @@
                                         data.invoice.balance_due,
                                     )}</span
                                 >
+                            </div>
+                        {/if}
+
+                        {#if data.invoice.status !== "draft" && data.invoice.status !== "cancelled" && data.invoice.balance_due > 0.01}
+                            <div class="pt-3">
+                                <Button
+                                    class="w-full"
+                                    variant="outline"
+                                    href="/payments/new?customer={data.invoice.customer_id}"
+                                >
+                                    Record Remaining Payment
+                                </Button>
                             </div>
                         {/if}
                     </div>

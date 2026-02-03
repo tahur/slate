@@ -389,6 +389,9 @@ export const actions: Actions = {
             type: 'success',
             message
         });
-        redirect(302, `/invoices/${createdInvoiceId}`);
+        const redirectUrl = capturePayment
+            ? `/invoices/${createdInvoiceId}?payment=recorded`
+            : `/invoices/${createdInvoiceId}`;
+        redirect(302, redirectUrl);
     }
 };
