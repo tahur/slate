@@ -50,6 +50,16 @@ export const GST_TREATMENTS = [
 // GSTIN format: 2-digit state code + 10-char PAN + 1-char entity + Z + 1-char checksum
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
+const gstinSchema = z.preprocess(
+    (val) => (typeof val === 'string' ? val.trim().toUpperCase() : ''),
+    z
+        .string()
+        .refine(
+            (val) => val === '' || GSTIN_REGEX.test(val),
+            'Invalid GSTIN format'
+        )
+);
+
 export const customerSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     company_name: z.string().optional().or(z.literal('')),
@@ -61,10 +71,7 @@ export const customerSchema = z.object({
     state_code: z.string().length(2, 'Select a state').optional().or(z.literal('')),
     pincode: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits').optional().or(z.literal('')),
 
-    gstin: z.string()
-        .regex(GSTIN_REGEX, 'Invalid GSTIN format')
-        .optional()
-        .or(z.literal('')),
+    gstin: gstinSchema,
     gst_treatment: z.enum(['registered', 'unregistered', 'consumer', 'overseas']).default('unregistered'),
 
     payment_terms: z.coerce.number().min(0).max(365).default(0),

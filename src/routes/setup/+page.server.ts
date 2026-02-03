@@ -6,6 +6,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { setupSchema } from './schema';
 import { seedChartOfAccounts } from '$lib/server/seed';
+import { setFlash } from '$lib/server/flash';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -86,6 +87,10 @@ export const actions: Actions = {
             return fail(500, { form, error: 'Failed to setup organization' });
         }
 
+        setFlash(event.cookies, {
+            type: 'success',
+            message: 'Organization setup complete.'
+        });
         redirect(302, '/dashboard');
     }
 };

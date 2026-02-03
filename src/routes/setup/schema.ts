@@ -8,14 +8,19 @@ export const setupSchema = z.object({
     // city: z.string().min(2, 'City is required'), // Simplified for now
     state_code: z.string().length(2, 'State code must be 2 digits'),
     pincode: z.string().regex(/^\d{6}$/, 'Invalid pincode'),
-    gstin: z
-        .string()
-        .regex(
-            /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-            'Invalid GSTIN format'
-        )
-        .optional()
-        .or(z.literal('')),
+    gstin: z.preprocess(
+        (val) => (typeof val === 'string' ? val.trim().toUpperCase() : ''),
+        z
+            .string()
+            .refine(
+                (val) =>
+                    val === '' ||
+                    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+                        val
+                    ),
+                'Invalid GSTIN format'
+            )
+    ),
     fy_start_month: z.coerce.number().min(1).max(12).default(4)
 });
 

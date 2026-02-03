@@ -4,6 +4,7 @@
     import { Card } from "$lib/components/ui/card";
     import { ArrowLeft, Printer, Send, Download, XCircle } from "lucide-svelte";
     import { enhance } from "$app/forms";
+    import { addToast } from "$lib/stores/toast";
 
     let { data, form } = $props();
     let isSubmitting = $state(false);
@@ -96,9 +97,21 @@
                     action="?/issue"
                     use:enhance={() => {
                         isSubmitting = true;
-                        return async ({ update }) => {
+                        return async ({ result, update }) => {
                             await update();
                             isSubmitting = false;
+                            if (result.type === "success") {
+                                addToast({
+                                    type: "success",
+                                    message: "Invoice issued successfully.",
+                                });
+                            }
+                            if (result.type === "failure" && result.data?.error) {
+                                addToast({
+                                    type: "error",
+                                    message: result.data.error as string,
+                                });
+                            }
                         };
                     }}
                 >
@@ -122,9 +135,21 @@
                             return;
                         }
                         isSubmitting = true;
-                        return async ({ update }) => {
+                        return async ({ result, update }) => {
                             await update();
                             isSubmitting = false;
+                            if (result.type === "success") {
+                                addToast({
+                                    type: "success",
+                                    message: "Invoice cancelled.",
+                                });
+                            }
+                            if (result.type === "failure" && result.data?.error) {
+                                addToast({
+                                    type: "error",
+                                    message: result.data.error as string,
+                                });
+                            }
                         };
                     }}
                 >
@@ -138,7 +163,15 @@
                     </Button>
                 </form>
             {/if}
-            <Button variant="outline">
+            <Button
+                variant="outline"
+                href="/api/invoices/{data.invoice.id}/pdf"
+                target="_blank"
+            >
+                <Download class="mr-2 size-4" />
+                Download PDF
+            </Button>
+            <Button variant="outline" onclick={() => window.print()}>
                 <Printer class="mr-2 size-4" />
                 Print
             </Button>

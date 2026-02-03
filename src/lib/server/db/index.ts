@@ -5,9 +5,14 @@ import { env } from '$env/dynamic/private';
 
 // Ensure data directory exists
 import fs from 'node:fs';
-if (!fs.existsSync('data')) {
-    fs.mkdirSync('data');
+import path from 'node:path';
+
+const dbPath = env.OPENBILL_DB_PATH || 'data/openbill.db';
+const dbDir = path.dirname(dbPath);
+
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const sqlite = new Database('data/openbill.db');
+const sqlite = new Database(dbPath);
 export const db = drizzle(sqlite, { schema });

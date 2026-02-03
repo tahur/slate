@@ -1,7 +1,14 @@
 import { lucia } from '$lib/server/auth';
+import { getFlash, clearFlash } from '$lib/server/flash';
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
+    const flash = getFlash(event.cookies);
+    event.locals.flash = flash;
+    if (flash) {
+        clearFlash(event.cookies);
+    }
+
     const sessionId = event.cookies.get(lucia.sessionCookieName);
     if (!sessionId) {
         event.locals.user = null;

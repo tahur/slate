@@ -9,12 +9,9 @@
     import {
         Plus,
         IndianRupee,
-        TrendingUp,
-        TrendingDown,
-        Users,
+        AlertTriangle,
+        Clock,
         FileText,
-        Wallet,
-        Banknote,
     } from "lucide-svelte";
     import type { PageData } from "./$types";
 
@@ -25,6 +22,35 @@
             style: "currency",
             currency: "INR",
         }).format(amount);
+    }
+
+    function formatDate(dateStr: string) {
+        return new Date(dateStr).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    }
+
+    function formatDso(dso: number) {
+        if (!dso || dso <= 0) return "—";
+        return `${dso.toFixed(1)} days`;
+    }
+
+    function getStatusColor(status: string): string {
+        switch (status) {
+            case "paid":
+                return "bg-green-100 text-green-800";
+            case "issued":
+                return "bg-blue-100 text-blue-800";
+            case "partially_paid":
+                return "bg-yellow-100 text-yellow-800";
+            case "overdue":
+            case "cancelled":
+                return "bg-red-100 text-red-800";
+            default:
+                return "bg-gray-100 text-gray-800";
+        }
     }
 </script>
 
@@ -49,7 +75,7 @@
 
     <!-- Stats Grid -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <!-- Revenue / Receivables -->
+        <!-- Total Receivables -->
         <Card>
             <CardHeader
                 class="flex flex-row items-center justify-between space-y-0 pb-2"
@@ -69,35 +95,37 @@
             </CardContent>
         </Card>
 
-        <!-- Expenses -->
+        <!-- Total Overdue -->
         <Card>
             <CardHeader
                 class="flex flex-row items-center justify-between space-y-0 pb-2"
             >
-                <CardTitle class="text-sm font-medium">Expenses</CardTitle>
-                <Wallet class="size-4 text-muted-foreground" />
+                <CardTitle class="text-sm font-medium">Total Overdue</CardTitle>
+                <AlertTriangle class="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
                 <div class="text-2xl font-bold">
-                    {formatCurrency(data.stats.expenses)}
+                    {formatCurrency(data.stats.overdue)}
                 </div>
-                <p class="text-xs text-muted-foreground">current fiscal year</p>
+                <p class="text-xs text-muted-foreground">
+                    {data.stats.overdueCount} overdue invoices
+                </p>
             </CardContent>
         </Card>
 
-        <!-- Placeholder Cards -->
+        <!-- DSO -->
         <Card>
             <CardHeader
                 class="flex flex-row items-center justify-between space-y-0 pb-2"
             >
-                <CardTitle class="text-sm font-medium">Cash on Hand</CardTitle>
-                <Banknote class="size-4 text-muted-foreground" />
+                <CardTitle class="text-sm font-medium">DSO</CardTitle>
+                <Clock class="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div class="text-2xl font-bold">
-                    {formatCurrency(data.stats.cash)}
-                </div>
-                <p class="text-xs text-muted-foreground">Across all accounts</p>
+                <div class="text-2xl font-bold">{formatDso(data.stats.dso)}</div>
+                <p class="text-xs text-muted-foreground">
+                    Based on last 30 days sales
+                </p>
             </CardContent>
         </Card>
 
@@ -105,43 +133,88 @@
             <CardHeader
                 class="flex flex-row items-center justify-between space-y-0 pb-2"
             >
-                <CardTitle class="text-sm font-medium">Net Profit</CardTitle>
-                <TrendingUp class="size-4 text-muted-foreground" />
+                <CardTitle class="text-sm font-medium"
+                    >Recent Invoices</CardTitle
+                >
+                <FileText class="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
                 <div class="text-2xl font-bold">
-                    {formatCurrency(
-                        data.stats.receivables - data.stats.expenses,
-                    )}
+                    {data.recentInvoices.length}
                 </div>
-                <p class="text-xs text-muted-foreground">Estimated</p>
+                <p class="text-xs text-muted-foreground">
+                    Last 5 invoices
+                </p>
             </CardContent>
         </Card>
     </div>
 
-    <!-- Empty State / Recent Activity Placeholder -->
+    <!-- Recent Activity -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card class="col-span-4">
-            <CardHeader>
-                <CardTitle>Recent Revenue</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div
-                    class="flex h-[200px] items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground"
-                >
-                    No data available for chart
-                </div>
-            </CardContent>
-        </Card>
-        <Card class="col-span-3">
             <CardHeader>
                 <CardTitle>Recent Invoices</CardTitle>
             </CardHeader>
             <CardContent>
+                {#if data.recentInvoices.length === 0}
+                    <div
+                        class="flex h-[200px] items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground"
+                    >
+                        No recent invoices
+                    </div>
+                {:else}
+                    <div class="space-y-3">
+                        {#each data.recentInvoices as invoice}
+                            <div
+                                class="flex items-center justify-between gap-4 rounded-md border px-3 py-2"
+                            >
+                                <div class="min-w-0">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="font-mono text-sm font-medium text-primary hover:underline"
+                                    >
+                                        {invoice.invoice_number}
+                                    </a>
+                                    <div class="text-xs text-muted-foreground">
+                                        {invoice.customer_name || "Unknown"} ·
+                                        {formatDate(invoice.invoice_date)}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="hidden text-xs font-medium uppercase rounded px-2 py-0.5 md:inline-flex {getStatusColor(
+                                            invoice.status,
+                                        )}"
+                                    >
+                                        {invoice.status}
+                                    </span>
+                                    <div class="text-right">
+                                        <div class="text-sm font-mono">
+                                            {formatCurrency(invoice.total)}
+                                        </div>
+                                        <div class="text-xs text-muted-foreground">
+                                            Balance{" "}
+                                            {formatCurrency(
+                                                invoice.balance_due || 0,
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </CardContent>
+        </Card>
+        <Card class="col-span-3">
+            <CardHeader>
+                <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
                 <div
                     class="flex h-[200px] items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground"
                 >
-                    No recent invoices
+                    Add a reminder or note for today
                 </div>
             </CardContent>
         </Card>

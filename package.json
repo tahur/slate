@@ -44,6 +44,7 @@
 		"lucia": "^3.2.2",
 		"lucide-svelte": "^0.563.0",
 		"oslo": "^1.2.1",
+		"puppeteer": "^22.10.0",
 		"sveltekit-superforms": "^2.29.1",
 		"tailwind-merge": "^3.4.0",
 		"tailwindcss-animate": "^1.0.7",

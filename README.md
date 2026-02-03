@@ -1,42 +1,57 @@
-# sv
+# OpenBill
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+OpenBill is a self-hosted, GST‑ready accounting system for Indian micro enterprises. It covers invoicing, payments, expenses, and reporting with a double‑entry posting engine under the hood.
 
-## Creating a project
+## Features
+- Customer management
+- GST‑compliant invoices with line items
+- Payment allocation and overpayment handling
+- Expense tracking with GST split
+- Reports: Aging, Customer Ledger, GST Summary, P&L
+- PDF generation for invoices and customer statements
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Tech Stack
+- SvelteKit + Svelte 5 + TypeScript
+- Tailwind CSS + shadcn-svelte components
+- SQLite + Drizzle ORM
+- Lucia authentication
+- Puppeteer PDF engine
 
+## Getting Started
+
+### 1) Install dependencies
 ```sh
-# create a new project
-npx sv create my-app
+npm install
 ```
 
-To recreate this project with the same configuration:
+### 2) Configure environment
+Copy `.env.example` and edit as needed.
 
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --no-install .
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
+### 3) Run in development
 ```sh
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+Then open `http://localhost:5173` and complete the `/setup` flow to create the organization and chart of accounts.
 
-To create a production version of your app:
+## Environment Variables
+```env
+OPENBILL_DB_PATH=data/openbill.db
+PUPPETEER_EXECUTABLE_PATH=
+CHROME_PATH=
+```
 
+If Puppeteer cannot detect Chrome/Chromium, set `PUPPETEER_EXECUTABLE_PATH` or `CHROME_PATH`.
+
+## Build & Preview
 ```sh
 npm run build
+npm run preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Database
+The SQLite database is stored at `data/openbill.db` by default. You can change this using `OPENBILL_DB_PATH`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Notes
+- The default adapter is `adapter-auto`. If you deploy to a specific environment, consider switching to a fixed adapter.
+- PDF rendering requires a working Chrome/Chromium binary.

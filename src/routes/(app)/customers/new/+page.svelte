@@ -5,12 +5,22 @@
     import { Card } from "$lib/components/ui/card";
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
+    import { addToast } from "$lib/stores/toast";
     import { INDIAN_STATES, GST_TREATMENTS } from "./schema";
     import { ArrowLeft, Save } from "lucide-svelte";
 
     let { data } = $props();
 
-    const { form, errors, enhance, submitting } = superForm(data.form);
+    const { form, errors, enhance, submitting } = superForm(data.form, {
+        onResult: ({ result }) => {
+            if (result.type === "failure" && result.data?.error) {
+                addToast({
+                    type: "error",
+                    message: result.data.error as string,
+                });
+            }
+        },
+    });
 </script>
 
 <div class="space-y-4">
@@ -26,6 +36,12 @@
             </p>
         </div>
     </div>
+
+    {#if data.error}
+        <div class="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+            {data.error}
+        </div>
+    {/if}
 
     <!-- Form -->
     <Card class="p-6">

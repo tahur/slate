@@ -11,6 +11,7 @@ import {
 import { eq, and, ne, sql, inArray } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postPaymentReceipt } from '$lib/server/services';
+import { setFlash } from '$lib/server/flash';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -84,7 +85,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-    recordPayment: async ({ request, locals }) => {
+    recordPayment: async ({ request, locals, cookies }) => {
         if (!locals.user) {
             redirect(302, '/login');
         }
@@ -229,6 +230,10 @@ export const actions: Actions = {
             });
         }
 
+        setFlash(cookies, {
+            type: 'success',
+            message: 'Payment recorded successfully.'
+        });
         redirect(302, '/payments');
     },
 

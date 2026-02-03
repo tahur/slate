@@ -4,6 +4,7 @@ import { expenses, accounts } from '$lib/server/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postExpense } from '$lib/server/services';
+import { setFlash } from '$lib/server/flash';
 
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) {
@@ -54,7 +55,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-    default: async ({ request, locals }) => {
+    default: async ({ request, locals, cookies }) => {
         if (!locals.user) {
             redirect(302, '/login');
         }
@@ -162,6 +163,10 @@ export const actions: Actions = {
             });
         }
 
+        setFlash(cookies, {
+            type: 'success',
+            message: 'Expense recorded successfully.'
+        });
         redirect(302, '/expenses');
     }
 };

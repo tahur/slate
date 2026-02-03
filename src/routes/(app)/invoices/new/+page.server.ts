@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { customers, invoices, invoice_items, organizations } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { calculateLineItem, calculateInvoiceTotals, type LineItem, GST_RATES } from './schema';
+import { setFlash } from '$lib/server/flash';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -165,6 +166,10 @@ export const actions: Actions = {
             return fail(500, { error: 'Failed to create invoice' });
         }
 
+        setFlash(event.cookies, {
+            type: 'success',
+            message: 'Invoice saved as draft.'
+        });
         redirect(302, '/invoices');
     }
 };

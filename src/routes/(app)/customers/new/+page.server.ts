@@ -4,6 +4,7 @@ import { customers } from '$lib/server/db/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { customerSchema } from './schema';
+import { setFlash } from '$lib/server/flash';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -57,6 +58,10 @@ export const actions: Actions = {
             return fail(500, { form, error: 'Failed to create customer' });
         }
 
+        setFlash(event.cookies, {
+            type: 'success',
+            message: 'Customer created successfully.'
+        });
         redirect(302, '/customers');
     }
 };

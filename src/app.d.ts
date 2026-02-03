@@ -6,6 +6,7 @@ declare global {
 		interface Locals {
 			user: import('lucia').User | null;
 			session: import('lucia').Session | null;
+			flash: import('$lib/server/flash').FlashMessage | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

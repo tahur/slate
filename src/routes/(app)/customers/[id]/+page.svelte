@@ -6,8 +6,16 @@
     import { Badge } from "$lib/components/ui/badge";
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
+    import { addToast } from "$lib/stores/toast";
     import { INDIAN_STATES, GST_TREATMENTS } from "../new/schema";
-    import { ArrowLeft, Save, Pencil, X, FileText } from "lucide-svelte";
+    import {
+        ArrowLeft,
+        Save,
+        Pencil,
+        X,
+        FileText,
+        Download,
+    } from "lucide-svelte";
 
     let { data } = $props();
 
@@ -17,6 +25,16 @@
         onResult: ({ result }) => {
             if (result.type === "success") {
                 isEditing = false;
+                addToast({
+                    type: "success",
+                    message: "Customer updated successfully.",
+                });
+            }
+            if (result.type === "failure" && result.data?.error) {
+                addToast({
+                    type: "error",
+                    message: result.data.error as string,
+                });
             }
         },
     });
@@ -60,6 +78,14 @@
             >
                 {data.customer.status}
             </Badge>
+            <Button
+                variant="outline"
+                href="/api/customers/{data.customer.id}/statement"
+                target="_blank"
+            >
+                <Download class="mr-2 size-4" />
+                Statement
+            </Button>
             {#if !isEditing}
                 <Button variant="outline" onclick={() => (isEditing = true)}>
                     <Pencil class="mr-2 size-4" />

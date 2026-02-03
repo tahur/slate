@@ -6,6 +6,7 @@
     import { Card } from "$lib/components/ui/card";
     import * as Select from "$lib/components/ui/select";
     import { GST_RATES, calculateInvoiceTotals, type LineItem } from "./schema";
+    import { addToast } from "$lib/stores/toast";
     import { ArrowLeft, Save, Plus, Trash2 } from "lucide-svelte";
 
     let { data } = $props();
@@ -110,6 +111,10 @@
                 submitting = false;
                 if (result.type === "failure" && result.data?.error) {
                     error = result.data.error as string;
+                    addToast({
+                        type: "error",
+                        message: error,
+                    });
                 } else {
                     await update();
                 }

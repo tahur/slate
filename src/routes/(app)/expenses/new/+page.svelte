@@ -5,6 +5,7 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check } from "lucide-svelte";
     import { enhance } from "$app/forms";
+    import { addToast } from "$lib/stores/toast";
 
     let { data, form } = $props();
     let isSubmitting = $state(false);
@@ -54,9 +55,15 @@
         method="POST"
         use:enhance={() => {
             isSubmitting = true;
-            return async ({ update }) => {
+            return async ({ result, update }) => {
                 await update();
                 isSubmitting = false;
+                if (result.type === "failure" && result.data?.error) {
+                    addToast({
+                        type: "error",
+                        message: result.data.error as string,
+                    });
+                }
             };
         }}
         class="grid gap-6 lg:grid-cols-3"

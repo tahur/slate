@@ -11,6 +11,10 @@ const MODULE_PREFIXES: Record<NumberSeriesModule, string> = {
     journal: 'JE'
 };
 
+export function getDefaultPrefix(module: NumberSeriesModule): string {
+    return MODULE_PREFIXES[module];
+}
+
 /**
  * Get the current fiscal year string based on Indian FY (April-March)
  * e.g., "2025-26" for dates between April 2025 and March 2026
@@ -89,7 +93,8 @@ export async function getNextNumber(
         });
     }
 
-    return `${prefix}-${fy}-${padNumber(nextNumber)}`;
+    const finalPrefix = existing?.prefix || prefix;
+    return `${finalPrefix}-${fy}-${padNumber(nextNumber)}`;
 }
 
 /**
@@ -132,5 +137,6 @@ export async function peekNextNumber(
         .get();
 
     const nextNumber = (existing?.current_number || 0) + 1;
-    return `${prefix}-${fy}-${padNumber(nextNumber)}`;
+    const finalPrefix = existing?.prefix || prefix;
+    return `${finalPrefix}-${fy}-${padNumber(nextNumber)}`;
 }

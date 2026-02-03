@@ -15,6 +15,13 @@ export const organizations = sqliteTable('organizations', {
     logo_url: text('logo_url'),
     currency: text('currency').default('INR'),
     fy_start_month: integer('fy_start_month').default(4), // April
+
+    // Bank Details
+    bank_name: text('bank_name'),
+    branch: text('branch'),
+    account_number: text('account_number'),
+    ifsc: text('ifsc'),
+
     created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });
