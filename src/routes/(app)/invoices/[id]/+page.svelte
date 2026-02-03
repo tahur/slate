@@ -27,19 +27,19 @@
         });
     }
 
-    function getStatusColor(status: string): string {
+    function getStatusClass(status: string): string {
         switch (status) {
             case "paid":
-                return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+                return "status-pill--positive";
             case "issued":
-                return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+                return "status-pill--info";
             case "partially_paid":
-                return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+                return "status-pill--warning";
             case "overdue":
             case "cancelled":
-                return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-            default:
-                return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+                return "status-pill--negative";
+            default: // draft
+                return "status-pill--warning";
         }
     }
 </script>
@@ -62,224 +62,170 @@
     </div>
 {/if}
 
-<div class="space-y-4">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
+<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
+    <!-- Header control bar -->
+    <header
+        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-10"
+    >
         <div class="flex items-center gap-4">
-            <Button variant="ghost" href="/invoices" class="p-2">
+            <Button
+                variant="ghost"
+                href="/invoices"
+                size="icon"
+                class="h-8 w-8 text-text-muted hover:text-text-strong"
+            >
                 <ArrowLeft class="size-4" />
             </Button>
-            <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-xl font-semibold font-mono">
-                        {data.invoice.invoice_number}
-                    </h1>
-                    <span
-                        class="inline-flex px-2 py-0.5 rounded text-xs font-medium uppercase {getStatusColor(
-                            data.invoice.status,
-                        )}"
-                    >
-                        {data.invoice.status}
-                    </span>
-                </div>
-                <p class="text-sm text-muted-foreground">
-                    {data.customer?.name || "Unknown Customer"}
-                    {#if data.customer?.company_name}
-                        · {data.customer.company_name}
-                    {/if}
-                </p>
+            <div class="flex items-center gap-3">
+                <h1
+                    class="text-xl font-bold tracking-tight text-text-strong font-mono"
+                >
+                    {data.invoice.invoice_number}
+                </h1>
+                <span class="status-pill {getStatusClass(data.invoice.status)}">
+                    {data.invoice.status}
+                </span>
             </div>
         </div>
+
         <div class="flex items-center gap-2">
             {#if data.invoice.status === "draft"}
-                <form
-                    method="POST"
-                    action="?/issue"
-                    use:enhance={() => {
-                        isSubmitting = true;
-                        return async ({ result, update }) => {
-                            await update();
-                            isSubmitting = false;
-                            if (result.type === "success") {
-                                addToast({
-                                    type: "success",
-                                    message: "Invoice issued successfully.",
-                                });
-                            }
-                            if (result.type === "failure" && result.data?.error) {
-                                addToast({
-                                    type: "error",
-                                    message: result.data.error as string,
-                                });
-                            }
-                        };
-                    }}
-                >
-                    <Button type="submit" disabled={isSubmitting}>
-                        <Send class="mr-2 size-4" />
-                        {isSubmitting ? "Issuing..." : "Issue Invoice"}
-                    </Button>
-                </form>
-            {/if}
-            {#if data.invoice.status !== "cancelled" && data.invoice.status !== "paid"}
-                <form
-                    method="POST"
-                    action="?/cancel"
-                    use:enhance={({ cancel }) => {
-                        if (
-                            !confirm(
-                                "Are you sure you want to cancel this invoice?",
-                            )
-                        ) {
-                            cancel();
-                            return;
-                        }
-                        isSubmitting = true;
-                        return async ({ result, update }) => {
-                            await update();
-                            isSubmitting = false;
-                            if (result.type === "success") {
-                                addToast({
-                                    type: "success",
-                                    message: "Invoice cancelled.",
-                                });
-                            }
-                            if (result.type === "failure" && result.data?.error) {
-                                addToast({
-                                    type: "error",
-                                    message: result.data.error as string,
-                                });
-                            }
-                        };
-                    }}
-                >
+                <!-- Issue Form -->
+                <form method="POST" action="?/issue" use:enhance>
                     <Button
                         type="submit"
-                        variant="destructive"
-                        disabled={isSubmitting}
+                        size="sm"
+                        class="bg-primary text-primary-foreground font-semibold"
                     >
-                        <XCircle class="mr-2 size-4" />
-                        Cancel
+                        <Send class="mr-2 size-3" /> Issue
                     </Button>
                 </form>
             {/if}
             <Button
                 variant="outline"
-                href="/api/invoices/{data.invoice.id}/pdf"
-                target="_blank"
+                size="sm"
+                class="text-text-muted"
+                onclick={() => window.print()}
             >
-                <Download class="mr-2 size-4" />
-                Download PDF
-            </Button>
-            <Button variant="outline" onclick={() => window.print()}>
-                <Printer class="mr-2 size-4" />
-                Print
+                <Printer class="mr-2 size-3" /> Print
             </Button>
         </div>
-    </div>
+    </header>
 
-    <div class="grid gap-4 lg:grid-cols-3">
-        <!-- Main Content -->
-        <Card class="p-6 lg:col-span-2 space-y-6">
-            <!-- Invoice Details -->
-            <div class="grid gap-4 md:grid-cols-3 text-sm">
-                <div>
-                    <p class="text-muted-foreground">Invoice Date</p>
-                    <p class="font-medium">
-                        {formatDate(data.invoice.invoice_date)}
-                    </p>
-                </div>
-                <div>
-                    <p class="text-muted-foreground">Due Date</p>
-                    <p class="font-medium">
-                        {formatDate(data.invoice.due_date)}
-                    </p>
-                </div>
-                {#if data.invoice.order_number}
-                    <div>
-                        <p class="text-muted-foreground">Order Number</p>
-                        <p class="font-medium">{data.invoice.order_number}</p>
+    <!-- Content: Paper View -->
+    <div class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30">
+        <div class="mx-auto max-w-5xl space-y-8">
+            <!-- Main Paper Sheet -->
+            <div
+                class="bg-surface-0 border border-border rounded-lg shadow-sm p-8 space-y-8"
+            >
+                <!-- Top Meta Band -->
+                <div class="flex justify-between items-start">
+                    <div class="space-y-1">
+                        <p
+                            class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                        >
+                            Bill To
+                        </p>
+                        <h3 class="text-lg font-bold text-text-strong">
+                            {data.customer?.name}
+                        </h3>
+                        {#if data.customer?.billing_address}
+                            <p
+                                class="text-sm text-text-subtle whitespace-pre-line max-w-xs"
+                            >
+                                {data.customer.billing_address}
+                            </p>
+                        {/if}
                     </div>
-                {/if}
-            </div>
 
-            <!-- Customer Details -->
-            <div class="border-t pt-4">
-                <h3 class="text-sm font-medium text-muted-foreground mb-2">
-                    Bill To
-                </h3>
-                <div class="text-sm">
-                    <p class="font-medium">{data.customer?.name}</p>
-                    {#if data.customer?.company_name}
-                        <p>{data.customer.company_name}</p>
-                    {/if}
-                    {#if data.customer?.billing_address}
-                        <p class="text-muted-foreground">
-                            {data.customer.billing_address}
-                        </p>
-                    {/if}
-                    {#if data.customer?.gstin}
-                        <p class="text-muted-foreground font-mono mt-1">
-                            GSTIN: {data.customer.gstin}
-                        </p>
-                    {/if}
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-right">
+                        <div>
+                            <p
+                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                            >
+                                Invoice Date
+                            </p>
+                            <p
+                                class="text-sm font-mono font-medium text-text-strong"
+                            >
+                                {formatDate(data.invoice.invoice_date)}
+                            </p>
+                        </div>
+                        <div>
+                            <p
+                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                            >
+                                Due Date
+                            </p>
+                            <p
+                                class="text-sm font-mono font-medium text-text-strong"
+                            >
+                                {formatDate(data.invoice.due_date)}
+                            </p>
+                        </div>
+                        {#if data.invoice.order_number}
+                            <div>
+                                <p
+                                    class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                >
+                                    Reference #
+                                </p>
+                                <p
+                                    class="text-sm font-mono font-medium text-text-strong"
+                                >
+                                    {data.invoice.order_number}
+                                </p>
+                            </div>
+                        {/if}
+                    </div>
                 </div>
-            </div>
 
-            <!-- Line Items -->
-            <div class="border-t pt-4">
-                <h3 class="text-sm font-medium text-muted-foreground mb-3">
-                    Items
-                </h3>
-                <div class="overflow-x-auto">
+                <!-- Items Table -->
+                <div class="border rounded-md overflow-hidden">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="border-b bg-muted/50">
-                                <th
-                                    class="px-3 py-2 text-left font-medium text-muted-foreground"
-                                    >Description</th
-                                >
-                                <th
-                                    class="px-3 py-2 text-left font-medium text-muted-foreground"
-                                    >HSN</th
-                                >
-                                <th
-                                    class="px-3 py-2 text-right font-medium text-muted-foreground"
-                                    >Qty</th
-                                >
-                                <th
-                                    class="px-3 py-2 text-right font-medium text-muted-foreground"
-                                    >Rate</th
-                                >
-                                <th
-                                    class="px-3 py-2 text-center font-medium text-muted-foreground"
-                                    >GST</th
-                                >
-                                <th
-                                    class="px-3 py-2 text-right font-medium text-muted-foreground"
-                                    >Amount</th
-                                >
+                            <tr
+                                class="bg-surface-2/50 border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-muted"
+                            >
+                                <th class="px-4 py-3 text-left">Item</th>
+                                <th class="px-4 py-3 text-right">Qty</th>
+                                <th class="px-4 py-3 text-right">Rate</th>
+                                <th class="px-4 py-3 text-right">Tax</th>
+                                <th class="px-4 py-3 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-border-subtle">
                             {#each data.items as item}
-                                <tr class="border-b">
-                                    <td class="px-3 py-2">{item.description}</td
-                                    >
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div
+                                            class="font-medium text-text-strong"
+                                        >
+                                            {item.description}
+                                        </div>
+                                        {#if item.hsn_code}
+                                            <div
+                                                class="text-[10px] font-mono text-text-muted"
+                                            >
+                                                HSN: {item.hsn_code}
+                                            </div>
+                                        {/if}
+                                    </td>
                                     <td
-                                        class="px-3 py-2 font-mono text-muted-foreground"
-                                        >{item.hsn_code || "—"}</td
-                                    >
-                                    <td class="px-3 py-2 text-right"
+                                        class="px-4 py-3 text-right font-mono text-text-subtle"
                                         >{item.quantity} {item.unit}</td
                                     >
-                                    <td class="px-3 py-2 text-right font-mono"
+                                    <td
+                                        class="px-4 py-3 text-right font-mono text-text-subtle"
                                         >{formatCurrency(item.rate)}</td
                                     >
-                                    <td class="px-3 py-2 text-center"
+                                    <td
+                                        class="px-4 py-3 text-right font-mono text-text-subtle"
                                         >{item.gst_rate}%</td
                                     >
-                                    <td class="px-3 py-2 text-right font-mono"
+                                    <td
+                                        class="px-4 py-3 text-right font-mono font-medium text-text-strong"
                                         >{formatCurrency(item.amount)}</td
                                     >
                                 </tr>
@@ -287,93 +233,112 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <!-- Notes -->
-            {#if data.invoice.notes}
-                <div class="border-t pt-4">
-                    <h3 class="text-sm font-medium text-muted-foreground mb-2">
-                        Notes
-                    </h3>
-                    <p class="text-sm whitespace-pre-wrap">
-                        {data.invoice.notes}
-                    </p>
-                </div>
-            {/if}
-        </Card>
-
-        <!-- Summary Sidebar -->
-        <div class="space-y-4">
-            <Card class="p-6">
-                <h3 class="font-medium mb-4">Summary</h3>
-                <div class="space-y-3 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-muted-foreground">Subtotal</span>
-                        <span class="font-mono"
-                            >{formatCurrency(data.invoice.subtotal)}</span
+                <!-- Notes -->
+                {#if data.invoice.notes}
+                    <div class="border-t border-border-subtle pt-6">
+                        <p
+                            class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2"
                         >
+                            Notes
+                        </p>
+                        <p class="text-sm text-text-subtle whitespace-pre-wrap">
+                            {data.invoice.notes}
+                        </p>
                     </div>
+                {/if}
 
-                    {#if data.invoice.is_inter_state}
-                        <div class="flex justify-between">
-                            <span class="text-muted-foreground">IGST</span>
-                            <span class="font-mono"
-                                >{formatCurrency(data.invoice.igst)}</span
-                            >
-                        </div>
-                    {:else}
-                        <div class="flex justify-between">
-                            <span class="text-muted-foreground">CGST</span>
-                            <span class="font-mono"
-                                >{formatCurrency(data.invoice.cgst)}</span
-                            >
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-muted-foreground">SGST</span>
-                            <span class="font-mono"
-                                >{formatCurrency(data.invoice.sgst)}</span
-                            >
-                        </div>
-                    {/if}
-
-                    <div class="border-t pt-3 flex justify-between font-medium">
-                        <span>Total</span>
-                        <span class="font-mono text-lg"
-                            >{formatCurrency(data.invoice.total)}</span
-                        >
-                    </div>
-
-                    {#if data.invoice.amount_paid && data.invoice.amount_paid > 0}
-                        <div class="flex justify-between text-green-600">
-                            <span>Amount Paid</span>
-                            <span class="font-mono"
-                                >{formatCurrency(
-                                    data.invoice.amount_paid,
-                                )}</span
-                            >
-                        </div>
-                    {/if}
-
-                    <div
-                        class="border-t pt-3 flex justify-between font-semibold text-lg"
-                    >
-                        <span>Balance Due</span>
-                        <span class="font-mono"
-                            >{formatCurrency(data.invoice.balance_due)}</span
-                        >
-                    </div>
-                </div>
-            </Card>
-
-            {#if data.invoice.status !== "paid" && data.invoice.status !== "cancelled" && data.invoice.status !== "draft"}
-                <Button
-                    class="w-full"
-                    variant="default"
-                    href="/payments/new?customer={data.invoice.customer_id}"
+                <!-- Bottom Section: Terms & Summary -->
+                <div
+                    class="border-t border-border-subtle pt-6 flex flex-col md:flex-row gap-8"
                 >
-                    Record Payment
-                </Button>
-            {/if}
+                    <!-- Left: Terms -->
+                    <div class="flex-1 space-y-2">
+                        {#if data.invoice.terms}
+                            <p
+                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                            >
+                                Terms & Conditions
+                            </p>
+                            <p
+                                class="text-xs text-text-muted whitespace-pre-wrap leading-relaxed"
+                            >
+                                {data.invoice.terms}
+                            </p>
+                        {/if}
+                    </div>
+
+                    <!-- Right: Summary -->
+                    <div class="w-full md:w-80 space-y-3 text-sm">
+                        <div class="flex justify-between text-text-subtle">
+                            <span>Sub Total</span>
+                            <span class="font-mono font-medium text-text-strong"
+                                >{formatCurrency(data.invoice.subtotal)}</span
+                            >
+                        </div>
+
+                        {#if data.invoice.is_inter_state}
+                            <div class="flex justify-between text-text-subtle">
+                                <span>IGST</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(data.invoice.igst)}</span
+                                >
+                            </div>
+                        {:else}
+                            <div class="flex justify-between text-text-subtle">
+                                <span>CGST</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(data.invoice.cgst)}</span
+                                >
+                            </div>
+                            <div class="flex justify-between text-text-subtle">
+                                <span>SGST</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(data.invoice.sgst)}</span
+                                >
+                            </div>
+                        {/if}
+
+                        <div
+                            class="border-t border-border pt-3 flex justify-between items-center"
+                        >
+                            <span class="font-bold text-base text-text-strong"
+                                >Total</span
+                            >
+                            <span
+                                class="font-mono text-xl font-bold text-text-strong"
+                                >{formatCurrency(data.invoice.total)}</span
+                            >
+                        </div>
+
+                        {#if data.invoice.amount_paid && data.invoice.amount_paid > 0}
+                            <div
+                                class="flex justify-between text-green-600 mt-2"
+                            >
+                                <span>Paid</span>
+                                <span class="font-mono"
+                                    >(-) {formatCurrency(
+                                        data.invoice.amount_paid,
+                                    )}</span
+                                >
+                            </div>
+                            <div
+                                class="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-border-strong"
+                            >
+                                <span>Balance Due</span>
+                                <span class="font-mono text-primary"
+                                    >{formatCurrency(
+                                        data.invoice.balance_due,
+                                    )}</span
+                                >
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

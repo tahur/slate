@@ -60,8 +60,11 @@ export const actions: Actions = {
         }
 
         try {
-            // Generate official invoice number
-            const invoiceNumber = await getNextNumber(orgId, 'invoice');
+            // Use existing number unless it's a legacy draft placeholder
+            let invoiceNumber = invoice.invoice_number;
+            if (invoiceNumber.startsWith('DRAFT-')) {
+                invoiceNumber = await getNextNumber(orgId, 'invoice');
+            }
 
             // Post to journal
             const postingResult = await postInvoiceIssuance(orgId, {

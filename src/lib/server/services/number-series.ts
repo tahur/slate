@@ -140,3 +140,74 @@ export async function peekNextNumber(
     const finalPrefix = existing?.prefix || prefix;
     return `${finalPrefix}-${fy}-${padNumber(nextNumber)}`;
 }
+
+type ParsedSeriesNumber = {
+    prefix: string;
+    fy: string;
+    sequence: number;
+};
+
+function parseSeriesNumber(value: string): ParsedSeriesNumber | null {
+    const match = /^([A-Z0-9]+)-(\d{4}-\d{2})-(\d{4})$/.exec(value.trim());
+    if (!match) return null;
+    return {
+        prefix: match[1],
+        fy: match[2],
+        sequence: Number.parseInt(match[3], 10)
+    };
+}
+
+/**
+ * Bump the number series when a manual number is higher than the current counter.
+ * Only applies when the manual number matches the standard series format.
+ */
+export async function bumpNumberSeriesIfHigher(
+    orgId: string,
+    module: NumberSeriesModule,
+    manualNumber: string
+): Promise<void> {
+    const parsed = parseSeriesNumber(manualNumber);
+    if (!parsed || Number.isNaN(parsed.sequence)) return;
+
+    const defaultPrefix = MODULE_PREFIXES[module];
+
+    const existing = await db
+        .select()
+        .from(number_series)
+        .where(
+            and(
+                eq(number_series.org_id, orgId),
+                eq(number_series.module, module),
+                eq(number_series.fy_year, parsed.fy)
+            )
+        )
+        .get();
+
+    if (existing) {
+        if (existing.prefix !== parsed.prefix) {
+            return;
+        }
+        if ((existing.current_number || 0) >= parsed.sequence) {
+            return;
+        }
+        await db
+            .update(number_series)
+            .set({ current_number: parsed.sequence })
+            .where(eq(number_series.id, existing.id));
+        return;
+    }
+
+    if (parsed.prefix !== defaultPrefix) {
+        return;
+    }
+
+    await db.insert(number_series).values({
+        id: crypto.randomUUID(),
+        org_id: orgId,
+        module,
+        prefix: parsed.prefix,
+        fy_year: parsed.fy,
+        current_number: parsed.sequence,
+        reset_on_fy: true
+    });
+}

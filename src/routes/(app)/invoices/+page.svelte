@@ -40,97 +40,128 @@
     }
 </script>
 
-<div class="space-y-4">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-xl font-semibold">Invoices</h1>
-            <p class="text-sm text-muted-foreground">
-                Create and manage your invoices
-            </p>
+<div class="flex flex-col h-full">
+    <!-- Header / Filter Bar -->
+    <div
+        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
+    >
+        <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                All Invoices
+            </h1>
+            <div class="h-6 w-px bg-border-subtle"></div>
+            <!-- Placeholder for filters -->
+            <button
+                class="text-xs font-semibold uppercase tracking-wider text-primary hover:underline"
+            >
+                Filter
+            </button>
         </div>
-        <Button href="/invoices/new">
+        <Button
+            href="/invoices/new"
+            class="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+        >
             <Plus class="mr-2 size-4" />
-            New Invoice
+            New
         </Button>
     </div>
 
-    <!-- Invoice Table or Empty State -->
-    {#if data.invoices.length === 0}
-        <Card class="flex flex-col items-center justify-center py-12">
-            <FileText class="size-12 text-muted-foreground/50 mb-4" />
-            <h3 class="text-lg font-medium">No invoices yet</h3>
-            <p class="text-sm text-muted-foreground mb-4">
-                Create your first invoice to get started
-            </p>
-            <Button href="/invoices/new">
-                <Plus class="mr-2 size-4" />
-                Create Invoice
-            </Button>
-        </Card>
-    {:else}
-        <Card class="overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="data-table">
+    <!-- Content -->
+    <div class="flex-1 overflow-auto bg-surface-1 p-6">
+        <!-- Invoice Table or Empty State -->
+        {#if data.invoices.length === 0}
+            <div
+                class="flex flex-col items-center justify-center py-20 border border-dashed border-border-strong rounded-lg bg-surface-0"
+            >
+                <FileText class="size-12 text-text-muted/30 mb-4" />
+                <h3 class="text-lg font-bold text-text-strong">
+                    No invoices yet
+                </h3>
+                <p class="text-sm text-text-muted mb-6">
+                    Create your first invoice to get started
+                </p>
+                <Button
+                    href="/invoices/new"
+                    class="bg-primary text-primary-foreground"
+                >
+                    <Plus class="mr-2 size-4" />
+                    Create Invoice
+                </Button>
+            </div>
+        {:else}
+            <div
+                class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
+            >
+                <table class="data-table w-full">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Number</th>
-                            <th>Customer</th>
-                            <th class="text-right">Amount</th>
-                            <th class="text-right">Balance</th>
-                            <th class="text-center">Status</th>
+                            <th class="w-32">Date</th>
+                            <th class="w-40">Invoice #</th>
+                            <th>Customer Name</th>
+                            <th class="text-right w-32">Status</th>
+                            <th class="text-right w-32">Amount</th>
+                            <th class="text-right w-32">Balance Due</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.invoices as invoice}
-                            <tr>
-                                <td class="data-cell--muted">
+                            <tr
+                                class="group hover:bg-surface-2 transition-colors cursor-pointer"
+                                onclick={() =>
+                                    (window.location.href = `/invoices/${invoice.id}`)}
+                            >
+                                <td class="data-cell--muted font-medium">
                                     {formatDate(invoice.invoice_date)}
                                 </td>
-                                <td class="data-cell--primary">
+                                <td>
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="font-mono hover:underline"
+                                        class="font-mono text-sm font-medium text-primary hover:underline"
                                     >
                                         {invoice.invoice_number}
                                     </a>
                                 </td>
                                 <td>
                                     <div class="flex flex-col">
-                                        <span class="data-cell--primary"
+                                        <span
+                                            class="text-sm font-semibold text-text-strong"
                                             >{invoice.customer_name ||
                                                 "—"}</span
                                         >
                                         {#if invoice.customer_company}
                                             <span
-                                                class="data-cell--muted text-[12px]"
+                                                class="text-[11px] text-text-muted uppercase tracking-wide"
                                             >
                                                 {invoice.customer_company}
                                             </span>
                                         {/if}
                                     </div>
                                 </td>
-                                <td class="data-cell--number">
-                                    {formatCurrency(invoice.total)}
-                                </td>
-                                <td class="data-cell--number">
-                                    {formatCurrency(invoice.balance_due)}
-                                </td>
-                                <td class="text-center">
+                                <td class="text-right">
                                     <span
                                         class="status-pill {getStatusClass(
                                             invoice.status,
                                         )}"
                                     >
-                                        {invoice.status}
+                                        {invoice.status.replace("_", " ")}
                                     </span>
+                                </td>
+                                <td class="data-cell--number text-text-strong">
+                                    {formatCurrency(invoice.total)}
+                                </td>
+                                <td
+                                    class="data-cell--number font-bold {invoice.balance_due >
+                                    0
+                                        ? 'text-text-strong'
+                                        : 'text-text-muted'}"
+                                >
+                                    {formatCurrency(invoice.balance_due)}
                                 </td>
                             </tr>
                         {/each}
                     </tbody>
                 </table>
             </div>
-        </Card>
-    {/if}
+        {/if}
+    </div>
 </div>
