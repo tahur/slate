@@ -3,7 +3,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { ArrowLeft, Check, Save } from "lucide-svelte";
+    import { ArrowLeft, Check, Search } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
 
@@ -127,7 +127,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto px-6 py-8">
+    <main class="flex-1 overflow-hidden">
         <form
             id="payment-form"
             method="POST"
@@ -145,13 +145,14 @@
                     }
                 };
             }}
-            class="mx-auto max-w-5xl space-y-8"
+            class="h-full flex flex-col md:flex-row"
         >
+            <!-- LEFT COLUMN: Payment Details -->
             <div
-                class="bg-surface-1 rounded-lg border border-border p-8 shadow-sm space-y-8"
+                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
-                <!-- Customer Selection -->
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-8">
+                    <!-- Customer Selection -->
                     <div class="space-y-2">
                         <Label
                             for="customer_id"
@@ -183,88 +184,88 @@
                             {/each}
                         </select>
                     </div>
-                </div>
 
-                <div class="grid gap-6 md:grid-cols-3">
-                    <!-- Amount -->
-                    <div class="space-y-2">
-                        <Label
-                            for="amount"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Amount Received *</Label
-                        >
-                        <Input
-                            type="number"
-                            id="amount"
-                            name="amount"
-                            bind:value={amount}
-                            step="0.01"
-                            min="0.01"
-                            required
-                            class="h-11 border-border-strong text-text-strong bg-surface-0 font-mono text-base"
-                        />
+                    <div class="grid gap-6 grid-cols-2">
+                        <!-- Amount -->
+                        <div class="space-y-2">
+                            <Label
+                                for="amount"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Amount *</Label
+                            >
+                            <Input
+                                type="number"
+                                id="amount"
+                                name="amount"
+                                bind:value={amount}
+                                step="0.01"
+                                min="0.01"
+                                required
+                                class="h-11 border-border-strong text-text-strong bg-surface-0 font-mono text-lg font-bold"
+                            />
+                        </div>
+
+                        <!-- Date -->
+                        <div class="space-y-2">
+                            <Label
+                                for="payment_date"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Date *</Label
+                            >
+                            <Input
+                                type="date"
+                                id="payment_date"
+                                name="payment_date"
+                                value={data.defaults.payment_date}
+                                required
+                                class="h-11 border-border-strong bg-surface-0"
+                            />
+                        </div>
                     </div>
 
-                    <!-- Payment Date -->
-                    <div class="space-y-2">
-                        <Label
-                            for="payment_date"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Payment Date *</Label
-                        >
-                        <Input
-                            type="date"
-                            id="payment_date"
-                            name="payment_date"
-                            value={data.defaults.payment_date}
-                            required
-                            class="h-11 border-border-strong bg-surface-0"
-                        />
-                    </div>
+                    <div class="grid gap-6 grid-cols-2">
+                        <!-- Mode -->
+                        <div class="space-y-2">
+                            <Label
+                                for="payment_mode"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Mode *</Label
+                            >
+                            <select
+                                id="payment_mode"
+                                name="payment_mode"
+                                bind:value={paymentMode}
+                                class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
+                                required
+                            >
+                                <option value="bank">Bank Transfer</option>
+                                <option value="upi">UPI</option>
+                                <option value="cash">Cash</option>
+                                <option value="cheque">Cheque</option>
+                            </select>
+                        </div>
 
-                    <!-- Payment Mode -->
-                    <div class="space-y-2">
-                        <Label
-                            for="payment_mode"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Payment Mode *</Label
-                        >
-                        <select
-                            id="payment_mode"
-                            name="payment_mode"
-                            bind:value={paymentMode}
-                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
-                            required
-                        >
-                            <option value="bank">Bank Transfer</option>
-                            <option value="upi">UPI</option>
-                            <option value="cash">Cash</option>
-                            <option value="cheque">Cheque</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="grid gap-6 md:grid-cols-2">
-                    <!-- Deposit To -->
-                    <div class="space-y-2">
-                        <Label
-                            for="deposit_to"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Deposit To *</Label
-                        >
-                        <select
-                            id="deposit_to"
-                            name="deposit_to"
-                            bind:value={depositTo}
-                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
-                            required
-                        >
-                            {#each data.depositAccounts as account}
-                                <option value={account.id}>
-                                    {account.name}
-                                </option>
-                            {/each}
-                        </select>
+                        <!-- Deposit To -->
+                        <div class="space-y-2">
+                            <Label
+                                for="deposit_to"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Deposit To *</Label
+                            >
+                            <select
+                                id="deposit_to"
+                                name="deposit_to"
+                                bind:value={depositTo}
+                                class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
+                                required
+                            >
+                                {#each data.depositAccounts as account}
+                                    <option value={account.id}>
+                                        {account.name}
+                                    </option>
+                                {/each}
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Reference -->
@@ -272,77 +273,83 @@
                         <Label
                             for="reference"
                             class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Reference (UTR / Cheque No.)</Label
+                            >Reference</Label
                         >
                         <Input
                             type="text"
                             id="reference"
                             name="reference"
-                            placeholder="Transaction reference number"
+                            placeholder="UTR / Cheque No."
                             class="h-11 border-border-strong bg-surface-0"
                         />
                     </div>
-                </div>
 
-                <!-- Notes -->
-                <div class="space-y-2">
-                    <Label
-                        for="notes"
-                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                        >Notes</Label
-                    >
-                    <textarea
-                        id="notes"
-                        name="notes"
-                        rows="2"
-                        class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
-                        placeholder="Internal notes..."
-                    ></textarea>
+                    <!-- Notes -->
+                    <div class="space-y-2">
+                        <Label
+                            for="notes"
+                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                            >Notes</Label
+                        >
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            rows="3"
+                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+                            placeholder="Internal notes..."
+                        ></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- Invoice Allocation -->
-            <div
-                class="bg-surface-1 rounded-lg border border-border shadow-sm overflow-hidden"
-            >
-                <div
-                    class="px-6 py-4 border-b border-border bg-surface-2/30 flex justify-between items-center"
-                >
-                    <h3
-                        class="text-xs font-bold uppercase tracking-widest text-text-muted"
-                    >
-                        Allocate to Invoices
-                    </h3>
-                    {#if unpaidInvoices.length > 0 && amount > 0}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="xs"
-                            onclick={autoAllocate}
-                            class="h-7 text-xs"
+            <!-- RIGHT COLUMN: Invoice Allocation -->
+            <div class="flex-1 overflow-y-auto bg-surface-2/30 p-6 md:p-8">
+                <div class="max-w-2xl mr-auto ml-0 md:ml-8 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3
+                            class="text-sm font-bold uppercase tracking-wider text-text-muted"
                         >
-                            Auto-Allocate
-                        </Button>
-                    {/if}
-                </div>
+                            Unpaid Invoices
+                        </h3>
+                        {#if unpaidInvoices.length > 0 && amount > 0}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="xs"
+                                onclick={autoAllocate}
+                                class="h-8 text-xs bg-surface-0"
+                            >
+                                Auto-Allocate
+                            </Button>
+                        {/if}
+                    </div>
 
-                <div class="p-6">
                     {#if !selectedCustomer}
-                        <div class="text-center py-8 text-text-muted text-sm">
-                            Select a customer to view outstanding invoices.
+                        <div
+                            class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border-subtle rounded-lg text-text-muted text-sm text-center p-4"
+                        >
+                            <Search class="size-8 mb-2 opacity-50" />
+                            Select a customer to view invoices
                         </div>
                     {:else if unpaidInvoices.length === 0}
-                        <div class="text-center py-8 text-text-muted text-sm">
-                            No unpaid invoices found for this customer.
+                        <div
+                            class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border-subtle rounded-lg text-text-muted text-sm text-center p-4"
+                        >
+                            <Check
+                                class="size-8 mb-2 opacity-50 text-green-500"
+                            />
+                            All caught up! No unpaid invoices.
                         </div>
                     {:else}
                         <div class="space-y-3">
                             {#each unpaidInvoices as invoice, idx}
                                 <div
-                                    class="flex items-center gap-4 p-4 rounded-md border border-border bg-surface-0"
+                                    class="group relative flex items-start gap-3 p-4 rounded-lg border border-border bg-surface-0 shadow-sm transition-all hover:shadow-md hover:border-primary/50"
                                 >
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2">
+                                        <div
+                                            class="flex items-center justify-between mb-1"
+                                        >
                                             <span
                                                 class="font-bold text-text-strong font-mono"
                                                 >{invoice.invoice_number}</span
@@ -354,20 +361,27 @@
                                                 )}</span
                                             >
                                         </div>
-                                        <div
-                                            class="text-xs text-destructive mt-1 font-medium"
-                                        >
-                                            {formatCurrency(
-                                                invoice.balance_due,
-                                            )} Due
+                                        <div class="flex items-baseline gap-2">
+                                            <span
+                                                class="text-xs text-text-muted"
+                                                >Due:</span
+                                            >
+                                            <span
+                                                class="text-sm font-medium text-destructive"
+                                                >{formatCurrency(
+                                                    invoice.balance_due,
+                                                )}</span
+                                            >
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-3">
+
+                                    <div class="flex items-center gap-2">
                                         <input
                                             type="hidden"
                                             name="allocations[{idx}].invoice_id"
                                             value={invoice.id}
                                         />
+
                                         <div class="w-32">
                                             <Input
                                                 type="number"
@@ -378,23 +392,22 @@
                                                 step="0.01"
                                                 min="0"
                                                 max={invoice.balance_due}
-                                                class="h-9 text-right font-mono bg-surface-1"
+                                                class="h-9 text-right font-mono bg-surface-1 border-transparent focus:bg-surface-0 transition-colors"
                                                 placeholder="0.00"
                                             />
                                         </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="xs"
-                                            class="text-xs h-7 text-primary hover:text-primary/80"
-                                            onclick={() => {
-                                                allocations[invoice.id] =
-                                                    invoice.balance_due;
-                                            }}
-                                        >
-                                            Full
-                                        </Button>
                                     </div>
+                                    <button
+                                        type="button"
+                                        class="absolute -right-2 -top-2 bg-surface-0 border border-border shadow-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Pay Full"
+                                        onclick={() => {
+                                            allocations[invoice.id] =
+                                                invoice.balance_due;
+                                        }}
+                                    >
+                                        <Check class="size-3 text-primary" />
+                                    </button>
                                 </div>
                             {/each}
                         </div>
@@ -428,32 +441,35 @@
             </Button>
         </div>
 
-        <div class="flex items-center gap-6 text-sm">
+        <div class="flex items-center gap-8 text-sm">
             <div class="flex flex-col items-end">
                 <span
                     class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
-                    >Payment Amount</span
+                    >Received</span
                 >
-                <span class="font-mono text-lg font-bold text-text-strong"
+                <span class="font-mono text-xl font-bold text-text-strong"
                     >{formatCurrency(amount)}</span
                 >
             </div>
-            <div class="h-8 w-px bg-border-subtle"></div>
+
             <div class="flex flex-col items-end">
                 <span
                     class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
                     >Allocated</span
                 >
-                <span class="font-mono font-medium text-text-strong"
-                    >{formatCurrency(totalAllocated)}</span
+                <span
+                    class="font-mono font-medium text-text-strong {totalAllocated >
+                    amount
+                        ? 'text-destructive'
+                        : ''}">{formatCurrency(totalAllocated)}</span
                 >
             </div>
+
             {#if hasExcess}
-                <div class="h-8 w-px bg-border-subtle"></div>
                 <div class="flex flex-col items-end text-amber-600">
                     <span
                         class="text-[10px] uppercase tracking-wider font-semibold"
-                        >Excess (Advance)</span
+                        >Excess</span
                     >
                     <span class="font-mono font-bold"
                         >{formatCurrency(remainingAmount)}</span
