@@ -81,320 +81,523 @@
     }
 </script>
 
-<div class="space-y-4">
-    <!-- Header -->
-    <div class="flex items-center gap-4">
-        <Button variant="ghost" href="/invoices" class="p-2">
+<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
+    <!-- Super Sticky Control Center Header -->
+    <header
+        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0"
+    >
+        <Button
+            variant="ghost"
+            href="/invoices"
+            size="icon"
+            class="h-8 w-8 text-text-muted hover:text-text-strong"
+        >
             <ArrowLeft class="size-4" />
         </Button>
         <div>
-            <h1 class="text-xl font-semibold">New Invoice</h1>
-            <p class="text-sm text-muted-foreground">
-                Create a new sales invoice
-            </p>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                New Invoice
+            </h1>
         </div>
-    </div>
+    </header>
 
     {#if error}
-        <div class="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
-            {error}
+        <div class="mx-auto mt-4 w-full max-w-5xl px-6">
+            <div
+                class="bg-destructive/10 text-active p-3 rounded-md text-sm border border-destructive/20 text-destructive flex items-center gap-2"
+            >
+                <span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>
+                {error}
+            </div>
         </div>
     {/if}
 
-    <!-- Form -->
-    <form
-        method="POST"
-        use:enhance={() => {
-            submitting = true;
-            error = null;
-            return async ({ result, update }) => {
-                submitting = false;
-                if (result.type === "failure" && result.data?.error) {
-                    error = result.data.error as string;
-                    addToast({
-                        type: "error",
-                        message: error,
-                    });
-                } else {
-                    await update();
-                }
-            };
-        }}
-    >
-        <div class="grid gap-4 lg:grid-cols-3">
-            <!-- Main Form -->
-            <Card class="p-6 lg:col-span-2 space-y-6">
-                <!-- Customer & Dates -->
-                <div class="grid gap-4 md:grid-cols-3">
-                    <div class="space-y-2">
-                        <Label for="customer_id">Customer *</Label>
-                        <Select.Root
-                            type="single"
-                            name="customer_id"
-                            bind:value={formData.customer_id}
-                        >
-                            <Select.Trigger id="customer_id">
-                                {selectedCustomer?.name || "Select customer"}
-                            </Select.Trigger>
-                            <Select.Content>
-                                {#each data.customers as customer}
-                                    <Select.Item value={customer.id}>
-                                        {customer.name}
-                                        {#if customer.company_name}
-                                            <span
-                                                class="text-muted-foreground text-xs ml-1"
-                                                >({customer.company_name})</span
+    <!-- Main Content - Paper Sheet -->
+    <main class="flex-1 overflow-y-auto px-6 py-8">
+        <form
+            id="invoice-form"
+            method="POST"
+            class="mx-auto max-w-5xl"
+            use:enhance={() => {
+                submitting = true;
+                error = null;
+                return async ({ result, update }) => {
+                    submitting = false;
+                    if (result.type === "failure" && result.data?.error) {
+                        error = result.data.error as string;
+                        addToast({
+                            type: "error",
+                            message: error,
+                        });
+                    } else {
+                        await update();
+                    }
+                };
+            }}
+        >
+            <div class="space-y-6">
+                <!-- Customer Section (Top Band) -->
+                <div
+                    class="bg-surface-1 rounded-lg border border-border p-6 shadow-sm"
+                >
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-4">
+                            <Label
+                                for="customer_id"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Customer Name <span class="text-destructive"
+                                    >*</span
+                                ></Label
+                            >
+                            <Select.Root
+                                type="single"
+                                name="customer_id"
+                                bind:value={formData.customer_id}
+                            >
+                                <Select.Trigger
+                                    id="customer_id"
+                                    class="h-10 border-border-strong bg-surface-0 focus:ring-1 focus:ring-primary/20"
+                                >
+                                    {selectedCustomer?.name ||
+                                        "Select or add a customer"}
+                                </Select.Trigger>
+                                <Select.Content
+                                    class="bg-surface-1 border-border shadow-lg"
+                                >
+                                    {#each data.customers as customer}
+                                        <Select.Item
+                                            value={customer.id}
+                                            class="hover:bg-surface-2 focus:bg-surface-2 cursor-pointer"
+                                        >
+                                            <div
+                                                class="flex flex-col text-left"
                                             >
-                                        {/if}
-                                    </Select.Item>
-                                {/each}
-                            </Select.Content>
-                        </Select.Root>
-                        {#if selectedCustomer && isInterState}
-                            <p class="text-xs text-blue-600">
-                                Inter-state supply (IGST applicable)
-                            </p>
-                        {/if}
+                                                <span
+                                                    class="font-medium text-text-strong"
+                                                    >{customer.name}</span
+                                                >
+                                                {#if customer.company_name}
+                                                    <span
+                                                        class="text-[10px] text-text-muted uppercase tracking-wide"
+                                                        >{customer.company_name}</span
+                                                    >
+                                                {/if}
+                                            </div>
+                                        </Select.Item>
+                                    {/each}
+                                </Select.Content>
+                            </Select.Root>
+                            {#if selectedCustomer && isInterState}
+                                <span
+                                    class="text-[10px] font-medium text-info bg-info/10 px-2 py-0.5 rounded-sm inline-block"
+                                >
+                                    Inter-state Supply (IGST)
+                                </span>
+                            {/if}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <Label
+                                    for="invoice_number"
+                                    class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                    >Invoice #</Label
+                                >
+                                <div class="relative">
+                                    <Input
+                                        value="Auto-generated"
+                                        disabled
+                                        class="h-10 bg-surface-2/50 text-text-muted border-border font-mono text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label
+                                    for="order_number"
+                                    class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                    >Order Number</Label
+                                >
+                                <Input
+                                    id="order_number"
+                                    name="order_number"
+                                    bind:value={formData.order_number}
+                                    class="h-10 border-border-strong text-text-strong bg-surface-0 focus:border-primary"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="space-y-2">
-                        <Label for="invoice_date">Invoice Date *</Label>
-                        <Input
-                            id="invoice_date"
-                            name="invoice_date"
-                            type="date"
-                            bind:value={formData.invoice_date}
-                        />
-                    </div>
-
-                    <div class="space-y-2">
-                        <Label for="due_date">Due Date *</Label>
-                        <Input
-                            id="due_date"
-                            name="due_date"
-                            type="date"
-                            bind:value={formData.due_date}
-                        />
+                    <!-- Dates Row -->
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-border-subtle"
+                    >
+                        <div class="space-y-2">
+                            <Label
+                                for="invoice_date"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Invoice Date <span class="text-destructive"
+                                    >*</span
+                                ></Label
+                            >
+                            <Input
+                                id="invoice_date"
+                                name="invoice_date"
+                                type="date"
+                                bind:value={formData.invoice_date}
+                                class="h-9 border-border text-sm"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label
+                                for="terms"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Terms</Label
+                            >
+                            <Select.Root
+                                type="single"
+                                bind:value={formData.terms}
+                            >
+                                <Select.Trigger
+                                    class="h-9 border-border text-sm bg-surface-0"
+                                >
+                                    {formData.terms || "Due on Receipt"}
+                                </Select.Trigger>
+                                <Select.Content>
+                                    <Select.Item value="Due on Receipt"
+                                        >Due on Receipt</Select.Item
+                                    >
+                                    <Select.Item value="Net 15"
+                                        >Net 15</Select.Item
+                                    >
+                                    <Select.Item value="Net 30"
+                                        >Net 30</Select.Item
+                                    >
+                                    <Select.Item value="Net 45"
+                                        >Net 45</Select.Item
+                                    >
+                                </Select.Content>
+                            </Select.Root>
+                            <!-- Hidden input for form submission if needed, or bind terms properly -->
+                            <input
+                                type="hidden"
+                                name="terms"
+                                value={formData.terms}
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label
+                                for="due_date"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Due Date <span class="text-destructive">*</span
+                                ></Label
+                            >
+                            <Input
+                                id="due_date"
+                                name="due_date"
+                                type="date"
+                                bind:value={formData.due_date}
+                                class="h-9 border-border text-sm"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <!-- Line Items -->
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <Label>Line Items</Label>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onclick={addItem}
+                <!-- Item Table (The Ledger) -->
+                <div
+                    class="bg-surface-1 rounded-lg border border-border mt-8 shadow-sm overflow-hidden"
+                >
+                    <div
+                        class="px-6 py-4 border-b border-border bg-surface-2/30 flex justify-between items-center"
+                    >
+                        <h3
+                            class="text-xs font-bold uppercase tracking-widest text-text-muted"
                         >
-                            <Plus class="mr-1 size-3" />
-                            Add Item
-                        </Button>
+                            Item Table
+                        </h3>
+                        <div
+                            class="flex gap-2 text-[10px] font-medium uppercase tracking-wide text-primary cursor-pointer hover:underline"
+                        >
+                            <span>Bulk Actions</span>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
-                                <tr class="border-b bg-muted/50">
-                                    <th
-                                        class="px-2 py-2 text-left font-medium text-muted-foreground w-1/3"
-                                        >Description</th
+                                <tr
+                                    class="border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-muted bg-surface-0/50"
+                                >
+                                    <th class="px-4 py-3 text-left w-[40%]"
+                                        >Item Details</th
                                     >
-                                    <th
-                                        class="px-2 py-2 text-left font-medium text-muted-foreground w-20"
-                                        >HSN</th
+                                    <th class="px-4 py-3 text-right w-24"
+                                        >Quantity</th
                                     >
-                                    <th
-                                        class="px-2 py-2 text-right font-medium text-muted-foreground w-16"
-                                        >Qty</th
-                                    >
-                                    <th
-                                        class="px-2 py-2 text-right font-medium text-muted-foreground w-24"
+                                    <th class="px-4 py-3 text-right w-32"
                                         >Rate</th
                                     >
-                                    <th
-                                        class="px-2 py-2 text-center font-medium text-muted-foreground w-20"
-                                        >GST %</th
+                                    <th class="px-4 py-3 text-right w-28"
+                                        >Tax</th
                                     >
-                                    <th
-                                        class="px-2 py-2 text-right font-medium text-muted-foreground w-24"
+                                    <th class="px-4 py-3 text-right w-32"
                                         >Amount</th
                                     >
-                                    <th class="px-2 py-2 w-10"></th>
+                                    <th class="px-2 py-3 w-10"></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody
+                                class="divide-y divide-border-subtle bg-surface-0"
+                            >
                                 {#each formData.items as item, index}
-                                    <tr class="border-b">
-                                        <td class="px-1 py-2">
-                                            <Input
-                                                name="items[{index}].description"
-                                                bind:value={item.description}
-                                                placeholder="Item description"
-                                                class="h-8 text-sm"
-                                            />
+                                    <tr
+                                        class="group hover:bg-surface-2/50 transition-colors"
+                                    >
+                                        <td class="px-4 py-3 align-top">
+                                            <div class="flex flex-col gap-1">
+                                                <Input
+                                                    name="items[{index}].description"
+                                                    bind:value={
+                                                        item.description
+                                                    }
+                                                    placeholder="Type or click to select an item"
+                                                    class="h-9 border-transparent hover:border-border focus:border-primary bg-transparent p-0 text-sm font-medium placeholder:text-text-muted/50 rounded-sm px-2 -ml-2 transition-all"
+                                                />
+                                                <Input
+                                                    name="items[{index}].hsn_code"
+                                                    bind:value={item.hsn_code}
+                                                    placeholder="HSN/SAC"
+                                                    class="h-6 w-32 border-transparent hover:border-border bg-transparent p-0 text-[11px] font-mono text-text-muted px-2 -ml-2 rounded-sm"
+                                                />
+                                            </div>
                                         </td>
-                                        <td class="px-1 py-2">
-                                            <Input
-                                                name="items[{index}].hsn_code"
-                                                bind:value={item.hsn_code}
-                                                placeholder="HSN"
-                                                class="h-8 text-sm font-mono"
-                                            />
-                                        </td>
-                                        <td class="px-1 py-2">
+                                        <td class="px-4 py-3 align-top">
                                             <Input
                                                 name="items[{index}].quantity"
                                                 type="number"
                                                 bind:value={item.quantity}
                                                 min="0.01"
                                                 step="0.01"
-                                                class="h-8 text-sm text-right"
+                                                class="h-9 border-border-subtle text-right bg-surface-1 focus:border-primary font-mono"
                                             />
                                         </td>
-                                        <td class="px-1 py-2">
+                                        <td class="px-4 py-3 align-top">
                                             <Input
                                                 name="items[{index}].rate"
                                                 type="number"
                                                 bind:value={item.rate}
                                                 min="0"
                                                 step="0.01"
-                                                class="h-8 text-sm text-right"
+                                                class="h-9 border-border-subtle text-right bg-surface-1 focus:border-primary font-mono"
                                             />
                                         </td>
-                                        <td class="px-1 py-2">
-                                            <input
-                                                type="hidden"
-                                                name="items[{index}].unit"
-                                                value={item.unit}
-                                            />
+                                        <td class="px-4 py-3 align-top">
                                             <select
                                                 name="items[{index}].gst_rate"
                                                 bind:value={item.gst_rate}
-                                                class="h-8 text-sm w-full px-2 border rounded-md bg-background"
+                                                class="h-9 w-full border border-border-subtle rounded-md bg-surface-1 text-right text-xs font-mono focus:border-primary focus:outline-none px-2"
                                             >
                                                 {#each GST_RATES as rate}
                                                     <option value={rate}
-                                                        >{rate}%</option
+                                                        >{rate}% GST</option
                                                     >
                                                 {/each}
                                             </select>
                                         </td>
                                         <td
-                                            class="px-2 py-2 text-right font-mono"
+                                            class="px-4 py-3 align-top text-right font-mono font-medium text-text-strong pt-4"
                                         >
                                             {formatCurrency(
                                                 getLineAmount(item),
                                             )}
                                         </td>
-                                        <td class="px-1 py-2">
-                                            <Button
+                                        <td class="px-2 py-3 align-top pt-3">
+                                            <button
                                                 type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                class="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                                class="text-text-muted hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
                                                 onclick={() =>
                                                     removeItem(index)}
                                                 disabled={formData.items
                                                     .length === 1}
                                             >
                                                 <Trash2 class="size-4" />
-                                            </Button>
+                                            </button>
                                         </td>
                                     </tr>
                                 {/each}
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                <!-- Notes & Terms -->
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div class="space-y-2">
-                        <Label for="notes">Notes</Label>
-                        <textarea
-                            id="notes"
-                            name="notes"
-                            bind:value={formData.notes}
-                            placeholder="Notes visible on invoice"
-                            class="w-full h-20 px-3 py-2 text-sm border rounded-md resize-none bg-background"
-                        ></textarea>
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="terms">Terms & Conditions</Label>
-                        <textarea
-                            id="terms"
-                            name="terms"
-                            bind:value={formData.terms}
-                            placeholder="Payment terms"
-                            class="w-full h-20 px-3 py-2 text-sm border rounded-md resize-none bg-background"
-                        ></textarea>
-                    </div>
-                </div>
-            </Card>
-
-            <!-- Summary Sidebar -->
-            <div class="space-y-4">
-                <Card class="p-6">
-                    <h3 class="font-medium mb-4">Invoice Summary</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-muted-foreground">Subtotal</span>
-                            <span class="font-mono"
-                                >{formatCurrency(totals.subtotal)}</span
-                            >
-                        </div>
-
-                        {#if isInterState}
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">IGST</span>
-                                <span class="font-mono"
-                                    >{formatCurrency(totals.igst)}</span
-                                >
-                            </div>
-                        {:else}
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">CGST</span>
-                                <span class="font-mono"
-                                    >{formatCurrency(totals.cgst)}</span
-                                >
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">SGST</span>
-                                <span class="font-mono"
-                                    >{formatCurrency(totals.sgst)}</span
-                                >
-                            </div>
-                        {/if}
-
-                        <div
-                            class="border-t pt-3 flex justify-between font-medium"
+                    <div class="border-t border-border bg-surface-0 p-4">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onclick={addItem}
+                            class="text-primary hover:text-primary hover:bg-primary/5 pl-2"
                         >
-                            <span>Total</span>
-                            <span class="font-mono text-lg"
-                                >{formatCurrency(totals.total)}</span
+                            <Plus class="mr-1 size-4" />
+                            Add New Row
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Footer / Totals -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <Label
+                                for="notes"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Customer Notes</Label
                             >
+                            <textarea
+                                id="notes"
+                                name="notes"
+                                bind:value={formData.notes}
+                                placeholder="Will be displayed on the invoice"
+                                class="w-full h-24 p-3 text-sm border border-border rounded-md resize-none bg-surface-1 focus:border-primary focus:outline-none"
+                            ></textarea>
                         </div>
                     </div>
-                </Card>
 
-                <!-- Actions -->
-                <div class="flex flex-col gap-2">
-                    <Button type="submit" disabled={submitting} class="w-full">
-                        <Save class="mr-2 size-4" />
-                        {submitting ? "Saving..." : "Save as Draft"}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        href="/invoices"
-                        type="button"
-                        class="w-full"
+                    <div
+                        class="bg-surface-1 rounded-lg border border-border p-6 shadow-sm"
                     >
-                        Cancel
-                    </Button>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between text-text-subtle">
+                                <span>Sub Total</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(totals.subtotal)}</span
+                                >
+                            </div>
+                            {#if isInterState}
+                                <div
+                                    class="flex justify-between text-text-subtle"
+                                >
+                                    <span>IGST</span>
+                                    <span
+                                        class="font-mono font-medium text-text-strong"
+                                        >{formatCurrency(totals.igst)}</span
+                                    >
+                                </div>
+                            {:else}
+                                <div
+                                    class="flex justify-between text-text-subtle"
+                                >
+                                    <span>CGST</span>
+                                    <span
+                                        class="font-mono font-medium text-text-strong"
+                                        >{formatCurrency(totals.cgst)}</span
+                                    >
+                                </div>
+                                <div
+                                    class="flex justify-between text-text-subtle"
+                                >
+                                    <span>SGST</span>
+                                    <span
+                                        class="font-mono font-medium text-text-strong"
+                                        >{formatCurrency(totals.sgst)}</span
+                                    >
+                                </div>
+                            {/if}
+
+                            <div
+                                class="border-t border-border mt-4 pt-4 flex justify-between items-center"
+                            >
+                                <span
+                                    class="font-bold text-base text-text-strong"
+                                    >Total</span
+                                >
+                                <span
+                                    class="font-mono text-xl font-bold text-text-strong"
+                                    >{formatCurrency(totals.total)}</span
+                                >
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </form>
+    </main>
+
+    <!-- Static Bottom Action Bar -->
+    <div
+        class="flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20"
+    >
+        <!-- Left: Actions -->
+        <div class="flex items-center gap-3">
+            <Button
+                type="submit"
+                form="invoice-form"
+                disabled={submitting}
+                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
+            >
+                <Save class="mr-2 size-4" />
+                {submitting ? "Saving..." : "Save as Draft"}
+            </Button>
+            <Button
+                type="button"
+                disabled={submitting}
+                class="bg-surface-0 border border-border-strong text-text-strong hover:bg-surface-2"
+            >
+                Save & Send
+            </Button>
+            <Button
+                href="/invoices"
+                variant="ghost"
+                type="button"
+                class="text-text-muted hover:text-destructive"
+            >
+                Cancel
+            </Button>
         </div>
-    </form>
+
+        <!-- Right: Quick Totals -->
+        <div class="flex items-center gap-6 text-sm">
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Sub Total</span
+                >
+                <span class="font-mono font-medium text-text-strong"
+                    >{formatCurrency(totals.subtotal)}</span
+                >
+            </div>
+
+            <!-- Separator -->
+            <div class="h-8 w-px bg-border-subtle"></div>
+
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Tax</span
+                >
+                {#if isInterState}
+                    <span class="font-mono font-medium text-text-strong"
+                        >{formatCurrency(totals.igst)}</span
+                    >
+                {:else}
+                    <span class="font-mono font-medium text-text-strong"
+                        >{formatCurrency(totals.cgst + totals.sgst)}</span
+                    >
+                {/if}
+            </div>
+
+            <!-- Separator -->
+            <div class="h-8 w-px bg-border-subtle"></div>
+
+            <div class="flex flex-col items-end">
+                <span
+                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    >Total</span
+                >
+                <span class="font-mono text-xl font-bold text-text-strong"
+                    >{formatCurrency(totals.total)}</span
+                >
+            </div>
+        </div>
+    </div>
 </div>

@@ -24,7 +24,7 @@
     } = superForm(data.form);
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-gray-50">
+<div class="flex min-h-screen items-center justify-center bg-background app-surface">
     <Card class="w-full max-w-sm">
         <CardHeader>
             <CardTitle class="text-2xl">Login</CardTitle>

@@ -1,10 +1,10 @@
-# OpenBill Style Guide
+# OpenBill Precision Utility 2026 Style Guide
 
-## Design Philosophy: Structured Clarity
+## Design Philosophy: Data-First Clarity
 
-**Core Principle**: Use strong contrast to separate navigation from content. Highlight key actions with vibrancy.
+**Core Principle**: Use crisp surfaces, hairline borders, and compact spacing to let data lead. Highlight only the primary action and the most important metric.
 
-> "A professional, fintech-grade interface that balances density with breathing room."
+> "A utilitarian, fintech-grade interface: compact, neutral, and precise."
 
 ---
 
@@ -12,87 +12,127 @@
 
 | Principle | Description |
 |-----------|-------------|
-| **Contrast** | Dark navigation vs. Light content area |
-| **Hierarchy** | Yellow accents guide the eye to primary actions |
-| **Structure** | Cards define content boundaries on a gray canvas |
-| **Clarity** | Breadcrumbs and distinct headers provide context |
+| **Hierarchy** | Primary metrics and actions are visually isolated; supporting data is subdued |
+| **Surface Discipline** | Surfaces are layered with subtle contrast; no heavy shadows |
+| **Compact Density** | Tight spacing, high information density, and clear alignment |
+| **Action Clarity** | One primary action per view, with amber emphasis |
 
 ---
 
-## 2. Color Palette
+## 2. Color System
 
-### Theme Structure
+### Surfaces
 
-| Area | Color | Value |
-|------|-------|-------|
-| **Sidebar** | Dark Gray | `#1e1e1e` |
-| **Content Bg** | Light Gray | `#f8f9fa` |
-| **Card Bg** | White | `#ffffff` |
-| **Primary** | Gold/Yellow | `#eeb00d` |
-| **Text Main** | Dark Slate | `#1f2937` |
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--background` | `hsl(240 25% 98%)` | App background (Ghostwhite) |
+| `--surface-1` | `hsl(0 0% 100%)` | Cards / Paper Sheets |
+| `--surface-2` | `hsl(240 20% 96%)` | Hover / Secondary |
+| `--surface-3` | `hsl(240 15% 92%)` | Active / Tertiary |
+| `--grid-dot` | `hsl(220 10% 85%)` | Dotted grid texture |
 
-### CSS Variables (Tailwind)
+### Borders
 
-```css
-:root {
-  /* Main */
-  --background: 210 20% 98%;   /* #f8f9fa */
-  --foreground: 222 47% 11%;   /* #1f2937 */
-  
-  /* Sidebar (Dark Theme) */
-  --sidebar-bg: 220 15% 15%;   /* #1e1e1e */
-  --sidebar-fg: 220 10% 80%;   /* #d1d5db */
-  
-  /* Primary Action */
-  --primary: 45 93% 47%;       /* #eeb00d */
-  --primary-foreground: 222 47% 11%;
-}
-```
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--border` | `hsl(220 15% 90%)` | Default border (Crisp) |
+| `--border-strong` | `hsl(220 15% 80%)` | Emphasis border |
+| `--input` | `hsl(220 15% 90%)` | Input fields |
+| `--ring` | `hsl(221 83% 53%)` | Focus rings |
+
+### Text (Ink)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--foreground` | `hsl(222 47% 10%)` | Primary Ink |
+| `--grayblack` | `hsl(222 47% 8%)` | **Highlights / Strong Text** |
+| `--text-strong` | `hsl(222 47% 8%)` | Deepest Ink |
+| `--text-subtle` | `hsl(220 10% 40%)` | Graphite / Secondary |
+| `--text-muted` | `hsl(220 10% 60%)` | Faint Ink / Meta |
+
+### Status & Feedback
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--positive` | `hsl(150 60% 40%)` | Emerald (Success) |
+| `--warning` | `hsl(35 90% 50%)` | Amber (Warning) |
+| `--negative` | `hsl(0 70% 50%)` | Red (Destructive) |
+| `--info` | `hsl(210 90% 50%)` | Sky (Info) |
+
+### Branding
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--primary` | `hsl(221 83% 53%)` | Professional Blue |
+| `--primary-fg`| `hsl(0 0% 100%)` | Text on primary |
+
+### Sidebar (Light Mode)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--sidebar-bg` | `hsl(0 0% 100%)` | White Sidebar |
+| `--sidebar-fg` | `hsl(220 10% 40%)` | Default text |
+| `--sidebar-accent` | `hsl(240 20% 97%)` | Hover state |
 
 ---
 
 ## 3. Typography
 
-**Font**: Inter (UI), JetBrains Mono (Numbers)
+**Font**: **Manrope** (UI), JetBrains Mono (Numbers)
 
-### key Patterns
+### Type Scale
 
-- **Breadcrumbs**: `Section (Grey)` > **Page (Dark/Bold)**
-- **Section Headers**: Uppercase, tracked small text in Sidebar/Tables
-- **Numbers**: Monospace, tabular-nums, right-aligned
+| Style | Size | Usage |
+|-------|------|-------|
+| **Page Title** | 24px | Dashboard headers (Grayblack) |
+| **Section Title** | 11px Uppercase | Card headers |
+| **Body** | 13px | Default UI text |
+| **Caption** | 12px | Metadata, sublabels |
+
+### Numeric Data
+- Use `JetBrains Mono` for currency and invoice numbers.
+- Always right-align numeric columns in tables.
 
 ---
 
 ## 4. Layout Patterns
 
 ### App Shell
+- Sidebar: **200px**
+- Header: **56px**
+- Content gutters: **16–20px**
 
-```
-┌─────────────────┬───────────────────────────────────┐
-│                 │ Header (60px)                     │
-│                 │ Breadcrumbs             [Actions] │
-│  Sidebar        ├───────────────────────────────────┤
-│  (Dark)         │ Content Area (Light Gray)         │
-│  220px          │                                   │
-│                 │  ┌─────────────────────────────┐  │
-│                 │  │ Card (White, Shadow-sm)     │  │
-│                 │  │                             │  │
-│                 │  └─────────────────────────────┘  │
-│                 │                                   │
-└─────────────────┴───────────────────────────────────┘
-```
+### Surface Texture
+- Apply `app-surface` to large content areas for dotted grid texture.
+- Keep dots subtle and never behind dense text blocks.
 
-### Components
+### KPI Band
+- Single row container with 4 compact KPI cells.
+- Primary KPI uses a subtle surface highlight (`--surface-2`).
 
-#### Cards
-- **Background**: White
-- **Border**: 1px Solid Light Gray (`border`)
-- **Shadow**: `shadow-sm`
-- **Padding**: `p-6` (Key for breathing room)
+### Data Tables
+- Sticky headers, uppercase column labels.
+- Row height: compact (8–10px vertical padding).
+- Subtle hover surface (`--surface-3`).
 
-#### Sidebar Navigation
-- **Grouped**: CRM, CLIENTS, FINANCE
-- **Active State**: Darker background card + Yellow indicator dot
+---
+
+## 5. Component Guidance
+
+### Buttons
+- Primary: `bg-primary` only for the top action.
+- Compact sizes: `xs`, `sm` for tight layouts.
+
+### Status Pills
+- Use `status-pill` + variant classes:
+  - `status-pill--positive`
+  - `status-pill--warning`
+  - `status-pill--negative`
+  - `status-pill--info`
+
+### Cards
+- Hairline borders only, minimal shadow.
+- Default padding: `p-4`.
 
 ---
 

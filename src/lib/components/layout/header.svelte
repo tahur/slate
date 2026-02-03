@@ -27,7 +27,9 @@
     }
 </script>
 
-<header class="flex h-[60px] items-center gap-4 bg-background px-6">
+<header
+    class="flex h-14 items-center gap-4 border-b border-border-subtle bg-surface-1 px-5"
+>
     <!-- Mobile Menu -->
     <div class="md:hidden">
         <Sheet>
@@ -37,25 +39,28 @@
                     <span class="sr-only">Toggle navigation menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" class="w-[220px] p-0 border-none">
-                <Sidebar class="flex h-full w-full flex-col bg-[#1e1e1e]" />
+            <SheetContent side="left" class="w-[200px] p-0 border-none">
+                <Sidebar class="flex h-full w-full flex-col bg-sidebar-bg" />
             </SheetContent>
         </Sheet>
     </div>
 
     <!-- Breadcrumbs / Title -->
-    <div class="flex items-center gap-2 text-sm text-muted-foreground">
-        <span class="font-medium text-muted-foreground/60"
+    <div class="flex items-center gap-2">
+        <span
+            class="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted"
             >{getPageTitle($page.url.pathname).section}</span
         >
-        <ChevronRight class="size-4 text-muted-foreground/40" />
-        <span class="font-bold text-foreground text-lg"
+        <ChevronRight class="size-3 text-text-muted/60" />
+        <span class="text-base font-semibold text-text-strong"
             >{getPageTitle($page.url.pathname).page}</span
         >
     </div>
 
     <div class="ml-auto flex items-center gap-2">
         <!-- Placeholder for Page Actions -->
-        <Button variant="outline" class="hidden h-9 md:flex">Action</Button>
+        <Button variant="outline" size="sm" class="hidden md:flex"
+            >Action</Button
+        >
     </div>
 </header>

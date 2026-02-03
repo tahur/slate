@@ -15,6 +15,47 @@ const config: Config = {
         },
         extend: {
             colors: {
+                surface: {
+                    0: "hsl(var(--surface-0) / <alpha-value>)",
+                    1: "hsl(var(--surface-1) / <alpha-value>)",
+                    2: "hsl(var(--surface-2) / <alpha-value>)",
+                    3: "hsl(var(--surface-3) / <alpha-value>)"
+                },
+                text: {
+                    strong: "hsl(var(--text-strong) / <alpha-value>)",
+                    subtle: "hsl(var(--text-subtle) / <alpha-value>)",
+                    muted: "hsl(var(--text-muted) / <alpha-value>)"
+                },
+                "border-subtle":
+                    "hsl(var(--border-subtle) / <alpha-value>)",
+                "border-strong":
+                    "hsl(var(--border-strong) / <alpha-value>)",
+                positive: {
+                    DEFAULT: "hsl(var(--positive) / <alpha-value>)",
+                    foreground:
+                        "hsl(var(--positive-foreground) / <alpha-value>)"
+                },
+                warning: {
+                    DEFAULT: "hsl(var(--warning) / <alpha-value>)",
+                    foreground:
+                        "hsl(var(--warning-foreground) / <alpha-value>)"
+                },
+                negative: {
+                    DEFAULT: "hsl(var(--negative) / <alpha-value>)",
+                    foreground:
+                        "hsl(var(--negative-foreground) / <alpha-value>)"
+                },
+                info: {
+                    DEFAULT: "hsl(var(--info) / <alpha-value>)",
+                    foreground: "hsl(var(--info-foreground) / <alpha-value>)"
+                },
+                sidebar: {
+                    bg: "hsl(var(--sidebar-bg) / <alpha-value>)",
+                    fg: "hsl(var(--sidebar-fg) / <alpha-value>)",
+                    accent: "hsl(var(--sidebar-accent) / <alpha-value>)",
+                    border: "hsl(var(--sidebar-border) / <alpha-value>)",
+                    primary: "hsl(var(--sidebar-primary) / <alpha-value>)"
+                },
                 border: "hsl(var(--border) / <alpha-value>)",
                 input: "hsl(var(--input) / <alpha-value>)",
                 ring: "hsl(var(--ring) / <alpha-value>)",
@@ -53,6 +94,11 @@ const config: Config = {
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)"
+            },
+            boxShadow: {
+                hairline:
+                    "0 1px 0 0 hsl(var(--border-subtle) / 0.85)",
+                soft: "0 12px 24px -18px hsl(222 47% 11% / 0.35)"
             },
             fontFamily: {
                 sans: ["Inter", ...fontFamily.sans],

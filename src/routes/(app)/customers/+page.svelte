@@ -17,10 +17,10 @@
 
     function getStatusVariant(
         status: string | null,
-    ): "default" | "secondary" | "destructive" | "outline" {
+    ): "success" | "secondary" | "outline" {
         switch (status) {
             case "active":
-                return "default";
+                return "success";
             case "inactive":
                 return "secondary";
             default:
@@ -60,68 +60,44 @@
     {:else}
         <Card class="overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="data-table">
                     <thead>
-                        <tr class="border-b bg-muted/50">
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Name
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Phone
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                GSTIN
-                            </th>
-                            <th
-                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Balance
-                            </th>
-                            <th
-                                class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Status
-                            </th>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>GSTIN</th>
+                            <th class="text-right">Balance</th>
+                            <th class="text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.customers as customer}
-                            <tr
-                                class="border-b hover:bg-muted/30 transition-colors"
-                            >
-                                <td class="px-4 py-3">
+                            <tr>
+                                <td class="data-cell--primary">
                                     <a
                                         href="/customers/{customer.id}"
-                                        class="font-medium hover:underline"
+                                        class="hover:underline"
                                     >
                                         {customer.name}
                                         {#if customer.company_name}
                                             <span
-                                                class="text-muted-foreground text-sm block"
+                                                class="data-cell--muted text-[12px] block"
                                             >
                                                 {customer.company_name}
                                             </span>
                                         {/if}
                                     </a>
                                 </td>
-                                <td class="px-4 py-3 text-sm">
+                                <td class="data-cell--muted">
                                     {customer.phone || "—"}
                                 </td>
-                                <td class="px-4 py-3 text-sm font-mono">
+                                <td class="font-mono text-sm">
                                     {customer.gstin || "—"}
                                 </td>
-                                <td
-                                    class="px-4 py-3 text-right font-mono text-sm"
-                                >
+                                <td class="data-cell--number">
                                     {formatCurrency(customer.balance)}
                                 </td>
-                                <td class="px-4 py-3 text-center">
+                                <td class="text-center">
                                     <Badge
                                         variant={getStatusVariant(
                                             customer.status,

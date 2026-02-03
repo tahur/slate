@@ -4,71 +4,154 @@
 
 @layer base {
     :root {
-        /* Backgrounds */
-        --background: 210 20% 98%;
-        /* Light Gray like Altezza main bg */
-        --foreground: 222 47% 11%;
+        /* Modern Paper Palette */
+
+        /* Surfaces */
+        --background: 240 25% 98%;
+        /* Ghostwhite-ish */
+        --surface-0: 240 25% 98%;
+        /* App Background */
+        --surface-1: 0 0% 100%;
+        /* Cards / Paper Sheets */
+        --surface-2: 240 20% 96%;
+        /* Hover / Secondary */
+        --surface-3: 240 15% 92%;
+        /* Active / Tertiary */
+        --grid-dot: 220 10% 85%;
+
+        /* Borders - Crisp and Subtle */
+        --border: 220 15% 90%;
+        --border-subtle: 220 15% 92%;
+        --border-strong: 220 15% 80%;
+        --input: 220 15% 90%;
+        --ring: 221 83% 53%;
+
+        /* Typography - Ink on Paper */
+        --foreground: 222 47% 10%;
+
+        --grayblack: 222 47% 8%;
+        /* Highlight Grayblack */
+        --text-strong: 222 47% 8%;
+        /* Deepest Ink */
+        --text-subtle: 220 10% 40%;
+        /* Graphite */
+        --text-muted: 220 10% 60%;
+        /* Faint Ink */
+
+        /* Identity Colors */
+        --primary: 221 83% 53%;
+        /* Professional Blue */
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 240 20% 96%;
+        --secondary-foreground: 222 47% 10%;
+
+        --accent: 240 20% 96%;
+        --accent-foreground: 221 83% 53%;
+
+        --muted: 240 20% 96%;
+        --muted-foreground: 220 10% 45%;
 
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 11%;
+        --card-foreground: 222 47% 10%;
 
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 11%;
+        --popover-foreground: 222 47% 10%;
 
-        /* Primary - Yellow/Gold from Altezza */
-        --primary: 45 93% 47%;
-        /* #eeb00d */
-        --primary-foreground: 222 47% 11%;
+        /* Status & Feedback - Cleaner, less neon */
+        --positive: 150 60% 40%;
+        /* Emerald */
+        --positive-foreground: 0 0% 100%;
 
-        --secondary: 220 14% 96%;
-        --secondary-foreground: 222 47% 11%;
+        --warning: 35 90% 50%;
+        /* Amber */
+        --warning-foreground: 0 0% 100%;
 
-        --muted: 220 14% 96%;
-        --muted-foreground: 215 16% 47%;
+        --negative: 0 70% 50%;
+        /* Red */
+        --negative-foreground: 0 0% 100%;
 
-        --accent: 210 40% 96.1%;
-        --accent-foreground: 222 47% 11.2%;
+        --info: 210 90% 50%;
+        /* Sky */
+        --info-foreground: 0 0% 100%;
 
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 210 40% 98%;
-
-        --border: 214.3 31.8% 91.4%;
-        --input: 214.3 31.8% 91.4%;
-        --ring: 45 93% 47%;
+        --destructive: 0 70% 50%;
+        --destructive-foreground: 0 0% 100%;
 
         --radius: 0.5rem;
+        /* Slightly more organic */
 
-        /* Sidebar Specific */
-        --sidebar-bg: 220 15% 15%;
-        /* #21252b - Dark Sidebar */
-        --sidebar-fg: 220 10% 80%;
-        --sidebar-primary: 45 93% 47%;
-        --sidebar-primary-fg: 222 47% 11%;
-        --sidebar-accent: 220 15% 20%;
-        --sidebar-accent-fg: 0 0% 100%;
-        --sidebar-border: 220 15% 20%;
+        /* Sidebar Specifics (Light Theme) */
+        --sidebar-bg: 0 0% 100%;
+        /* White Sidebaer */
+        --sidebar-fg: 220 10% 40%;
+        --sidebar-primary: 221 83% 53%;
+        --sidebar-primary-fg: 0 0% 100%;
+        --sidebar-accent: 240 20% 97%;
+        --sidebar-accent-fg: 221 83% 53%;
+        --sidebar-border: 220 15% 92%;
     }
 
     .dark {
-        --background: 222.2 84% 4.9%;
+        /* Inverted "Dark Paper" - Slate tones */
+        --background: 222 20% 10%;
+        --surface-0: 222 20% 10%;
+        --surface-1: 222 20% 13%;
+        --surface-2: 222 20% 16%;
+        --surface-3: 222 20% 20%;
+
         --foreground: 210 40% 98%;
-        --card: 222.2 84% 4.9%;
+        --text-strong: 210 40% 98%;
+        --text-subtle: 215 15% 70%;
+        --text-muted: 215 15% 50%;
+
+        --card: 222 20% 13%;
         --card-foreground: 210 40% 98%;
-        --popover: 222.2 84% 4.9%;
+
+        --popover: 222 20% 13%;
         --popover-foreground: 210 40% 98%;
-        --primary: 45 93% 47%;
-        --primary-foreground: 222.2 47.4% 11.2%;
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 217.2 32.6% 17.5%;
-        --input: 217.2 32.6% 17.5%;
-        --ring: 212.7 26.8% 83.9%;
+
+        --primary: 217 91% 60%;
+        --primary-foreground: 222 47% 11%;
+
+        --secondary: 217 19% 27%;
+        --secondary-foreground: 0 0% 100%;
+
+        --muted: 217 19% 27%;
+        --muted-foreground: 215 20% 65%;
+
+        --accent: 217 19% 27%;
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 62% 30%;
+        --destructive-foreground: 0 0% 100%;
+
+        --border: 217 19% 27%;
+        --border-subtle: 217 19% 22%;
+        --border-strong: 217 19% 35%;
+        --input: 217 19% 27%;
+        --ring: 224 76% 48%;
+
+        --sidebar-bg: 222 20% 10%;
+        --sidebar-fg: 215 20% 65%;
+        --sidebar-primary: 224 76% 48%;
+        --sidebar-primary-fg: 0 0% 100%;
+        --sidebar-accent: 222 20% 15%;
+        --sidebar-accent-fg: 240 5% 96%;
+        --sidebar-border: 217 19% 27%;
+    }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
+
+@layer base {
+    :root {
+        /* ... existing ... */
+        --grayblack: 222 47% 8%;
+        /* Deep rich gray-black */
+
+        /* Update Foreground to use Grayblack mostly, or just specific highlights */
+        --text-strong: var(--grayblack);
     }
 }
 
@@ -80,7 +163,19 @@
     body {
         @apply bg-background text-foreground;
         font-feature-settings: "rlig" 1, "calt" 1;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* Headlines / Highlights in Grayblack */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .font-bold,
+    .text-strong {
+        color: hsl(var(--grayblack));
     }
 
     /* Utilitarian Minimalism Helpers */
@@ -88,5 +183,95 @@
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         font-variant-numeric: tabular-nums;
         text-align: right;
+    }
+}
+
+@layer components {
+    .app-surface {
+        background-color: hsl(var(--surface-0));
+        /* Clean Paper Surface */
+    }
+
+    .glass-panel {
+        @apply border border-border bg-surface-1 shadow-sm;
+    }
+
+    .data-table {
+        @apply w-full border-collapse text-sm;
+    }
+
+    .data-table thead th {
+        @apply sticky top-0 z-10 text-[11px] font-bold uppercase tracking-[0.1em] text-text-subtle border-b border-border-strong px-4 py-3 text-left;
+        background-color: hsl(var(--surface-0));
+    }
+
+    .data-table tbody td {
+        @apply border-b border-border-subtle px-4 py-3 text-sm text-text-strong align-middle;
+    }
+
+    .data-table tbody tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .data-table tbody tr:hover td {
+        @apply bg-surface-2;
+    }
+
+    .data-table .data-cell--primary {
+        @apply font-semibold text-text-strong;
+    }
+
+    .data-table .data-cell--number {
+        @apply text-right font-mono text-text-strong tabular-nums tracking-tight;
+    }
+
+    .data-table .data-cell--muted {
+        @apply text-text-muted;
+    }
+
+    /* Modern Paper Badges - Outline Style */
+    .status-pill {
+        @apply inline-flex items-center justify-center rounded-sm border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider min-w-[80px];
+    }
+
+    .status-pill--positive {
+        @apply border-positive text-positive bg-white;
+    }
+
+    .status-pill--warning {
+        @apply border-warning text-warning bg-white;
+    }
+
+    .status-pill--negative {
+        @apply border-negative text-negative bg-white;
+    }
+
+    .status-pill--info {
+        @apply border-info text-info bg-white;
+    }
+
+    /* KPI Cards - Stamped Look */
+    .kpi-band {
+        @apply grid gap-4 md:grid-cols-4;
+    }
+
+    .kpi-card {
+        @apply flex flex-col justify-between gap-2 rounded-lg border border-border bg-surface-1 p-4 shadow-sm transition-shadow hover:shadow-md;
+    }
+
+    .kpi-card--primary {
+        @apply ring-1 ring-primary/20;
+    }
+
+    .kpi-label {
+        @apply text-[11px] font-bold uppercase tracking-widest text-text-muted;
+    }
+
+    .kpi-value {
+        @apply text-2xl font-bold tracking-tight text-text-strong;
+    }
+
+    .kpi-sub {
+        @apply text-[12px] font-medium text-text-subtle;
     }
 }

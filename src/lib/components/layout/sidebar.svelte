@@ -53,24 +53,24 @@
 <aside
     class={className
         ? className
-        : "hidden w-[220px] flex-col border-r border-[#2d2d2d] bg-[#1e1e1e] text-[#9ca3af] md:flex"}
+        : "hidden w-[200px] flex-col border-r border-sidebar-border bg-sidebar-bg text-sidebar-fg md:flex"}
 >
     <!-- Header -->
-    <div class="flex h-[60px] items-center px-6">
+    <div class="flex h-14 items-center px-4 border-b border-sidebar-border/40">
         <div
-            class="flex items-center gap-3 font-bold text-white tracking-wide text-lg"
+            class="flex items-center gap-2.5 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
         >
-            <Building2 class="size-6 text-primary" />
-            <span>OpenBill</span>
+            <Building2 class="size-5" />
+            <span class="text-sidebar-fg">OpenBill</span>
         </div>
     </div>
 
     <!-- Navigation -->
-    <div class="flex-1 overflow-auto py-4 px-3 space-y-6">
+    <div class="flex-1 overflow-auto py-3 px-2.5 space-y-5">
         {#each navSections as section}
             <div class="space-y-1">
                 <h3
-                    class="px-3 text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-2"
+                    class="px-2.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-sidebar-fg/60 mb-2"
                 >
                     {section.title}
                 </h3>
@@ -78,20 +78,24 @@
                     {@const isActive = $page.url.pathname.startsWith(item.href)}
                     <a
                         href={item.href}
-                        class="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-[#2d2d2d] hover:text-white
-                        {isActive ? 'bg-[#2d2d2d] text-white' : ''}"
+                        class="group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-all
+                        {isActive
+                            ? 'bg-sidebar-accent text-sidebar-primary shadow-sm border border-sidebar-border/50'
+                            : 'text-sidebar-fg hover:bg-sidebar-accent/50 hover:text-sidebar-fg'}"
                     >
-                        <item.icon
-                            class="size-5 transition-colors {isActive
-                                ? 'text-primary'
-                                : 'text-[#9ca3af] group-hover:text-white'}"
-                        />
-                        {item.label}
+                        <!-- Active Indicator (Left Bar) -->
                         {#if isActive}
-                            <div
-                                class="ml-auto h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                            ></div>
+                            <span
+                                class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary"
+                            ></span>
                         {/if}
+
+                        <item.icon
+                            class="size-4 transition-colors {isActive
+                                ? 'text-sidebar-primary'
+                                : 'text-sidebar-fg/70 group-hover:text-sidebar-fg'}"
+                        />
+                        <span class="flex-1">{item.label}</span>
                     </a>
                 {/each}
             </div>
@@ -99,14 +103,14 @@
     </div>
 
     <!-- Footer -->
-    <div class="border-t border-[#2d2d2d] p-4">
+    <div class="border-t border-sidebar-border p-3">
         <form action="/logout" method="POST">
             <button
                 type="submit"
-                class="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#9ca3af] transition-all hover:text-white"
+                class="group flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium text-sidebar-fg transition-colors hover:bg-sidebar-accent/50 hover:text-red-600"
             >
                 <LogOut
-                    class="size-5 transition-colors group-hover:text-red-400"
+                    class="size-4 transition-colors group-hover:text-red-500"
                 />
                 Logout
             </button>

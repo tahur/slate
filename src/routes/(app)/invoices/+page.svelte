@@ -1,6 +1,5 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
-    import { Badge } from "$lib/components/ui/badge";
     import { Card } from "$lib/components/ui/card";
     import { Plus, FileText } from "lucide-svelte";
 
@@ -24,37 +23,19 @@
         });
     }
 
-    function getStatusVariant(
-        status: string,
-    ): "default" | "secondary" | "destructive" | "outline" {
+    function getStatusClass(status: string): string {
         switch (status) {
             case "paid":
-                return "default";
+                return "status-pill--positive";
             case "issued":
-                return "secondary";
+                return "status-pill--info";
             case "partially_paid":
-                return "outline";
+                return "status-pill--warning";
             case "overdue":
             case "cancelled":
-                return "destructive";
+                return "status-pill--negative";
             default: // draft
-                return "outline";
-        }
-    }
-
-    function getStatusColor(status: string): string {
-        switch (status) {
-            case "paid":
-                return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-            case "issued":
-                return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-            case "partially_paid":
-                return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-            case "overdue":
-            case "cancelled":
-                return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-            default: // draft
-                return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+                return "status-pill--warning";
         }
     }
 </script>
@@ -90,80 +71,55 @@
     {:else}
         <Card class="overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full">
+                <table class="data-table">
                     <thead>
-                        <tr class="border-b bg-muted/50">
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Date
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Number
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Customer
-                            </th>
-                            <th
-                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Amount
-                            </th>
-                            <th
-                                class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Balance
-                            </th>
-                            <th
-                                class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground"
-                            >
-                                Status
-                            </th>
+                        <tr>
+                            <th>Date</th>
+                            <th>Number</th>
+                            <th>Customer</th>
+                            <th class="text-right">Amount</th>
+                            <th class="text-right">Balance</th>
+                            <th class="text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.invoices as invoice}
-                            <tr
-                                class="border-b hover:bg-muted/30 transition-colors"
-                            >
-                                <td class="px-4 py-3 text-sm">
+                            <tr>
+                                <td class="data-cell--muted">
                                     {formatDate(invoice.invoice_date)}
                                 </td>
-                                <td class="px-4 py-3">
+                                <td class="data-cell--primary">
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="font-medium font-mono hover:underline"
+                                        class="font-mono hover:underline"
                                     >
                                         {invoice.invoice_number}
                                     </a>
                                 </td>
-                                <td class="px-4 py-3 text-sm">
-                                    {invoice.customer_name || "—"}
-                                    {#if invoice.customer_company}
-                                        <span
-                                            class="text-muted-foreground block text-xs"
+                                <td>
+                                    <div class="flex flex-col">
+                                        <span class="data-cell--primary"
+                                            >{invoice.customer_name ||
+                                                "—"}</span
                                         >
-                                            {invoice.customer_company}
-                                        </span>
-                                    {/if}
+                                        {#if invoice.customer_company}
+                                            <span
+                                                class="data-cell--muted text-[12px]"
+                                            >
+                                                {invoice.customer_company}
+                                            </span>
+                                        {/if}
+                                    </div>
                                 </td>
-                                <td
-                                    class="px-4 py-3 text-right font-mono text-sm"
-                                >
+                                <td class="data-cell--number">
                                     {formatCurrency(invoice.total)}
                                 </td>
-                                <td
-                                    class="px-4 py-3 text-right font-mono text-sm"
-                                >
+                                <td class="data-cell--number">
                                     {formatCurrency(invoice.balance_due)}
                                 </td>
-                                <td class="px-4 py-3 text-center">
+                                <td class="text-center">
                                     <span
-                                        class="inline-flex px-2 py-0.5 rounded text-xs font-medium uppercase {getStatusColor(
+                                        class="status-pill {getStatusClass(
                                             invoice.status,
                                         )}"
                                     >

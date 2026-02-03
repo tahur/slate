@@ -73,7 +73,7 @@
         <div class="flex items-center gap-2">
             <Badge
                 variant={data.customer.status === "active"
-                    ? "default"
+                    ? "success"
                     : "secondary"}
             >
                 {data.customer.status}

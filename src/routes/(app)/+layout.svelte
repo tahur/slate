@@ -8,9 +8,9 @@
 
 <div class="flex h-screen w-full flex-col md:flex-row bg-background">
     <Sidebar />
-    <div class="flex flex-1 flex-col overflow-hidden">
+    <div class="flex flex-1 flex-col overflow-hidden app-surface">
         <Header />
-        <main class="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+        <main class="flex-1 overflow-auto p-4 md:p-5 space-y-5">
             {@render children()}
         </main>
     </div>
