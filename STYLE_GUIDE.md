@@ -35,23 +35,35 @@
 :root {
   /* Background */
   --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #f1f3f4;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
   
   /* Text */
-  --text-primary: #1a1a1a;
-  --text-secondary: #5f6368;
-  --text-muted: #9aa0a6;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
   
   /* Borders */
-  --border-light: #e8eaed;
-  --border-default: #dadce0;
-  --border-strong: #80868b;
+  --border-light: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
   
   /* Interactive */
-  --interactive-primary: #1a73e8;
-  --interactive-hover: #1557b0;
-  --interactive-active: #174ea6;
+  --interactive-primary: #3b82f6; /* Fintech blue */
+  --interactive-hover: #2563eb;
+  --interactive-active: #1d4ed8;
+}
+```
+
+### Background Pattern (Dotted Grid)
+
+Use a subtle grid to add structure without adding decoration. Keep contrast low.
+
+```css
+body {
+  background-color: var(--bg-primary);
+  background-image: radial-gradient(rgba(148, 163, 184, 0.22) 0.75px, transparent 0.75px);
+  background-size: 28px 28px;
 }
 ```
 
@@ -60,22 +72,22 @@
 ```css
 :root {
   /* Status */
-  --status-success: #137333;
-  --status-success-bg: #e6f4ea;
+  --status-success: #0f766e;
+  --status-success-bg: #ecfdf3;
   
-  --status-warning: #b06000;
-  --status-warning-bg: #fef7e0;
+  --status-warning: #c2410c; /* Orange tint */
+  --status-warning-bg: #fff7ed;
   
-  --status-error: #c5221f;
-  --status-error-bg: #fce8e6;
+  --status-error: #dc2626;
+  --status-error-bg: #fee2e2;
   
-  --status-info: #1a73e8;
-  --status-info-bg: #e8f0fe;
+  --status-info: #0f172a;
+  --status-info-bg: #f1f5f9;
   
   /* Financial */
-  --amount-positive: #137333;  /* Profit, Credit */
-  --amount-negative: #c5221f;  /* Loss, Debit */
-  --amount-neutral: #1a1a1a;   /* Zero, pending */
+  --amount-positive: #0f766e;  /* Profit, Credit */
+  --amount-negative: #dc2626;  /* Loss, Debit */
+  --amount-neutral: #0f172a;   /* Zero, pending */
 }
 ```
 
@@ -84,11 +96,11 @@
 | Status | Color | Background |
 |--------|-------|------------|
 | Draft | `#5f6368` | `#f1f3f4` |
-| Issued | `#1a73e8` | `#e8f0fe` |
-| Partially Paid | `#b06000` | `#fef7e0` |
-| Paid | `#137333` | `#e6f4ea` |
-| Cancelled | `#c5221f` | `#fce8e6` |
-| Overdue | `#c5221f` | `#fce8e6` |
+| Issued | `#0f172a` | `#f1f5f9` |
+| Partially Paid | `#c2410c` | `#fff7ed` |
+| Paid | `#0f766e` | `#ecfdf3` |
+| Cancelled | `#dc2626` | `#fee2e2` |
+| Overdue | `#dc2626` | `#fee2e2` |
 
 ---
 
