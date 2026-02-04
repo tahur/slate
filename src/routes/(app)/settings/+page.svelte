@@ -28,7 +28,12 @@
         { id: "profile", label: "My Profile", icon: User },
     ];
 
-    const org = superForm(data.orgForm, {
+    const {
+        form: orgForm,
+        errors: orgErrors,
+        enhance: orgEnhance,
+        submitting: orgSubmitting,
+    } = superForm(data.orgForm, {
         id: "org-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -46,7 +51,11 @@
         },
     });
 
-    const profile = superForm(data.profileForm, {
+    const {
+        form: profileForm,
+        enhance: profileEnhance,
+        submitting: profileSubmitting,
+    } = superForm(data.profileForm, {
         id: "profile-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -55,7 +64,11 @@
         },
     });
 
-    const series = superForm(data.seriesForm, {
+    const {
+        form: seriesForm,
+        enhance: seriesEnhance,
+        submitting: seriesSubmitting,
+    } = superForm(data.seriesForm, {
         id: "series-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -85,7 +98,7 @@
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            $org.form.logo_url = e.target?.result as string;
+            $orgForm.logo_url = e.target?.result as string;
         };
         reader.readAsDataURL(file);
     }
@@ -150,7 +163,7 @@
                     <form
                         method="POST"
                         action="?/updateOrg"
-                        use:org.enhance
+                        use:orgEnhance
                         class="space-y-6"
                     >
                         {#if activeTab === "general"}
@@ -174,21 +187,21 @@
                                         <input
                                             type="hidden"
                                             name="logo_url"
-                                            bind:value={$org.form.logo_url}
+                                            bind:value={$orgForm.logo_url}
                                         />
                                         <div
                                             class="relative group size-24 shrink-0 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-surface-1 overflow-hidden transition-colors hover:border-primary/50"
                                         >
-                                            {#if $org.form.logo_url}
+                                            {#if $orgForm.logo_url}
                                                 <img
-                                                    src={$org.form.logo_url}
+                                                    src={$orgForm.logo_url}
                                                     alt="Logo"
                                                     class="w-full h-full object-contain"
                                                 />
                                                 <button
                                                     type="button"
                                                     onclick={() =>
-                                                        ($org.form.logo_url =
+                                                        ($orgForm.logo_url =
                                                             "")}
                                                     class="absolute top-1 right-1 bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
@@ -243,12 +256,12 @@
                                         <Input
                                             id="name"
                                             name="name"
-                                            bind:value={$org.form.name}
+                                            bind:value={$orgForm.name}
                                         />
-                                        {#if $org.errors.name}<p
+                                        {#if $orgErrors.name}<p
                                                 class="text-xs text-destructive"
                                             >
-                                                {$org.errors.name}
+                                                {$orgErrors.name}
                                             </p>{/if}
                                     </div>
                                     <div class="space-y-2">
@@ -257,7 +270,7 @@
                                             id="email"
                                             name="email"
                                             type="email"
-                                            bind:value={$org.form.email}
+                                            bind:value={$orgForm.email}
                                         />
                                     </div>
                                     <div class="space-y-2">
@@ -265,14 +278,14 @@
                                         <Input
                                             id="gstin"
                                             name="gstin"
-                                            bind:value={$org.form.gstin}
+                                            bind:value={$orgForm.gstin}
                                             class="uppercase font-mono"
                                             placeholder="29ABCDE1234F1Z5"
                                         />
-                                        {#if $org.errors.gstin}<p
+                                        {#if $orgErrors.gstin}<p
                                                 class="text-xs text-destructive"
                                             >
-                                                {$org.errors.gstin}
+                                                {$orgErrors.gstin}
                                             </p>{/if}
                                     </div>
                                     <div class="space-y-2">
@@ -280,7 +293,7 @@
                                         <Input
                                             id="phone"
                                             name="phone"
-                                            bind:value={$org.form.phone}
+                                            bind:value={$orgForm.phone}
                                         />
                                     </div>
                                 </div>
@@ -294,7 +307,7 @@
                                         <Input
                                             id="address"
                                             name="address"
-                                            bind:value={$org.form.address}
+                                            bind:value={$orgForm.address}
                                         />
                                     </div>
                                     <div class="space-y-2">
@@ -302,7 +315,7 @@
                                         <Input
                                             id="city"
                                             name="city"
-                                            bind:value={$org.form.city}
+                                            bind:value={$orgForm.city}
                                         />
                                     </div>
                                     <div class="space-y-2">
@@ -310,13 +323,13 @@
                                         <Select.Root
                                             type="single"
                                             name="state_code"
-                                            bind:value={$org.form.state_code}
+                                            bind:value={$orgForm.state_code}
                                         >
                                             <Select.Trigger id="state_code">
                                                 {INDIAN_STATES.find(
                                                     (s) =>
                                                         s.code ===
-                                                        $org.form.state_code,
+                                                        $orgForm.state_code,
                                                 )?.name || "Select state"}
                                             </Select.Trigger>
                                             <Select.Content>
@@ -334,7 +347,7 @@
                                         <Input
                                             id="pincode"
                                             name="pincode"
-                                            bind:value={$org.form.pincode}
+                                            bind:value={$orgForm.pincode}
                                             class="font-mono"
                                         />
                                     </div>
@@ -361,7 +374,7 @@
                                         <Input
                                             id="bank_name"
                                             name="bank_name"
-                                            bind:value={$org.form.bank_name}
+                                            bind:value={$orgForm.bank_name}
                                         />
                                     </div>
                                     <div class="space-y-2">
@@ -372,7 +385,7 @@
                                             id="account_number"
                                             name="account_number"
                                             bind:value={
-                                                $org.form.account_number
+                                                $orgForm.account_number
                                             }
                                             class="font-mono"
                                         />
@@ -382,7 +395,7 @@
                                         <Input
                                             id="ifsc"
                                             name="ifsc"
-                                            bind:value={$org.form.ifsc}
+                                            bind:value={$orgForm.ifsc}
                                             class="uppercase font-mono"
                                         />
                                     </div>
@@ -391,7 +404,7 @@
                                         <Input
                                             id="branch"
                                             name="branch"
-                                            bind:value={$org.form.branch}
+                                            bind:value={$orgForm.branch}
                                         />
                                     </div>
                                 </div>
@@ -420,7 +433,7 @@
                                             id="invoice_terms_default"
                                             name="invoice_terms_default"
                                             bind:value={
-                                                $org.form.invoice_terms_default
+                                                $orgForm.invoice_terms_default
                                             }
                                             rows="4"
                                             class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y min-h-[100px]"
@@ -435,7 +448,7 @@
                                             id="invoice_notes_default"
                                             name="invoice_notes_default"
                                             bind:value={
-                                                $org.form.invoice_notes_default
+                                                $orgForm.invoice_notes_default
                                             }
                                             rows="3"
                                             class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y"
@@ -447,8 +460,8 @@
                         {/if}
 
                         <div class="flex justify-end pt-4">
-                            <Button type="submit" disabled={$org.submitting}>
-                                {$org.submitting ? "Saving..." : "Save Changes"}
+                            <Button type="submit" disabled={$orgSubmitting}>
+                                {$orgSubmitting ? "Saving..." : "Save Changes"}
                             </Button>
                         </div>
                     </form>
@@ -458,7 +471,7 @@
                     <form
                         method="POST"
                         action="?/updateSeries"
-                        use:series.enhance
+                        use:seriesEnhance
                     >
                         <Card class="p-6 space-y-6">
                             <div>
@@ -477,7 +490,7 @@
                                     <Input
                                         id="invoice_prefix"
                                         name="invoice_prefix"
-                                        bind:value={$series.form.invoice_prefix}
+                                        bind:value={$seriesForm.invoice_prefix}
                                         class="uppercase font-mono"
                                     />
                                 </div>
@@ -488,7 +501,7 @@
                                     <Input
                                         id="payment_prefix"
                                         name="payment_prefix"
-                                        bind:value={$series.form.payment_prefix}
+                                        bind:value={$seriesForm.payment_prefix}
                                         class="uppercase font-mono"
                                     />
                                 </div>
@@ -499,7 +512,7 @@
                                     <Input
                                         id="expense_prefix"
                                         name="expense_prefix"
-                                        bind:value={$series.form.expense_prefix}
+                                        bind:value={$seriesForm.expense_prefix}
                                         class="uppercase font-mono"
                                     />
                                 </div>
@@ -507,9 +520,9 @@
                             <div class="flex justify-end pt-4">
                                 <Button
                                     type="submit"
-                                    disabled={$series.submitting}
+                                    disabled={$seriesSubmitting}
                                 >
-                                    {$series.submitting
+                                    {$seriesSubmitting
                                         ? "Saving..."
                                         : "Save Series"}
                                 </Button>
@@ -522,7 +535,7 @@
                     <form
                         method="POST"
                         action="?/updateProfile"
-                        use:profile.enhance
+                        use:profileEnhance
                     >
                         <Card class="p-6 space-y-6">
                             <div>
@@ -539,7 +552,7 @@
                                     <Input
                                         id="profile_name"
                                         name="name"
-                                        bind:value={$profile.form.name}
+                                        bind:value={$profileForm.name}
                                     />
                                 </div>
                                 <div class="space-y-2">
@@ -548,16 +561,16 @@
                                         id="profile_email"
                                         name="email"
                                         type="email"
-                                        bind:value={$profile.form.email}
+                                        bind:value={$profileForm.email}
                                     />
                                 </div>
                             </div>
                             <div class="flex justify-end pt-4">
                                 <Button
                                     type="submit"
-                                    disabled={$profile.submitting}
+                                    disabled={$profileSubmitting}
                                 >
-                                    {$profile.submitting
+                                    {$profileSubmitting
                                         ? "Saving..."
                                         : "Save Profile"}
                                 </Button>

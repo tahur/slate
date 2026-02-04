@@ -13,6 +13,7 @@
         Clock,
         FileText,
     } from "lucide-svelte";
+    import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
     import type { PageData } from "./$types";
 
     let { data }: { data: PageData } = $props();
@@ -35,22 +36,6 @@
     function formatDso(dso: number) {
         if (!dso || dso <= 0) return "—";
         return `${dso.toFixed(1)} days`;
-    }
-
-    function getStatusClass(status: string): string {
-        switch (status) {
-            case "paid":
-                return "status-pill--positive";
-            case "issued":
-                return "status-pill--info";
-            case "partially_paid":
-                return "status-pill--warning";
-            case "overdue":
-            case "cancelled":
-                return "status-pill--negative";
-            default:
-                return "status-pill--warning";
-        }
     }
 </script>
 
@@ -126,7 +111,8 @@
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card class="col-span-4">
             <CardHeader class="border-b border-border-subtle">
-                <CardTitle class="text-sm uppercase tracking-[0.14em] text-text-muted"
+                <CardTitle
+                    class="text-sm uppercase tracking-[0.14em] text-text-muted"
                     >Recent Invoices</CardTitle
                 >
             </CardHeader>
@@ -155,11 +141,13 @@
                                         <td class="data-cell--primary">
                                             <a
                                                 href="/invoices/{invoice.id}"
-                                                class="font-mono hover:underline"
+                                                class="font-mono text-link"
                                             >
                                                 {invoice.invoice_number}
                                             </a>
-                                            <div class="data-cell--muted text-[12px]">
+                                            <div
+                                                class="data-cell--muted text-[12px]"
+                                            >
                                                 {formatDate(
                                                     invoice.invoice_date,
                                                 )}
@@ -172,13 +160,9 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <span
-                                                class="status-pill {getStatusClass(
-                                                    invoice.status,
-                                                )}"
-                                            >
-                                                {invoice.status}
-                                            </span>
+                                            <StatusBadge
+                                                status={invoice.status}
+                                            />
                                         </td>
                                         <td class="data-cell--number">
                                             {formatCurrency(invoice.total)}
@@ -198,7 +182,8 @@
         </Card>
         <Card class="col-span-3">
             <CardHeader class="border-b border-border-subtle">
-                <CardTitle class="text-sm uppercase tracking-[0.14em] text-text-muted"
+                <CardTitle
+                    class="text-sm uppercase tracking-[0.14em] text-text-muted"
                     >Notes</CardTitle
                 >
             </CardHeader>

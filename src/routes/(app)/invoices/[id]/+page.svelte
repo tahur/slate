@@ -13,22 +13,28 @@
     async function downloadPdf() {
         isDownloading = true;
         try {
-            // Direct download to use server's Content-Disposition filename
-            const url = `/api/invoices/${data.invoice.id}/pdf?t=${Date.now()}`;
+            const res = await fetch(`/api/invoices/${data.invoice.id}/pdf`);
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || "Failed to generate PDF");
+            }
+            const blob = new Blob([await res.arrayBuffer()], {
+                type: "application/pdf",
+            });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `${data.invoice.invoice_number}.pdf`; // Backup hint
+            a.download = `${data.invoice.invoice_number}.pdf`;
+            a.style.display = "none";
             document.body.appendChild(a);
             a.click();
             a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
         } catch (e) {
             console.error("PDF download failed:", e);
             addToast({ type: "error", message: "Failed to generate PDF" });
         } finally {
-            // Short timeout to reset state, as we can't track direct download completion easily
-            setTimeout(() => {
-                isDownloading = false;
-            }, 1000);
+            isDownloading = false;
         }
     }
 

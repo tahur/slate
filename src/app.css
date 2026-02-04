@@ -56,6 +56,8 @@
     --color-popover: hsl(var(--popover));
     --color-popover-foreground: hsl(var(--popover-foreground));
 
+    --color-link: hsl(var(--link));
+
     --color-card: hsl(var(--card));
     --color-card-foreground: hsl(var(--card-foreground));
 
@@ -74,74 +76,98 @@
 
 @layer base {
     :root {
-        /* Restored Paper Palette */
+        /* Cloudflare Radiance Palette (2026) */
 
-        /* Backgrounds */
+        /* Backgrounds - Clean & Flat */
         --background: 0 0% 100%;
-        /* White, for the dots to sit on */
+        /* Pure White */
         --surface-0: 0 0% 100%;
-        --surface-1: 0 0% 100%;
-        --surface-2: 220 16% 96%;
-        --surface-3: 220 16% 92%;
+        /* White */
+        --surface-1: 210 20% 98%;
+        /* Soft Gray (Sidebar/Headers) */
+        --surface-2: 210 20% 96%;
+        /* Hover */
+        --surface-3: 210 20% 92%;
+        /* Active */
 
-        --grid-dot: 220 13% 82%;
+        /* No Grid Dots - Clean Corporate Look */
+        --grid-dot: 0 0% 100%;
+        /* Invisible */
 
-        /* Borders - Subtle Gray */
-        --border: 220 13% 91%;
-        --border-subtle: 220 13% 91%;
-        --border-strong: 220 13% 80%;
-        --input: 220 13% 91%;
-        --ring: 214 82% 51%;
+        /* Borders - Subtle & Friendly */
+        --border: 220 15% 92%;
+        /* Very subtle hairline */
+        --border-subtle: 220 15% 92%;
+        --border-strong: 220 15% 85%;
+        --input: 220 15% 90%;
+        --ring: 28 90% 54%;
+        /* Orange Ring */
 
-        /* Typography */
-        --foreground: 222 47% 11%;
-        --grayblack: 222 47% 8%;
-        --text-strong: 222 47% 8%;
-        --text-subtle: 215 16% 47%;
-        --text-muted: 220 10% 60%;
+        /* Typography - Legible Arsenic */
+        --foreground: 220 15% 25%;
+        /* Arsenic (Softer than black) */
+        --grayblack: 220 20% 15%;
+        /* Charcoal */
+        --text-strong: 220 20% 15%;
+        --text-subtle: 220 10% 45%;
+        /* Graphite */
+        --text-muted: 220 10% 65%;
+        /* Dust */
 
-        /* Identity - Professional Blue */
-        --primary: 214 82% 51%;
+        /* Identity - Cloudflare/Radiance */
+        --primary: 28 90% 54%;
+        /* Princeton Orange */
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 220 16% 96%;
-        --secondary-foreground: 222 47% 11%;
+        --secondary: 210 20% 98%;
+        /* Soft Gray */
+        --secondary-foreground: 220 15% 25%;
 
-        --accent: 187 100% 94%;
-        --accent-foreground: 222 47% 11%;
+        --accent: 150 60% 45%;
+        /* Sea Green (Success/Growth) */
+        --accent-foreground: 0 0% 100%;
 
-        --muted: 220 16% 95%;
-        --muted-foreground: 215 16% 47%;
+        --muted: 210 20% 96%;
+        --muted-foreground: 220 10% 45%;
 
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 11%;
+        --card-foreground: 220 15% 25%;
 
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 11%;
+        --popover-foreground: 220 15% 25%;
 
         /* Status */
-        --positive: 150 60% 40%;
+        --positive: 150 60% 45%;
+        /* Sea Green */
         --positive-foreground: 0 0% 100%;
         --warning: 35 90% 50%;
+        /* Amber */
         --warning-foreground: 0 0% 100%;
         --negative: 0 72% 51%;
+        /* Red */
         --negative-foreground: 0 0% 100%;
         --info: 210 90% 50%;
+        /* Sky */
         --info-foreground: 0 0% 100%;
-        --destructive: 0 72% 51%;
-        --destructive-foreground: 0 0% 100%;
 
-        --radius: 0.25rem;
-        /* 4px, crisper */
+        --radius: 0.5rem;
+        /* 8px - Friendly */
+        /* Rounded corners */
 
-        /* Sidebar Specifics (Light Theme) */
-        --sidebar-bg: 0 0% 100%;
+        /* Sidebar Specifics (Soft Gray) */
+        --sidebar-bg: 210 20% 98%;
+        /* Soft Gray */
         --sidebar-fg: 220 10% 40%;
-        --sidebar-primary: 214 82% 51%;
+        --sidebar-primary: 28 90% 54%;
         --sidebar-primary-fg: 0 0% 100%;
-        --sidebar-accent: 220 16% 96%;
-        --sidebar-accent-fg: 214 82% 51%;
-        --sidebar-border: 220 13% 91%;
+        --sidebar-accent: 0 0% 100%;
+        /* White Pill on Gray */
+        --sidebar-accent-fg: 28 90% 54%;
+        --sidebar-border: 220 15% 92%;
+
+        /* Highlights / Links (Blue) */
+        --link: 221 83% 53%;
+        /* Inter Blue - sparingly used */
     }
 
     .dark {
@@ -162,9 +188,8 @@
         font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
         /* Restored Dotted Grid */
-        background-image: radial-gradient(hsl(var(--grid-dot) / 0.22) 0.75px,
-                transparent 0.75px);
-        background-size: 28px 28px;
+        /* Clean Background (Cloudflare Style) */
+        background-color: hsl(var(--background));
     }
 
     /* Headlines / Highlights in Grayblack */

@@ -1,4 +1,4 @@
-// @ts-expect-error pdfmake has no ESM types; resolved via ssr.external in vite.config
+// @ts-ignore pdfmake CJS module resolved via ssr.external in vite.config
 import pdfmake from 'pdfmake';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 

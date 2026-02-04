@@ -1,163 +1,89 @@
-# OpenBill Precision Utility 2026 Style Guide
+# OpenBill Radiance Style Guide (2026)
 
-## Design Philosophy: Data-First Clarity
+## Design Philosophy: Cloudflare Radiance
 
-**Core Principle**: Use crisp surfaces, hairline borders, and compact spacing to let data lead. Highlight only the primary action and the most important metric.
+**Core Aesthetic**: "Friendly, Professional, Fluid."
+Away from the "Old School Boxy" look. We aim for:
+- **Friendly Colors**: Warm Oranges, Friendly Greens, Soft Grays.
+- **Fluid Layouts**: Rounded corners, organic spacing, no harsh black borders.
+- **Legible Typography**: High contrast but not harsh (Arsenic/Graphite).
 
-> "A utilitarian, fintech-grade interface: compact, neutral, and precise."
-
----
-
-## 1. Design Principles
-
-| Principle | Description |
-|-----------|-------------|
-| **Hierarchy** | Primary metrics and actions are visually isolated; supporting data is subdued |
-| **Surface Discipline** | Surfaces are layered with subtle contrast; no heavy shadows |
-| **Compact Density** | Tight spacing, high information density, and clear alignment |
-| **Action Clarity** | One primary action per view, with amber emphasis |
+> "Data-dense but easy on the eyes. Inspired by Cloudflare's Radiance."
 
 ---
 
-## 2. Color System
+## 1. Design Tokens
 
-### Surfaces
+### Colors (HSL)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--background` | `hsl(240 25% 98%)` | App background (Ghostwhite) |
-| `--surface-1` | `hsl(0 0% 100%)` | Cards / Paper Sheets |
-| `--surface-2` | `hsl(240 20% 96%)` | Hover / Secondary |
-| `--surface-3` | `hsl(240 15% 92%)` | Active / Tertiary |
-| `--grid-dot` | `hsl(220 10% 85%)` | Dotted grid texture |
+| Token | HSL | Hex (Approx) | Usage |
+|-------|-----|--------------|-------|
+| `--primary` | `28 90% 54%` | `#F48120` | **Princeton Orange** (Actions) |
+| `--primary-fg`| `0 0% 100%` | `#FFFFFF` | Text on Orange |
+| `--accent` | `150 60% 45%` | `#2E8B57` | **Sea Green** (Success/Growth) |
 
-### Borders
+### Surfaces (Friendly Grays)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--border` | `hsl(220 15% 90%)` | Default border (Crisp) |
-| `--border-strong` | `hsl(220 15% 80%)` | Emphasis border |
-| `--input` | `hsl(220 15% 90%)` | Input fields |
-| `--ring` | `hsl(221 83% 53%)` | Focus rings |
+| Token | HSL | Usage |
+|-------|-----|-------|
+| `--background` | `0 0% 100%` | **Clean White** App Background |
+| `--surface-1` | `210 20% 98%` | **Soft Gray** Panels (Sidebar/Headers) |
+| `--surface-2` | `210 20% 96%` | Hover states |
+| `--surface-3` | `210 20% 92%` | Pressed / Active |
 
-### Text (Ink)
+### Text (Legible & Easy)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--foreground` | `hsl(222 47% 10%)` | Primary Ink |
-| `--grayblack` | `hsl(222 47% 8%)` | **Highlights / Strong Text** |
-| `--text-strong` | `hsl(222 47% 8%)` | Deepest Ink |
-| `--text-subtle` | `hsl(220 10% 40%)` | Graphite / Secondary |
-| `--text-muted` | `hsl(220 10% 60%)` | Faint Ink / Meta |
+| Token | HSL | Usage |
+|-------|-----|-------|
+| `--foreground` | `220 15% 25%` | **Arsenic** (Primary Text - Softer than black) |
+| `--text-strong` | `220 20% 15%` | **Charcoal** (Headings) |
+| `--text-subtle` | `220 10% 45%` | **Graphite** (Secondary info) |
+| `--text-muted` | `220 10% 65%` | **Dust** (Meta / Placeholders) |
 
-### Status & Feedback
+### Borders (No "Boxy" Black)
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--positive` | `hsl(150 60% 40%)` | Emerald (Success) |
-| `--warning` | `hsl(35 90% 50%)` | Amber (Warning) |
-| `--negative` | `hsl(0 70% 50%)` | Red (Destructive) |
-| `--info` | `hsl(210 90% 50%)` | Sky (Info) |
+| Token | HSL | Usage |
+|-------|-----|-------|
+| `--border` | `220 15% 92%` | Very subtle hairline |
+| `--border-strong`| `220 15% 85%` | Input focus / Active |
 
-### Branding
+### Radius
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--primary` | `hsl(221 83% 53%)` | Professional Blue |
-| `--primary-fg`| `hsl(0 0% 100%)` | Text on primary |
-
-### Sidebar (Light Mode)
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--sidebar-bg` | `hsl(0 0% 100%)` | White Sidebar |
-| `--sidebar-fg` | `hsl(220 10% 40%)` | Default text |
-| `--sidebar-accent` | `hsl(240 20% 97%)` | Hover state |
+- `--radius`: `0.5rem` (8px) - Friendly rounded corners.
+- `--radius-lg`: `0.75rem` (12px) - Cards / Modals.
 
 ---
 
-## 3. Typography
+## 2. Typography
 
-**Font**: **Manrope** (UI), JetBrains Mono (Numbers)
-
-### Type Scale
-
-| Style | Size | Usage |
-|-------|------|-------|
-| **Page Title** | 24px | Dashboard headers (Grayblack) |
-| **Section Title** | 11px Uppercase | Card headers |
-| **Body** | 13px | Default UI text |
-| **Caption** | 12px | Metadata, sublabels |
-
-### Numeric Data
-- Use `JetBrains Mono` for currency and invoice numbers.
-- Always right-align numeric columns in tables.
+**Font**: **Inter** (Standard Cloudflare stack).
+- Headings: SemiBold (600), Tight tracking.
+- Body: Regular (400), Relaxed reading.
 
 ---
 
-## 4. Layout Patterns
+## 3. Component Updates
 
-### App Shell
-- Sidebar: **200px**
-- Header: **56px**
-- Content gutters: **16–20px**
+### 1. Cards
+- **Old**: Sharp corners, visible border.
+- **New**: `rounded-xl`, `border-border`, `shadow-sm` (soft diffuse shadow).
+- Background: White on Soft Gray page, or Soft Gray on White page.
 
-### Surface Texture
-- Apply `app-surface` to large content areas for dotted grid texture.
-- Keep dots subtle and never behind dense text blocks.
+### 2. Buttons
+- **Primary**: Orange (`bg-primary`). Rounded-md.
+- **Secondary**: White with subtle border.
 
-### KPI Band
-- Single row container with 4 compact KPI cells.
-- Primary KPI uses a subtle surface highlight (`--surface-2`).
+### 3. Dashboard
+- **Old**: "Gumroad" KPI stamped cards.
+- **New**: Floating cards. White background with soft shadow.
+- **Colors**:
+    - **Receivables** (Money coming in) -> **Green** accent.
+    - **Overdue** (Action needed) -> **Orange** accent.
 
-### Data Tables
-- Sticky headers, uppercase column labels.
-- Row height: compact (8–10px vertical padding).
-- Subtle hover surface (`--surface-3`).
-
-### Form Layouts (3-Tier System)
-1. **Large (Invoices)**:
-   - `max-w-7xl` or full width.
-   - For dense tables, multi-item lists, and complex documents.
-   - Example: *Invoice Creation*
-
-2. **Split Screen (Payments & Expenses)**:
-   - `max-w-[variable]` or flex containers.
-   - **2-Column Layout**:
-     - **Left**: Data Entry (Form).
-     - **Right**: Context/Summary (e.g., Unpaid Invoices, Tax Breakdown).
-   - Improves density and allows reference while typing.
-   - Example: *New Payment, New Expense*
-
-3. **Standard (Entities)**:
-   - `max-w-3xl`.
-   - Single column, focused vertical flow.
-   - For simple entities like Customers or Items.
-
-### Sticky Actions
-- Primary actions (Save, Cancel) are **pinned to the bottom** of the viewport.
-- Ensures actions are always accessible without scrolling.
-- Background: `--surface-1` with top border.
+### 4. Sidebar
+- Light gray (`--surface-1`) background, distinct from white content area.
+- Active link: White pill with shadow.
 
 ---
 
-## 5. Component Guidance
-
-### Buttons
-- Primary: `bg-primary` only for the top action.
-- Compact sizes: `xs`, `sm` for tight layouts.
-
-### Status Pills
-- Use `status-pill` + variant classes:
-  - `status-pill--positive`
-  - `status-pill--warning`
-  - `status-pill--negative`
-  - `status-pill--info`
-
-### Cards
-- Hairline borders only, minimal shadow.
-- Default padding: `p-4`.
-
----
-
-*Last Updated: February 3, 2026*
+*Last Updated: February 4, 2026*

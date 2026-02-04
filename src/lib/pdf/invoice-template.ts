@@ -43,8 +43,6 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 	}
 	itemHeaderCols.push({ text: 'Amount', style: 'tableHeader', alignment: 'right' });
 
-	const colCount = itemHeaderCols.length;
-
 	const itemRows: TableCell[][] = items.map((item, i) => {
 		const rate = item.gst_rate || 0;
 		const splitRate = isIntra ? rate / 2 : rate;
