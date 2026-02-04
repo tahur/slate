@@ -33,7 +33,11 @@
             items: [
                 { href: "/customers", label: "Customers", icon: Users },
                 { href: "/invoices", label: "Invoices", icon: FileText },
-                { href: "/credit-notes", label: "Credit Notes", icon: CreditCard },
+                {
+                    href: "/credit-notes",
+                    label: "Credit Notes",
+                    icon: CreditCard,
+                },
             ],
         },
         {
@@ -43,13 +47,7 @@
                 { href: "/expenses", label: "Expenses", icon: Wallet },
             ],
         },
-        {
-            title: "ACCOUNTING",
-            items: [
-                { href: "/accounts", label: "Chart of Accounts", icon: BookOpen },
-                { href: "/journals", label: "Journal Entries", icon: Briefcase },
-            ],
-        },
+
         {
             title: "SETTINGS",
             items: [{ href: "/settings", label: "Settings", icon: Settings }],

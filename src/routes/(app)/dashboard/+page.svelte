@@ -62,48 +62,63 @@
 
     <!-- Stats Grid -->
     <div class="kpi-band">
-        <div class="kpi-card kpi-card--primary">
+        <div class="kpi-card bg-positive/5 border-positive/20">
             <div class="flex items-center justify-between">
-                <span class="kpi-label">Receivables</span>
-                <IndianRupee class="size-3.5 text-text-muted" />
+                <span
+                    class="kpi-label text-positive-foreground/80 text-positive"
+                    >Receivables</span
+                >
+                <IndianRupee class="size-3.5 text-positive" />
             </div>
-            <div class="kpi-value">
+            <div
+                class="kpi-value text-3xl font-bold tracking-tight text-foreground"
+            >
                 {formatCurrency(data.stats.receivables)}
             </div>
-            <div class="kpi-sub">
+            <div class="kpi-sub text-positive/80">
                 {data.stats.receivablesCount} invoices outstanding
             </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card bg-negative/5 border-negative/20">
             <div class="flex items-center justify-between">
-                <span class="kpi-label">Overdue</span>
-                <AlertTriangle class="size-3.5 text-text-muted" />
+                <span class="kpi-label text-negative">Overdue</span>
+                <AlertTriangle class="size-3.5 text-negative" />
             </div>
-            <div class="kpi-value">
+            <div
+                class="kpi-value text-3xl font-bold tracking-tight text-foreground"
+            >
                 {formatCurrency(data.stats.overdue)}
             </div>
-            <div class="kpi-sub">
+            <div class="kpi-sub text-negative/80">
                 {data.stats.overdueCount} overdue invoices
             </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card bg-info/5 border-info/20">
             <div class="flex items-center justify-between">
-                <span class="kpi-label">DSO</span>
-                <Clock class="size-3.5 text-text-muted" />
+                <span class="kpi-label text-info">DSO</span>
+                <Clock class="size-3.5 text-info" />
             </div>
-            <div class="kpi-value">{formatDso(data.stats.dso)}</div>
-            <div class="kpi-sub">Based on last 30 days sales</div>
+            <div
+                class="kpi-value text-3xl font-bold tracking-tight text-foreground"
+            >
+                {formatDso(data.stats.dso)}
+            </div>
+            <div class="kpi-sub text-info/80">Based on last 30 days sales</div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card bg-surface-2/50 border-border">
             <div class="flex items-center justify-between">
-                <span class="kpi-label">Recent</span>
+                <span class="kpi-label text-text-subtle">Recent</span>
                 <FileText class="size-3.5 text-text-muted" />
             </div>
-            <div class="kpi-value">{data.recentInvoices.length}</div>
-            <div class="kpi-sub">Last 5 invoices</div>
+            <div
+                class="kpi-value text-3xl font-bold tracking-tight text-foreground"
+            >
+                {data.recentInvoices.length}
+            </div>
+            <div class="kpi-sub text-text-muted">Last 5 invoices</div>
         </div>
     </div>
 
