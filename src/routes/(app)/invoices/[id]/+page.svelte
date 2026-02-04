@@ -1,7 +1,6 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Badge } from "$lib/components/ui/badge";
-    import { Card } from "$lib/components/ui/card";
     import { ArrowLeft, Printer, Send, Download, XCircle } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";

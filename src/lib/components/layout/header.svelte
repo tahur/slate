@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { Button, buttonVariants } from "$lib/components/ui/button";
+    import { buttonVariants } from "$lib/components/ui/button";
     import { Menu, ChevronRight } from "lucide-svelte";
     import {
         Sheet,
@@ -21,6 +21,12 @@
             return { section: "Finance", page: "Expenses" };
         if (pathname.startsWith("/customers"))
             return { section: "Clients", page: "Customers" };
+        if (pathname.startsWith("/credit-notes"))
+            return { section: "Clients", page: "Credit Notes" };
+        if (pathname.startsWith("/accounts"))
+            return { section: "Accounting", page: "Chart of Accounts" };
+        if (pathname.startsWith("/journals"))
+            return { section: "Accounting", page: "Journal Entries" };
         if (pathname.startsWith("/settings"))
             return { section: "System", page: "Settings" };
         return { section: "App", page: "OpenBill" };
@@ -62,9 +68,5 @@
     </div>
 
     <div class="ml-auto flex items-center gap-2">
-        <!-- Placeholder for Page Actions -->
-        <Button variant="outline" size="sm" class="hidden md:flex"
-            >Action</Button
-        >
     </div>
 </header>
