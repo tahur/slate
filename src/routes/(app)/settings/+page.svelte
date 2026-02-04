@@ -68,7 +68,7 @@
     });
 
     // Logo Upload Logic
-    let logoInput: HTMLInputElement;
+    let logoInput = $state<HTMLInputElement>();
 
     function handleLogoUpload(e: Event) {
         const file = (e.target as HTMLInputElement).files?.[0];

@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { customers, invoices, payments, organizations } from '$lib/server/db/schema';
-import { renderPdf, renderStatementHtml } from '$lib/server/services/pdf';
+import { buildStatementDocDefinition } from '$lib/pdf/statement-template';
+import { generatePdfBuffer } from '$lib/pdf/generate';
 import { eq, and, ne, gte, lte, lt, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -137,8 +138,8 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
         where: eq(organizations.id, orgId)
     });
 
-    const html = renderStatementHtml({
-        org,
+    const doc = buildStatementDocDefinition({
+        org: org ?? null,
         customer,
         startDate,
         endDate,
@@ -149,10 +150,10 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
         entries: statementEntries
     });
 
-    const pdf = await renderPdf(html);
+    const pdf = await generatePdfBuffer(doc);
     const filename = `Statement-${customer.name.replace(/\s+/g, '-')}.pdf`;
 
-    return new Response(pdf, {
+    return new Response(pdf as BodyInit, {
         headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${filename}"`

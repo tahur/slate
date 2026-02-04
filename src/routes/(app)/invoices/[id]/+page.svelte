@@ -8,6 +8,29 @@
 
     let { data, form } = $props();
     let isSubmitting = $state(false);
+    let isDownloading = $state(false);
+
+    async function downloadPdf() {
+        isDownloading = true;
+        try {
+            // Direct download to use server's Content-Disposition filename
+            const url = `/api/invoices/${data.invoice.id}/pdf?t=${Date.now()}`;
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${data.invoice.invoice_number}.pdf`; // Backup hint
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (e) {
+            console.error("PDF download failed:", e);
+            addToast({ type: "error", message: "Failed to generate PDF" });
+        } finally {
+            // Short timeout to reset state, as we can't track direct download completion easily
+            setTimeout(() => {
+                isDownloading = false;
+            }, 1000);
+        }
+    }
 
     function formatCurrency(amount: number | null): string {
         if (amount === null || amount === undefined) return "₹0.00";
@@ -63,7 +86,9 @@
 {/if}
 
 {#if data.justRecordedPayment}
-    <div class="mb-4 p-3 rounded-md bg-surface-2 text-text-strong text-sm border border-border-subtle">
+    <div
+        class="mb-4 p-3 rounded-md bg-surface-2 text-text-strong text-sm border border-border-subtle"
+    >
         Payment recorded:
         <span class="font-mono font-medium"
             >{formatCurrency(data.invoice.amount_paid || 0)}</span
@@ -78,7 +103,7 @@
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header control bar -->
     <header
-        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-10"
+        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-1 z-10"
     >
         <div class="flex items-center gap-4">
             <Button
@@ -118,6 +143,16 @@
                 variant="outline"
                 size="sm"
                 class="text-text-muted"
+                onclick={downloadPdf}
+                disabled={isDownloading}
+            >
+                <Download class="mr-2 size-3" />
+                {isDownloading ? "Generating..." : "Download PDF"}
+            </Button>
+            <Button
+                variant="outline"
+                size="sm"
+                class="text-text-muted"
                 onclick={() => window.print()}
             >
                 <Printer class="mr-2 size-3" /> Print
@@ -130,7 +165,7 @@
         <div class="mx-auto max-w-5xl space-y-8">
             <!-- Main Paper Sheet -->
             <div
-                class="bg-surface-0 border border-border rounded-lg shadow-sm p-8 space-y-8"
+                class="bg-surface-1 border border-border rounded-lg shadow-sm p-8 space-y-8"
             >
                 <!-- Top Meta Band -->
                 <div class="flex justify-between items-start">
@@ -355,7 +390,8 @@
                                 <Button
                                     class="w-full"
                                     variant="outline"
-                                    href="/payments/new?customer={data.invoice.customer_id}"
+                                    href="/payments/new?customer={data.invoice
+                                        .customer_id}"
                                 >
                                     Record Remaining Payment
                                 </Button>

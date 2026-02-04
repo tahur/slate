@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { invoices, invoice_items, customers } from '$lib/server/db/schema';
+import { invoices, invoice_items, customers, organizations } from '$lib/server/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postInvoiceIssuance } from '$lib/server/services';
@@ -32,8 +32,12 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
         where: eq(customers.id, invoice.customer_id),
     });
 
+    const org = await db.query.organizations.findFirst({
+        where: eq(organizations.id, locals.user.orgId)
+    });
+
     const justRecordedPayment = url.searchParams.get('payment') === 'recorded';
-    return { invoice, items, customer, justRecordedPayment };
+    return { invoice, items, customer, org, justRecordedPayment };
 };
 
 export const actions: Actions = {

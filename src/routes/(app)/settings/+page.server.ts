@@ -12,89 +12,94 @@ import type { Actions, PageServerLoad } from './$types';
 const MODULES = ['invoice', 'payment', 'expense', 'journal'] as const;
 
 export const load: PageServerLoad = async ({ locals }) => {
-    if (!locals.user) {
-        redirect(302, '/login');
-    }
+    try {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
 
-    const orgId = locals.user.orgId;
-    const fy = getCurrentFiscalYear();
+        const orgId = locals.user.orgId;
+        const fy = getCurrentFiscalYear();
 
-    const org = await db.query.organizations.findFirst({
-        where: eq(organizations.id, orgId)
-    });
+        const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId)
+        });
 
-    if (!org) {
-        redirect(302, '/setup');
-    }
+        if (!org) {
+            redirect(302, '/setup');
+        }
 
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, locals.user.id)
-    });
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, locals.user.id)
+        });
 
-    const seriesRows = await db
-        .select()
-        .from(number_series)
-        .where(
-            and(
-                eq(number_series.org_id, orgId),
-                eq(number_series.fy_year, fy),
-                inArray(number_series.module, MODULES)
-            )
+        const seriesRows = await db
+            .select()
+            .from(number_series)
+            .where(
+                and(
+                    eq(number_series.org_id, orgId),
+                    eq(number_series.fy_year, fy),
+                    inArray(number_series.module, MODULES)
+                )
+            );
+
+        const seriesMap = new Map(seriesRows.map((row) => [row.module, row.prefix]));
+
+        const orgForm = await superValidate(
+            {
+                name: org.name,
+                email: org.email || '',
+                phone: org.phone || '',
+                address: org.address || '',
+                city: org.city || '',
+                state_code: org.state_code,
+                pincode: org.pincode || '',
+                gstin: org.gstin || '',
+                pan: org.pan || '',
+                currency: org.currency || 'INR',
+                fy_start_month: org.fy_start_month || 4,
+                bank_name: org.bank_name || '',
+                branch: org.branch || '',
+                account_number: org.account_number || '',
+                ifsc: org.ifsc || '',
+                logo_url: org.logo_url || '',
+                invoice_notes_default: org.invoice_notes_default || '',
+                invoice_terms_default: org.invoice_terms_default || ''
+            },
+            zod4(orgSettingsSchema),
+            { id: 'org-settings' }
         );
 
-    const seriesMap = new Map(seriesRows.map((row) => [row.module, row.prefix]));
+        const profileForm = await superValidate(
+            {
+                name: user?.name || '',
+                email: user?.email || ''
+            },
+            zod4(profileSchema),
+            { id: 'profile-settings' }
+        );
 
-    const orgForm = await superValidate(
-        {
-            name: org.name,
-            email: org.email || '',
-            phone: org.phone || '',
-            address: org.address || '',
-            city: org.city || '',
-            state_code: org.state_code,
-            pincode: org.pincode || '',
-            gstin: org.gstin || '',
-            pan: org.pan || '',
-            currency: org.currency || 'INR',
-            fy_start_month: org.fy_start_month || 4,
-            bank_name: org.bank_name || '',
-            branch: org.branch || '',
-            account_number: org.account_number || '',
-            ifsc: org.ifsc || '',
-            logo_url: org.logo_url || '',
-            invoice_notes_default: org.invoice_notes_default || '',
-            invoice_terms_default: org.invoice_terms_default || ''
-        },
-        zod4(orgSettingsSchema),
-        { id: 'org-settings' }
-    );
+        const seriesForm = await superValidate(
+            {
+                invoice_prefix: seriesMap.get('invoice') || getDefaultPrefix('invoice'),
+                payment_prefix: seriesMap.get('payment') || getDefaultPrefix('payment'),
+                expense_prefix: seriesMap.get('expense') || getDefaultPrefix('expense'),
+                journal_prefix: seriesMap.get('journal') || getDefaultPrefix('journal')
+            },
+            zod4(numberSeriesSchema),
+            { id: 'series-settings' }
+        );
 
-    const profileForm = await superValidate(
-        {
-            name: user?.name || '',
-            email: user?.email || ''
-        },
-        zod4(profileSchema),
-        { id: 'profile-settings' }
-    );
-
-    const seriesForm = await superValidate(
-        {
-            invoice_prefix: seriesMap.get('invoice') || getDefaultPrefix('invoice'),
-            payment_prefix: seriesMap.get('payment') || getDefaultPrefix('payment'),
-            expense_prefix: seriesMap.get('expense') || getDefaultPrefix('expense'),
-            journal_prefix: seriesMap.get('journal') || getDefaultPrefix('journal')
-        },
-        zod4(numberSeriesSchema),
-        { id: 'series-settings' }
-    );
-
-    return {
-        orgForm,
-        profileForm,
-        seriesForm,
-        fyYear: fy
-    };
+        return {
+            orgForm,
+            profileForm,
+            seriesForm,
+            fyYear: fy
+        };
+    } catch (e) {
+        console.error("SETTINGS LOAD ERROR:", e);
+        throw e;
+    }
 };
 
 export const actions: Actions = {

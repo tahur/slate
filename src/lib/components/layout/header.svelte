@@ -1,6 +1,6 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { Button } from "$lib/components/ui/button";
+    import { Button, buttonVariants } from "$lib/components/ui/button";
     import { Menu, ChevronRight } from "lucide-svelte";
     import {
         Sheet,
@@ -33,11 +33,15 @@
     <!-- Mobile Menu -->
     <div class="md:hidden">
         <Sheet>
-            <SheetTrigger>
-                <Button variant="ghost" size="icon" class="md:hidden">
-                    <Menu class="size-5" />
-                    <span class="sr-only">Toggle navigation menu</span>
-                </Button>
+            <SheetTrigger
+                class={buttonVariants({
+                    variant: "ghost",
+                    size: "icon",
+                    className: "md:hidden",
+                })}
+            >
+                <Menu class="size-5" />
+                <span class="sr-only">Toggle navigation menu</span>
             </SheetTrigger>
             <SheetContent side="left" class="w-[200px] p-0 border-none">
                 <Sidebar class="flex h-full w-full flex-col bg-sidebar-bg" />
