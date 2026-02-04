@@ -27,7 +27,12 @@ export const orgSettingsSchema = z.object({
     bank_name: z.string().optional().or(z.literal('')),
     branch: z.string().optional().or(z.literal('')),
     account_number: z.string().optional().or(z.literal('')),
-    ifsc: z.string().optional().or(z.literal(''))
+    ifsc: z.string().optional().or(z.literal('')),
+
+    // Defaults & Logo
+    logo_url: z.string().optional().or(z.literal('')),
+    invoice_notes_default: z.string().optional().or(z.literal('')),
+    invoice_terms_default: z.string().optional().or(z.literal(''))
 }).refine(
     (data) => {
         if (data.gstin && data.state_code) {

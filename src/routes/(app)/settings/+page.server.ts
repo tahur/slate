@@ -60,7 +60,10 @@ export const load: PageServerLoad = async ({ locals }) => {
             bank_name: org.bank_name || '',
             branch: org.branch || '',
             account_number: org.account_number || '',
-            ifsc: org.ifsc || ''
+            ifsc: org.ifsc || '',
+            logo_url: org.logo_url || '',
+            invoice_notes_default: org.invoice_notes_default || '',
+            invoice_terms_default: org.invoice_terms_default || ''
         },
         zod4(orgSettingsSchema),
         { id: 'org-settings' }
@@ -125,6 +128,9 @@ export const actions: Actions = {
                 branch: form.data.branch || null,
                 account_number: form.data.account_number || null,
                 ifsc: form.data.ifsc || null,
+                logo_url: form.data.logo_url || null,
+                invoice_notes_default: form.data.invoice_notes_default || null,
+                invoice_terms_default: form.data.invoice_terms_default || null,
                 updated_at: new Date().toISOString()
             })
             .where(eq(organizations.id, locals.user.orgId));

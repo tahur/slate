@@ -15,6 +15,8 @@ export const organizations = sqliteTable('organizations', {
     logo_url: text('logo_url'),
     currency: text('currency').default('INR'),
     fy_start_month: integer('fy_start_month').default(4), // April
+    invoice_notes_default: text('invoice_notes_default'),
+    invoice_terms_default: text('invoice_terms_default'),
 
     // Bank Details
     bank_name: text('bank_name'),
