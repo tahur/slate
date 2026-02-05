@@ -40,7 +40,6 @@
 
     --color-primary: hsl(var(--primary));
     --color-primary-foreground: hsl(var(--primary-foreground));
-
     --color-secondary: hsl(var(--secondary));
     --color-secondary-foreground: hsl(var(--secondary-foreground));
 
@@ -72,7 +71,8 @@
     --font-mono: "JetBrains Mono", monospace;
 
     /* Poly Theme */
-    --color-brand: #ea580c;
+    /* Poly Theme */
+    --color-brand: #fb631b;
     --color-brand-hover: #c2410c;
     --color-bg-light: #f8fafc;
     --color-bg-dark: #0f172a;
@@ -117,30 +117,30 @@
         /* Orange Ring */
 
         /* Typography - Legible Arsenic */
-        --foreground: 220 15% 25%;
-        /* Arsenic (Softer than black) */
-        --grayblack: 220 20% 15%;
-        /* Charcoal */
-        --text-strong: 220 20% 15%;
-        --text-subtle: 220 10% 45%;
-        /* Graphite */
+        /* Typography */
+        --foreground: 0 0% 9%;
+        /* #181818 */
+        --text-strong: 0 0% 9%;
+        /* #181818 */
+        --text-subtle: 2 1% 52%;
+        /* #858382 */
+        --text-muted: 220 10% 65%;
         --text-muted: 220 10% 65%;
         /* Dust */
 
         /* Identity - Cloudflare/Radiance */
         /* ... */
-        --primary: 28 90% 54%;
-        /* Princeton Orange */
+        /* Updated Palette */
+        --primary: 20 96% 55%;
+        /* #fb631b */
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 210 20% 98%;
-        /* Soft Gray */
-        --secondary-foreground: 220 15% 25%;
+        --secondary: 0 0% 26%;
+        /* #434343 */
+        --secondary-foreground: 0 0% 98%;
 
-        /* ... */
-
-        --radius: 0.5rem;
-        /* 8px - Friendly */
+        --radius: 0.25rem;
+        /* 4px */
         /* Rounded corners */
 
         /* Sidebar Specifics (Soft Gray) */
@@ -325,6 +325,6 @@
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-image: linear-gradient(135deg, #ea580c, #f97316);
+        background-image: linear-gradient(135deg, #fb631b, #ff8e53);
     }
 }
