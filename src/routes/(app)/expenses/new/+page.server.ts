@@ -66,7 +66,7 @@ export const actions: Actions = {
         // Parse form data
         const expense_date = formData.get('expense_date') as string;
         const category = formData.get('category') as string;
-        const vendor = formData.get('vendor') as string || '';
+        const vendor_name = formData.get('vendor') as string || '';
         const description = formData.get('description') as string || '';
         const amount = parseFloat(formData.get('amount') as string) || 0;
         const gst_rate = parseFloat(formData.get('gst_rate') as string) || 0;
@@ -142,7 +142,7 @@ export const actions: Actions = {
                 expense_number: expenseNumber,
                 expense_date,
                 category,
-                vendor,
+                vendor_name,
                 description,
                 amount,
                 gst_rate,

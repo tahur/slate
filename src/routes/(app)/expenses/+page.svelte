@@ -121,7 +121,7 @@
                                     </div>
                                 </td>
                                 <td class="text-sm text-text-strong">
-                                    {expense.vendor || "—"}
+                                    {expense.vendor_name || "—"}
                                 </td>
                                 <td
                                     class="text-right font-mono text-text-subtle"

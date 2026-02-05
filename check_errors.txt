@@ -1,0 +1,230 @@
+
+> openbill@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: /Users/tahur/Desktop/openBill
+Getting Svelte diagnostics...
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/expenses/+page.server.ts:15:30
+Error: Property 'vendor' does not exist on type 'SQLiteTableWithColumns<{ name: "expenses"; schema: undefined; columns: { id: SQLiteColumn<{ name: "id"; tableName: "expenses"; dataType: "string"; columnType: "SQLiteText"; data: string; driverParam: string; notNull: true; hasDefault: false; ... 6 more ...; generated: undefined; }, {}, { ...; }>; ... 19 more ...; cr...'. 
+            category: expenses.category,
+            vendor: expenses.vendor,
+            description: expenses.description,
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/expenses/[id]/+page.server.ts:21:30
+Error: Property 'vendor' does not exist on type 'SQLiteTableWithColumns<{ name: "expenses"; schema: undefined; columns: { id: SQLiteColumn<{ name: "id"; tableName: "expenses"; dataType: "string"; columnType: "SQLiteText"; data: string; driverParam: string; notNull: true; hasDefault: false; ... 6 more ...; generated: undefined; }, {}, { ...; }>; ... 19 more ...; cr...'. 
+            category: expenses.category,
+            vendor: expenses.vendor,
+            description: expenses.description,
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/expenses/new/+page.server.ts:139:39
+Error: No overload matches this call.
+  Overload 1 of 2, '(value: { id: string | SQL<unknown> | Placeholder<string, any>; org_id: string | SQL<unknown> | Placeholder<string, any>; total: number | SQL<unknown> | Placeholder<string, any>; ... 17 more ...; receipt_url?: string | ... 3 more ... | undefined; }): SQLiteInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'vendor' does not exist in type '{ id: string | SQL<unknown> | Placeholder<string, any>; org_id: string | SQL<unknown> | Placeholder<string, any>; total: number | SQL<unknown> | Placeholder<string, any>; ... 17 more ...; receipt_url?: string | ... 3 more ... | undefined; }'.
+  Overload 2 of 2, '(values: { id: string | SQL<unknown> | Placeholder<string, any>; org_id: string | SQL<unknown> | Placeholder<string, any>; total: number | SQL<unknown> | Placeholder<string, any>; ... 17 more ...; receipt_url?: string | ... 3 more ... | undefined; }[]): SQLiteInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type '{ id: string | SQL<unknown> | Placeholder<string, any>; org_id: string | SQL<unknown> | Placeholder<string, any>; total: number | SQL<unknown> | Placeholder<string, any>; ... 17 more ...; receipt_url?: string | ... 3 more ... | undefined; }[]'. 
+            // Create expense record
+            await db.insert(expenses).values({
+                id: expenseId,
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/customers/[id]/+page.svelte:33:61
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    const { form, errors, enhance, submitting } = superForm(data.form, {
+        onResult: ({ result }) => {
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/customers/new/+page.svelte:14:61
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    const { form, errors, enhance, submitting } = superForm(data.form, {
+        onResult: ({ result }) => {
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/invoices/[id]/+page.svelte:17:32
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    // Payment form state
+    let paymentAmount = $state(data.invoice.balance_due);
+    let paymentMode = $state("bank");
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/invoices/[id]/+page.svelte:483:17
+Warn: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+                </div>
+                <button
+                    onclick={() => (showCreditsModal = false)}
+                    class="text-text-muted hover:text-text-strong"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/invoices/new/+page.svelte:17:23
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        customer_id: "",
+        invoice_date: data.defaults.invoice_date,
+        due_date: data.defaults.due_date,
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/invoices/new/+page.svelte:18:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        invoice_date: data.defaults.invoice_date,
+        due_date: data.defaults.due_date,
+        order_number: "",
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/invoices/new/+page.svelte:36:29
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let error = $state<string | null>(null);
+    let autoInvoiceNumber = data.autoInvoiceNumber as string;
+    let invoiceNumberMode = $state<"auto" | "manual">("auto");
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/journals/+page.svelte:10:28
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/journals/+page.svelte:11:26
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/payments/new/+page.svelte:14:35
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    // Form state
+    let selectedCustomer = $state(data.selectedCustomer);
+    let amount = $state(0);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/payments/new/+page.svelte:18:9
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let depositTo = $state(
+        data.depositAccounts.find((a) => a.code === "1100")?.id || "",
+    );
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/payments/new/+page.svelte:22:33
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    // Invoice allocations
+    let unpaidInvoices = $state(data.unpaidInvoices || []);
+    let allocations = $state<Record<string, number>>({});
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/reports/gst/+page.svelte:11:28
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/reports/gst/+page.svelte:12:26
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/reports/ledger/+page.svelte:10:35
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    let selectedCustomer = $state(data.ledger?.id || "");
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/reports/pnl/+page.svelte:16:28
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/reports/pnl/+page.svelte:17:26
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/settings/+page.svelte:41:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        submitting: orgSubmitting,
+    } = superForm(data.orgForm, {
+        id: "org-settings",
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/settings/+page.svelte:63:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        submitting: profileSubmitting,
+    } = superForm(data.profileForm, {
+        id: "profile-settings",
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/settings/+page.svelte:76:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        submitting: seriesSubmitting,
+    } = superForm(data.seriesForm, {
+        id: "series-settings",
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/vendors/[id]/+page.svelte:33:61
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    const { form, errors, enhance, submitting } = superForm(data.form, {
+        onResult: ({ result }) => {
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/vendors/[id]/+page.svelte:6:30
+Error: Cannot find module '$lib/components/ui/checkbox' or its corresponding type declarations. (ts)
+    import * as Select from "$lib/components/ui/select";
+    import { Checkbox } from "$lib/components/ui/checkbox";
+    import { superForm } from "sveltekit-superforms";
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/vendors/new/+page.svelte:15:61
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+    const { form, errors, enhance, submitting } = superForm(data.form, {
+        onResult: ({ result }) => {
+
+/Users/tahur/Desktop/openBill/src/routes/(app)/vendors/new/+page.svelte:7:30
+Error: Cannot find module '$lib/components/ui/checkbox' or its corresponding type declarations. (ts)
+    import * as Select from "$lib/components/ui/select";
+    import { Checkbox } from "$lib/components/ui/checkbox";
+    import { addToast } from "$lib/stores/toast";
+
+/Users/tahur/Desktop/openBill/src/routes/login/+page.svelte:25:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        delayed,
+    } = superForm(data.form);
+</script>
+
+/Users/tahur/Desktop/openBill/src/routes/register/+page.svelte:24:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        delayed,
+    } = superForm(data.form);
+</script>
+
+/Users/tahur/Desktop/openBill/src/routes/setup/+page.svelte:31:19
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+        delayed,
+    } = superForm(data.form);
+
+====================================
+svelte-check found 5 errors and 25 warnings in 18 files

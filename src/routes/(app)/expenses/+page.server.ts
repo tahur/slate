@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             expense_number: expenses.expense_number,
             expense_date: expenses.expense_date,
             category: expenses.category,
-            vendor: expenses.vendor,
+            vendor_name: expenses.vendor_name,
             description: expenses.description,
             amount: expenses.amount,
             cgst: expenses.cgst,

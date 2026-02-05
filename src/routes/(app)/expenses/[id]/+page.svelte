@@ -62,10 +62,10 @@
                 </div>
             </div>
 
-            {#if data.expense.vendor}
+            {#if data.expense.vendor_name}
                 <div class="border-t pt-4">
                     <p class="text-sm text-muted-foreground mb-1">Vendor</p>
-                    <p class="font-medium">{data.expense.vendor}</p>
+                    <p class="font-medium">{data.expense.vendor_name}</p>
                 </div>
             {/if}
 
