@@ -246,7 +246,7 @@
         </div>
         {#if selectedCustomer}
             <div
-                class="hidden md:flex items-center gap-4 rounded-md border border-border-subtle bg-surface-2/60 px-4 py-2 text-[11px] text-text-muted"
+                class="hidden md:flex items-center gap-4 rounded-md border border-primary/20 bg-primary/5 px-4 py-2 text-[11px] text-text-strong shadow-sm"
             >
                 <div class="flex flex-col">
                     <span
@@ -359,7 +359,7 @@
                                         </span>
                                         {#if selectedCustomer}
                                             <span
-                                                class="text-[11px] text-text-muted truncate"
+                                                class="text-xs text-text-strong/80 font-medium truncate"
                                             >
                                                 {selectedCustomer.company_name ||
                                                     selectedCustomer.email ||
@@ -1035,45 +1035,47 @@
         </div>
 
         <!-- Right: Quick Totals -->
-        <div class="flex items-center gap-6 text-sm">
+        <div
+            class="flex items-center gap-4 text-sm bg-surface-2/50 px-4 py-2 rounded-lg border border-border-subtle"
+        >
             <div class="flex flex-col items-end">
                 <span
                     class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
                     >Sub Total</span
                 >
-                <span class="font-mono font-medium text-text-strong"
+                <span class="font-mono font-medium text-text-subtle"
                     >{formatCurrency(totals.subtotal)}</span
                 >
             </div>
 
             <!-- Separator -->
-            <div class="h-8 w-px bg-border-subtle"></div>
+            <div class="h-8 w-px bg-border-strong/50"></div>
 
             <div class="flex flex-col items-end">
                 <span
-                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    class="text-[10px] uppercase tracking-wider text-text-strong font-bold"
                     >Tax</span
                 >
                 {#if isInterState}
-                    <span class="font-mono font-medium text-text-strong"
+                    <span class="font-mono font-bold text-text-strong"
                         >{formatCurrency(totals.igst)}</span
                     >
                 {:else}
-                    <span class="font-mono font-medium text-text-strong"
+                    <span class="font-mono font-bold text-text-strong"
                         >{formatCurrency(totals.cgst + totals.sgst)}</span
                     >
                 {/if}
             </div>
 
             <!-- Separator -->
-            <div class="h-8 w-px bg-border-subtle"></div>
+            <div class="h-8 w-px bg-border-strong/50"></div>
 
             <div class="flex flex-col items-end">
                 <span
-                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    class="text-[10px] uppercase tracking-wider text-primary font-bold"
                     >Total</span
                 >
-                <span class="font-mono text-xl font-bold text-text-strong"
+                <span class="font-mono text-xl font-bold text-primary"
                     >{formatCurrency(totals.total)}</span
                 >
             </div>
