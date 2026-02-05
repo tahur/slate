@@ -30,7 +30,7 @@
                     >
                     <a
                         class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand transition-colors"
-                        href="#pricing">Pricing</a
+                        href="https://github.com/openbill/openbill">GitHub</a
                     >
                     <a
                         class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand transition-colors"
@@ -76,15 +76,14 @@
             <h1
                 class="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-6"
             >
-                Accounting for the <br />
-                <span class="text-gradient">modern business</span>.
+                The Open Source <br />
+                <span class="text-gradient">Financial Stack</span>.
             </h1>
             <p
                 class="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-10"
             >
-                Stop wrestling with spreadsheets. Poly gives you a clear,
-                real-time view of your cash flow, overdue invoices, and
-                financial health in one beautiful dashboard.
+                Free, self-hosted, and privacy-first. Poly gives you full
+                control over your business finances without the monthly fees.
             </p>
             <div
                 class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
@@ -93,19 +92,18 @@
                     class="bg-brand hover:bg-brand-hover text-white px-8 py-3.5 rounded-xl font-semibold shadow-lg shadow-orange-500/20 transition-all hover:scale-105 flex items-center gap-2"
                     href="/register"
                 >
-                    Get Started Free
+                    Get Started
                     <span class="material-icons-round text-sm"
                         >arrow_forward</span
                     >
                 </a>
                 <a
                     class="bg-white dark:bg-surf-dark border border-bord-light dark:border-bord-dark text-slate-700 dark:text-slate-200 px-8 py-3.5 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-                    href="#demo"
+                    href="https://github.com/openbill/openbill"
                 >
-                    <span class="material-icons-round text-slate-400"
-                        >play_circle</span
+                    <span class="material-icons-round text-slate-400">code</span
                     >
-                    View Demo
+                    Generic GitHub
                 </a>
             </div>
             <div class="max-w-6xl mx-auto relative group">
@@ -304,11 +302,10 @@
                 <h2
                     class="text-3xl font-bold text-slate-900 dark:text-white mb-4"
                 >
-                    Everything you need to run your business
+                    Enterprise power, Open Source freedom
                 </h2>
                 <p class="text-slate-500 dark:text-slate-400">
-                    Powerful features wrapped in a simple, intuitive interface.
-                    Designed for freelancers and small businesses.
+                    100% free and open source. Hosted by you, controlled by you.
                 </p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -459,6 +456,79 @@
         </div>
     </section>
 
+    <section
+        class="py-24 bg-white dark:bg-bg-dark border-t border-bord-light dark:border-bord-dark"
+    >
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-12">
+                Built for Developers
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <!-- Stack Item 1 -->
+                <div class="flex flex-col items-center gap-3 group">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform"
+                    >
+                        <span class="material-icons-round text-3xl">code</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-white">
+                        SvelteKit
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Full-stack Framework
+                    </p>
+                </div>
+
+                <!-- Stack Item 2 -->
+                <div class="flex flex-col items-center gap-3 group">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform"
+                    >
+                        <span class="material-icons-round text-3xl"
+                            >storage</span
+                        >
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-white">
+                        SQLite
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Embedded Database
+                    </p>
+                </div>
+
+                <!-- Stack Item 3 -->
+                <div class="flex flex-col items-center gap-3 group">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform"
+                    >
+                        <span class="material-icons-round text-3xl">dns</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-white">
+                        Drizzle ORM
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Type-safe SQL
+                    </p>
+                </div>
+
+                <!-- Stack Item 4 -->
+                <div class="flex flex-col items-center gap-3 group">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform"
+                    >
+                        <span class="material-icons-round text-3xl">style</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-white">
+                        Tailwind CSS
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Utility-first Styling
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer
         class="bg-surf-light dark:bg-surf-dark border-t border-bord-light dark:border-bord-dark pt-16 pb-8"
@@ -491,13 +561,14 @@
                         <li>
                             <a
                                 class="hover:text-brand transition-colors"
-                                href="#">Features</a
+                                href="#features">Features</a
                             >
                         </li>
                         <li>
                             <a
                                 class="hover:text-brand transition-colors"
-                                href="#">Pricing</a
+                                href="https://github.com/openbill/openbill"
+                                >GitHub</a
                             >
                         </li>
                     </ul>
@@ -508,7 +579,7 @@
                 class="border-t border-bord-light dark:border-bord-dark pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
             >
                 <p class="text-sm text-slate-500 dark:text-slate-400">
-                    © 2024 Poly Inc. All rights reserved.
+                    Released under the MIT License. Open Source & Free.
                 </p>
             </div>
         </div>
