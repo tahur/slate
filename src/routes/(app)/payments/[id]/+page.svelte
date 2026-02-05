@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
-    import { ArrowLeft, Printer } from "lucide-svelte";
+    import { ArrowLeft, Printer, Lock } from "lucide-svelte";
 
     let { data } = $props();
 
@@ -42,14 +42,20 @@
                 <ArrowLeft class="size-4" />
             </Button>
             <div>
-                <h1 class="text-xl font-semibold font-mono">
-                    {data.payment.payment_number}
-                </h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-semibold font-mono">
+                        {data.payment.payment_number}
+                    </h1>
+                    <span class="text-muted-foreground" title="This payment is posted and cannot be modified">
+                        <Lock class="size-4" />
+                    </span>
+                </div>
                 <p class="text-sm text-muted-foreground">
                     {data.customer?.name || "Unknown Customer"}
                     {#if data.customer?.company_name}
                         · {data.customer.company_name}
                     {/if}
+                    · Posted {formatDate(data.payment.payment_date)}
                 </p>
             </div>
         </div>

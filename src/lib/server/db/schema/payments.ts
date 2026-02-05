@@ -33,6 +33,9 @@ export const payments = sqliteTable(
         // Journal
         journal_entry_id: text('journal_entry_id').references(() => journal_entries.id),
 
+        // Idempotency (prevents duplicate submissions)
+        idempotency_key: text('idempotency_key'),
+
         // Audit
         created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
         created_by: text('created_by').references(() => users.id)

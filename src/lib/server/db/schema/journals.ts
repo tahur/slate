@@ -1,8 +1,15 @@
-import { sqliteTable, text, real, index, unique } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, real, index, unique, check } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
 import { accounts } from './accounts';
+
+/**
+ * ⚠️ ACCOUNTING INVARIANTS ENFORCED AT DATABASE LEVEL
+ *
+ * These constraints are the FINAL safety net for accounting integrity.
+ * See docs/ACCOUNTING_INVARIANTS.md for details.
+ */
 
 export const journal_entries = sqliteTable(
     'journal_entries',
@@ -25,7 +32,8 @@ export const journal_entries = sqliteTable(
     },
     (t) => ({
         unq: unique().on(t.org_id, t.entry_number),
-        orgIdx: index('idx_journals_org').on(t.org_id)
+        orgIdx: index('idx_journals_org').on(t.org_id),
+        dateIdx: index('idx_journals_date').on(t.org_id, t.entry_date)
     })
 );
 
@@ -46,7 +54,17 @@ export const journal_lines = sqliteTable(
         narration: text('narration')
     },
     (t) => ({
+        // Indexes for query performance
         accountIdx: index('idx_journal_lines_account').on(t.account_id),
-        partyIdx: index('idx_journal_lines_party').on(t.party_type, t.party_id)
+        partyIdx: index('idx_journal_lines_party').on(t.party_type, t.party_id),
+        entryIdx: index('idx_journal_lines_entry').on(t.journal_entry_id),
+
+        // ⚠️ ACCOUNTING INVARIANT: Amounts must be non-negative
+        debitPositive: check('debit_positive', sql`debit >= 0`),
+        creditPositive: check('credit_positive', sql`credit >= 0`),
+
+        // ⚠️ ACCOUNTING INVARIANT: A line is EITHER debit OR credit, not both
+        // (debit > 0 AND credit = 0) OR (debit = 0 AND credit > 0) OR (debit = 0 AND credit = 0)
+        singleSided: check('single_sided_entry', sql`NOT (debit > 0 AND credit > 0)`)
     })
 );

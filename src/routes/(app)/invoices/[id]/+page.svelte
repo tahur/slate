@@ -3,7 +3,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Badge } from "$lib/components/ui/badge";
-    import { ArrowLeft, Printer, Send, Download, XCircle } from "lucide-svelte";
+    import { ArrowLeft, Printer, Send, Download, XCircle, Lock } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
 
@@ -127,15 +127,27 @@
             >
                 <ArrowLeft class="size-4" />
             </Button>
-            <div class="flex items-center gap-3">
-                <h1
-                    class="text-xl font-bold tracking-tight text-text-strong font-mono"
-                >
-                    {data.invoice.invoice_number}
-                </h1>
-                <span class="status-pill {getStatusClass(data.invoice.status)}">
-                    {data.invoice.status}
-                </span>
+            <div class="flex flex-col">
+                <div class="flex items-center gap-3">
+                    <h1
+                        class="text-xl font-bold tracking-tight text-text-strong font-mono"
+                    >
+                        {data.invoice.invoice_number}
+                    </h1>
+                    <span class="status-pill {getStatusClass(data.invoice.status)}">
+                        {data.invoice.status}
+                    </span>
+                    {#if data.invoice.status !== "draft"}
+                        <span class="text-text-muted" title="This invoice is posted and cannot be modified">
+                            <Lock class="size-4" />
+                        </span>
+                    {/if}
+                </div>
+                {#if data.invoice.issued_at}
+                    <p class="text-xs text-text-muted mt-0.5">
+                        Issued on {formatDate(data.invoice.issued_at)}
+                    </p>
+                {/if}
             </div>
         </div>
 

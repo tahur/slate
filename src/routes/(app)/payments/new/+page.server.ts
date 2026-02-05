@@ -10,7 +10,7 @@ import {
 } from '$lib/server/db/schema';
 import { eq, and, ne, sql, inArray } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
-import { getNextNumber, postPaymentReceipt } from '$lib/server/services';
+import { getNextNumber, postPaymentReceipt, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -224,6 +224,20 @@ export const actions: Actions = {
                     updated_at: new Date().toISOString()
                 })
                 .where(eq(customers.id, customer_id));
+
+            // Log activity
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'payment',
+                entityId: paymentId,
+                action: 'created',
+                changedFields: {
+                    payment_number: { new: paymentNumber },
+                    amount: { new: amount },
+                    payment_mode: { new: payment_mode }
+                }
+            });
 
         } catch (error) {
             console.error('Failed to record payment:', error);

@@ -3,6 +3,12 @@ import { journal_entries, journal_lines, accounts } from '../db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { getNextNumber } from './number-series';
 import { addCurrency, round2, currencyEquals } from '$lib/utils/currency';
+import {
+    validateNewEntry,
+    assertEntryMutable,
+    AccountingInvariantError,
+    type JournalLineData
+} from '../accounting/invariants';
 
 export type PostingType =
     | 'INVOICE_ISSUED'
@@ -73,27 +79,34 @@ async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<
 
 /**
  * Post a journal entry with validation
- * 
- * Accounting rules:
+ *
+ * ⚠️ ACCOUNTING INVARIANTS ENFORCED:
  * - Total debits MUST equal total credits
- * - Updates account balances atomically
+ * - Each line is debit OR credit, not both
+ * - All amounts must be positive
+ * - Minimum 2 lines per entry
+ *
+ * See docs/ACCOUNTING_INVARIANTS.md for details.
  */
 export async function post(
     orgId: string,
     input: PostingInput
 ): Promise<PostingResult> {
+    // Convert to JournalLineData format for validation
+    const lineData: JournalLineData[] = input.lines.map(l => ({
+        debit: l.debit || 0,
+        credit: l.credit || 0
+    }));
+
+    // ⚠️ INVARIANT CHECK: Validate all accounting rules before posting
+    // This will throw AccountingInvariantError if any rule is violated
+    validateNewEntry(lineData);
+
     // Calculate totals using decimal.js for precision
     const debits = input.lines.map(l => l.debit || 0);
     const credits = input.lines.map(l => l.credit || 0);
     const totalDebit = addCurrency(...debits);
     const totalCredit = addCurrency(...credits);
-
-    // Validate: debits = credits
-    if (!currencyEquals(totalDebit, totalCredit)) {
-        throw new Error(
-            `Journal entry unbalanced: Debit ₹${totalDebit.toFixed(2)} ≠ Credit ₹${totalCredit.toFixed(2)}`
-        );
-    }
 
     // Get account IDs
     const codes = input.lines.map(l => l.accountCode);
@@ -173,6 +186,9 @@ export async function post(
 
 /**
  * Reverse a journal entry (creates an opposite entry)
+ *
+ * ⚠️ ACCOUNTING INVARIANT: Posted entries are IMMUTABLE
+ * This is the ONLY way to "undo" a posted entry - by creating a reversal.
  */
 export async function reverse(
     orgId: string,
@@ -188,11 +204,19 @@ export async function reverse(
         .get();
 
     if (!original) {
-        throw new Error('Journal entry not found');
+        throw new AccountingInvariantError(
+            'ENTRY_EXISTS',
+            `Journal entry ${journalEntryId} not found`,
+            { journalEntryId }
+        );
     }
 
     if (original.status === 'reversed') {
-        throw new Error('Journal entry already reversed');
+        throw new AccountingInvariantError(
+            'NOT_ALREADY_REVERSED',
+            `Journal entry ${journalEntryId} has already been reversed`,
+            { journalEntryId, status: original.status }
+        );
     }
 
     // Get original lines

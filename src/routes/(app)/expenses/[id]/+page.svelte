@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
-    import { ArrowLeft, Receipt } from "lucide-svelte";
+    import { ArrowLeft, Receipt, Lock } from "lucide-svelte";
 
     let { data } = $props();
 
@@ -32,11 +32,16 @@
                 <ArrowLeft class="size-4" />
             </Button>
             <div>
-                <h1 class="text-xl font-semibold font-mono">
-                    {data.expense.expense_number}
-                </h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-semibold font-mono">
+                        {data.expense.expense_number}
+                    </h1>
+                    <span class="text-muted-foreground" title="This expense is posted and cannot be modified">
+                        <Lock class="size-4" />
+                    </span>
+                </div>
                 <p class="text-sm text-muted-foreground">
-                    {data.expense.category_name}
+                    {data.expense.category_name} · Posted {formatDate(data.expense.expense_date)}
                 </p>
             </div>
         </div>

@@ -81,6 +81,9 @@
             }}
             class="h-full flex flex-col md:flex-row"
         >
+            <!-- Idempotency key to prevent duplicate submissions -->
+            <input type="hidden" name="idempotency_key" value={data.idempotencyKey} />
+
             <!-- LEFT COLUMN: Main Details -->
             <div class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1">
                 <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">

@@ -192,6 +192,9 @@
                 };
             }}
         >
+            <!-- Idempotency key to prevent duplicate submissions -->
+            <input type="hidden" name="idempotency_key" value={data.idempotencyKey} />
+
             <!-- LEFT COLUMN: Main Details -->
             <div
                 class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"

@@ -14,6 +14,7 @@
         Briefcase,
         CreditCard,
         BookOpen,
+        History,
     } from "lucide-svelte";
 
     const navSections = [
@@ -56,7 +57,10 @@
         },
         {
             title: "SETTINGS",
-            items: [{ href: "/settings", label: "Settings", icon: Settings }],
+            items: [
+                { href: "/settings", label: "Settings", icon: Settings },
+                { href: "/activity-log", label: "Activity Log", icon: History },
+            ],
         },
     ];
 

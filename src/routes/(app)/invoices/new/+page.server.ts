@@ -9,8 +9,9 @@ import {
 import { eq, and, sql } from 'drizzle-orm';
 import { calculateLineItem, calculateInvoiceTotals, type LineItem, GST_RATES } from './schema';
 import { setFlash } from '$lib/server/flash';
-import { postInvoiceIssuance } from '$lib/server/services';
+import { postInvoiceIssuance, logActivity } from '$lib/server/services';
 import { bumpNumberSeriesIfHigher, getNextNumber, peekNextNumber } from '$lib/server/services/number-series';
+import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -49,11 +50,14 @@ export const load: PageServerLoad = async ({ locals }) => {
     const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const autoInvoiceNumber = await peekNextNumber(orgId, 'invoice');
 
-    // Return data without using superforms for nested arrays
+    // Generate idempotency key to prevent duplicate submissions
+    const idempotencyKey = generateIdempotencyKey();
+
     return {
         customers: customerList,
         orgStateCode: org?.state_code || '',
         autoInvoiceNumber,
+        idempotencyKey,
         defaults: {
             invoice_date: today,
             due_date: dueDate,
@@ -68,11 +72,20 @@ export const actions: Actions = {
         }
 
         const formData = await event.request.formData();
+        const orgId = event.locals.user.orgId;
 
-        // DEBUG LOGGING
-        const fs = await import('node:fs');
-        const log = (msg: string) => fs.appendFileSync('debug_log.txt', `[${new Date().toISOString()}] ${msg}\n`);
-        log('Starting Default Action');
+        // Check idempotency to prevent duplicate submissions
+        const idempotencyKey = formData.get('idempotency_key') as string;
+        const { isDuplicate, existingRecord } = await checkIdempotency<typeof invoices.$inferSelect>(
+            'invoices',
+            orgId,
+            idempotencyKey
+        );
+
+        if (isDuplicate && existingRecord) {
+            // Return existing invoice instead of creating duplicate
+            redirect(302, `/invoices/${existingRecord.id}`);
+        }
 
         // Parse form data
         const customer_id = formData.get('customer_id') as string;
@@ -84,9 +97,6 @@ export const actions: Actions = {
         const intent = (formData.get('intent') as string || 'draft').trim();
         const invoiceNumberMode = (formData.get('invoice_number_mode') as string || 'auto').trim();
         const providedInvoiceNumber = (formData.get('invoice_number') as string || '').trim();
-
-
-        // Credits (New)
 
 
         // Validation
@@ -128,7 +138,6 @@ export const actions: Actions = {
         let createdInvoiceId = '';
 
         try {
-            const orgId = event.locals.user.orgId;
             const invoiceId = crypto.randomUUID();
             let invoiceNumber = providedInvoiceNumber;
             createdInvoiceId = invoiceId;
@@ -205,7 +214,7 @@ export const actions: Actions = {
                 });
             }
 
-            // Insert invoice
+            // Insert invoice with idempotency key
             await db.insert(invoices).values({
                 id: invoiceId,
                 org_id: orgId,
@@ -226,6 +235,7 @@ export const actions: Actions = {
                 notes: notes || null,
                 terms: terms || null,
                 journal_entry_id: postingResult?.journalEntryId || null,
+                idempotency_key: idempotencyKey || null,
                 issued_at: isIssue ? new Date().toISOString() : null,
                 created_by: event.locals.user.id,
                 updated_by: event.locals.user.id,
@@ -264,11 +274,21 @@ export const actions: Actions = {
                     .where(eq(customers.id, customer_id));
             }
 
+            // Log activity
+            await logActivity({
+                orgId,
+                userId: event.locals.user.id,
+                entityType: 'invoice',
+                entityId: invoiceId,
+                action: isIssue ? 'issued' : 'created',
+                changedFields: {
+                    invoice_number: { new: invoiceNumber },
+                    total: { new: totals.total },
+                    status: { new: isIssue ? 'issued' : 'draft' }
+                }
+            });
 
         } catch (e) {
-            // DEBUG LOGGING
-            const fs = await import('node:fs');
-            fs.appendFileSync('debug_log.txt', `[ERROR] Invoice creation error: ${e instanceof Error ? e.stack : JSON.stringify(e)}\n`);
             console.error('Invoice creation error:', e);
             return fail(500, { error: 'Failed to create invoice' });
         }

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { formatINR } from "$lib/utils/currency";
-    import { ArrowLeft, Printer, Download } from "lucide-svelte";
+    import { ArrowLeft, Printer, Download, Lock } from "lucide-svelte";
     import { formatDate } from "../../../../lib/utils/date";
 
     let { data } = $props();
@@ -33,7 +33,13 @@
                     >
                         {data.creditNote.status}
                     </span>
+                    <span class="text-text-muted" title="This credit note is posted and cannot be modified">
+                        <Lock class="size-4" />
+                    </span>
                 </div>
+                <p class="text-xs text-text-muted mt-0.5">
+                    Issued on {formatDate(data.creditNote.credit_note_date)}
+                </p>
             </div>
         </div>
         <div class="flex items-center gap-2">

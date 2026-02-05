@@ -2,7 +2,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { credit_notes, customers } from '$lib/server/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { getNextNumber, peekNextNumber, bumpNumberSeriesIfHigher, postCreditNote } from '$lib/server/services';
+import { getNextNumber, peekNextNumber, bumpNumberSeriesIfHigher, postCreditNote, logActivity } from '$lib/server/services';
+import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -23,7 +24,8 @@ export const load: PageServerLoad = async ({ locals }) => {
     return {
         customers: customerList,
         autoNumber,
-        today
+        today,
+        idempotencyKey: generateIdempotencyKey()
     };
 };
 
@@ -31,47 +33,45 @@ export const actions: Actions = {
     default: async ({ request, locals }) => {
         if (!locals.user) return fail(401);
 
-        const data = await request.formData();
-
-        // DEBUG LOG
-        console.log('--- Creating Credit Note ---');
-        const entries = Object.fromEntries(data.entries());
-        console.log('Form Data:', entries);
-
+        const formData = await request.formData();
         const orgId = locals.user.orgId;
 
-        const customer_id = data.get('customer_id') as string;
-        const amount = parseFloat(data.get('amount') as string);
-        const reason = data.get('reason') as string;
-        const notes = data.get('notes') as string;
-        const date = data.get('date') as string;
-        let number = data.get('number') as string;
+        // Check idempotency
+        const idempotencyKey = formData.get('idempotency_key') as string;
+        const { isDuplicate } = await checkIdempotency('credit_notes', orgId, idempotencyKey);
+        if (isDuplicate) {
+            redirect(302, '/credit-notes');
+        }
+
+        const customer_id = formData.get('customer_id') as string;
+        const amount = parseFloat(formData.get('amount') as string);
+        const reason = formData.get('reason') as string;
+        const notes = formData.get('notes') as string;
+        const date = formData.get('date') as string;
+        let number = formData.get('number') as string;
 
         // Collision Check & Recovery
         try {
-            const existingIV = await db.query.credit_notes.findFirst({
+            const existingCN = await db.query.credit_notes.findFirst({
                 where: and(
                     eq(credit_notes.org_id, orgId),
                     eq(credit_notes.credit_note_number, number)
                 )
             });
 
-            if (existingIV) {
+            if (existingCN) {
                 console.log('Collision detected for credit note number:', number);
-                fs.appendFileSync('debug_log.txt', `Collision detected for ${number}. Generating new number...\n`);
                 // Force generate next number
                 number = await getNextNumber(orgId, 'credit_note');
             } else if (!number) {
-                fs.appendFileSync('debug_log.txt', `No number provided. Generating new number...\n`);
                 number = await getNextNumber(orgId, 'credit_note');
             }
         } catch (numErr) {
-            fs.appendFileSync('debug_log.txt', `Number Gen Error: ${numErr}\n`);
+            console.error('Number generation error:', numErr);
             throw numErr;
         }
 
         if (!customer_id || !amount || !reason || !date) {
-            fs.appendFileSync('debug_log.txt', `Missing fields: customer_id=${customer_id}, amount=${amount}, reason=${reason}, date=${date}\n`);
             return fail(400, { error: 'Missing required fields' });
         }
 
@@ -105,6 +105,7 @@ export const actions: Actions = {
                 notes,
                 status: 'issued', // Available for use
                 journal_entry_id: postingResult.journalEntryId,
+                idempotency_key: idempotencyKey || null,
                 created_by: locals.user.id
             });
 
@@ -120,13 +121,23 @@ export const actions: Actions = {
             // Ensure the number series is updated if we used a manual/peeked number
             await bumpNumberSeriesIfHigher(orgId, 'credit_note', number);
 
-            fs.appendFileSync('debug_log.txt', `Success! Created CN ${number} for ${amount}\n`);
+            // Log activity
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'credit_note',
+                entityId: id,
+                action: 'created',
+                changedFields: {
+                    credit_note_number: { new: number },
+                    total: { new: amount },
+                    reason: { new: reason }
+                }
+            });
 
         } catch (e) {
-            console.error('SERVER ERROR Creating Credit Note:', e);
+            console.error('Failed to create credit note:', e);
             const errMsg = e instanceof Error ? e.message : String(e);
-            const stack = e instanceof Error ? e.stack : '';
-            fs.appendFileSync('debug_log.txt', `ERROR: ${errMsg}\nSTACK: ${stack}\n`);
             return fail(500, { error: 'Failed to create credit note: ' + errMsg });
         }
 

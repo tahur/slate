@@ -66,6 +66,9 @@ export const invoices = sqliteTable(
         // Journal reference
         journal_entry_id: text('journal_entry_id').references(() => journal_entries.id),
 
+        // Idempotency (prevents duplicate submissions)
+        idempotency_key: text('idempotency_key'),
+
         // Audit
         issued_at: text('issued_at'),
         cancelled_at: text('cancelled_at'),

@@ -41,6 +41,9 @@ export const expenses = sqliteTable(
         // Journal
         journal_entry_id: text('journal_entry_id').references(() => journal_entries.id),
 
+        // Idempotency (prevents duplicate submissions)
+        idempotency_key: text('idempotency_key'),
+
         // Audit
         created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
         updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),

@@ -3,8 +3,9 @@ import { db } from '$lib/server/db';
 import { expenses, accounts, vendors } from '$lib/server/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
-import { getNextNumber, postExpense } from '$lib/server/services';
+import { getNextNumber, postExpense, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
+import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -71,6 +72,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         paymentAccounts,
         vendors: vendorList,
         selectedVendorId,
+        idempotencyKey: generateIdempotencyKey(),
         defaults: {
             expense_date: new Date().toISOString().split('T')[0]
         }
@@ -85,6 +87,13 @@ export const actions: Actions = {
 
         const orgId = locals.user.orgId;
         const formData = await request.formData();
+
+        // Check idempotency
+        const idempotencyKey = formData.get('idempotency_key') as string;
+        const { isDuplicate } = await checkIdempotency('expenses', orgId, idempotencyKey);
+        if (isDuplicate) {
+            redirect(302, '/expenses');
+        }
 
         // Parse form data
         const expense_date = formData.get('expense_date') as string;
@@ -159,7 +168,7 @@ export const actions: Actions = {
                 userId: locals.user.id
             });
 
-            // Create expense record
+            // Create expense record with idempotency key
             await db.insert(expenses).values({
                 id: expenseId,
                 org_id: orgId,
@@ -178,7 +187,22 @@ export const actions: Actions = {
                 paid_through,
                 reference,
                 journal_entry_id: postingResult.journalEntryId,
+                idempotency_key: idempotencyKey || null,
                 created_by: locals.user.id
+            });
+
+            // Log activity
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'expense',
+                entityId: expenseId,
+                action: 'created',
+                changedFields: {
+                    expense_number: { new: expenseNumber },
+                    total: { new: total },
+                    category: { new: categoryAccount.account_name }
+                }
             });
 
         } catch (error) {

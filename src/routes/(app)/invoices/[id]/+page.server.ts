@@ -14,7 +14,7 @@ import {
 } from '$lib/server/db/schema';
 import { eq, and, sql, gt, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
-import { getNextNumber, postInvoiceIssuance, postPaymentReceipt } from '$lib/server/services';
+import { getNextNumber, postInvoiceIssuance, postPaymentReceipt, logActivity } from '$lib/server/services';
 
 
 
@@ -244,6 +244,19 @@ export const actions: Actions = {
                     updated_at: new Date().toISOString()
                 })
                 .where(eq(customers.id, invoice.customer_id));
+
+            // Log activity
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'invoice',
+                entityId: params.id,
+                action: 'issued',
+                changedFields: {
+                    status: { old: 'draft', new: 'issued' },
+                    invoice_number: { new: invoiceNumber }
+                }
+            });
 
             return { success: true, invoiceNumber };
         } catch (error) {
@@ -675,6 +688,20 @@ export const actions: Actions = {
                     updated_at: new Date().toISOString()
                 })
                 .where(eq(invoices.id, invoiceId));
+
+            // Log activity
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'invoice',
+                entityId: invoiceId,
+                action: newStatus === 'paid' ? 'paid' : 'partially_paid',
+                changedFields: {
+                    status: { old: invoice.status, new: newStatus },
+                    amount_paid: { old: invoice.amount_paid, new: newAmountPaid },
+                    balance_due: { old: invoice.balance_due, new: newBalanceDue }
+                }
+            });
 
             return { success: true, message: 'Settlement recorded successfully' };
 

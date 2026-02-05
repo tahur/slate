@@ -3,7 +3,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { FileText, RefreshCw } from "lucide-svelte";
+    import { FileText, RefreshCw, Lock } from "lucide-svelte";
 
     let { data } = $props();
 
@@ -147,11 +147,18 @@
                                     {formatCurrency(entry.total_credit)}
                                 </td>
                                 <td class="text-right">
-                                    <span
-                                        class="status-pill {getStatusClass(entry.status)}"
-                                    >
-                                        {entry.status}
-                                    </span>
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <span
+                                            class="status-pill {getStatusClass(entry.status)}"
+                                        >
+                                            {entry.status}
+                                        </span>
+                                        {#if entry.status === "posted"}
+                                            <span class="text-text-muted" title="This journal entry is immutable">
+                                                <Lock class="size-3" />
+                                            </span>
+                                        {/if}
+                                    </div>
                                 </td>
                             </tr>
                         {/each}
