@@ -8,8 +8,11 @@
     --color-surface-3: hsl(var(--surface-3));
 
     --color-text-strong: hsl(var(--text-strong));
+    --color-text-secondary: hsl(var(--text-secondary));
     --color-text-subtle: hsl(var(--text-subtle));
     --color-text-muted: hsl(var(--text-muted));
+    --color-text-placeholder: hsl(var(--text-placeholder));
+    --color-label: hsl(var(--label));
 
     --color-border-subtle: hsl(var(--border-subtle));
     --color-border-strong: hsl(var(--border-strong));
@@ -42,6 +45,7 @@
     --color-primary-foreground: hsl(var(--primary-foreground));
     --color-secondary: hsl(var(--secondary));
     --color-secondary-foreground: hsl(var(--secondary-foreground));
+    --color-secondary-hover: hsl(var(--secondary-hover));
 
     --color-destructive: hsl(var(--destructive));
     --color-destructive-foreground: hsl(var(--destructive-foreground));
@@ -116,17 +120,21 @@
         --ring: 28 90% 54%;
         /* Orange Ring */
 
-        /* Typography - Legible Arsenic */
-        /* Typography */
+        /* Typography - Clear Hierarchy */
         --foreground: 0 0% 9%;
-        /* #181818 */
+        /* #181818 - Primary text */
         --text-strong: 0 0% 9%;
-        /* #181818 */
-        --text-subtle: 2 1% 52%;
-        /* #858382 */
-        --text-muted: 220 10% 65%;
-        --text-muted: 220 10% 65%;
-        /* Dust */
+        /* #181818 - Headlines, important data */
+        --text-secondary: 220 9% 46%;
+        /* #6b7280 - Labels, column headers, secondary info */
+        --text-subtle: 220 9% 52%;
+        /* #7c8390 - Metadata, timestamps */
+        --text-muted: 220 10% 58%;
+        /* #8b92a0 - Hints, disabled, tertiary */
+        --text-placeholder: 220 10% 68%;
+        /* #a3a9b8 - Input placeholders only */
+        --label: 220 9% 38%;
+        /* #565d6b - Form labels (darker for readability) */
 
         /* Identity - Cloudflare/Radiance */
         /* ... */
@@ -135,9 +143,10 @@
         /* #fb631b */
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 0 0% 26%;
-        /* #434343 */
-        --secondary-foreground: 0 0% 98%;
+        --secondary: 220 14% 96%;
+        /* Cool gray-blue for secondary buttons */
+        --secondary-foreground: 220 13% 26%;
+        --secondary-hover: 220 14% 92%;
 
         /* Status Colors */
         --positive: 142 76% 36%;
@@ -307,7 +316,7 @@
     }
 
     .kpi-label {
-        @apply text-[11px] font-bold uppercase tracking-widest text-text-muted;
+        @apply text-[11px] font-bold uppercase tracking-widest text-text-secondary;
     }
 
     .kpi-value {
@@ -336,5 +345,52 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-image: linear-gradient(135deg, #fb631b, #ff8e53);
+    }
+
+    /* Form Utilities */
+    .form-label {
+        @apply text-xs font-semibold uppercase tracking-wide text-label;
+    }
+
+    .form-label--required::after {
+        content: " *";
+        @apply text-destructive;
+    }
+
+    .form-hint {
+        @apply text-xs text-text-muted mt-1;
+    }
+
+    .form-error {
+        @apply text-xs text-destructive mt-1;
+    }
+
+    .form-section {
+        @apply bg-surface-0 rounded-xl border border-border p-6 space-y-6;
+    }
+
+    .form-section-header {
+        @apply flex items-center gap-3 pb-4 border-b border-border;
+    }
+
+    .form-section-icon {
+        @apply p-2 rounded-lg;
+    }
+
+    .form-section-title {
+        @apply font-semibold text-text-strong;
+    }
+
+    .form-section-subtitle {
+        @apply text-sm text-text-secondary;
+    }
+
+    /* Bottom Action Bar */
+    .action-bar {
+        @apply flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20;
+    }
+
+    .action-bar-group {
+        @apply flex items-center gap-3;
     }
 }

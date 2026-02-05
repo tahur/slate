@@ -14,23 +14,18 @@
 
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header -->
-    <header
-        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
-        <div class="flex items-center gap-4">
-            <Button
-                variant="ghost"
-                href="/credit-notes"
-                size="icon"
-                class="h-8 w-8 text-text-muted hover:text-text-strong"
-            >
-                <ArrowLeft class="size-4" />
-            </Button>
-            <div>
-                <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                    New Credit Note
-                </h1>
-            </div>
+    <header class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20">
+        <Button
+            variant="ghost"
+            href="/credit-notes"
+            size="icon"
+            class="h-8 w-8"
+        >
+            <ArrowLeft class="size-4" />
+        </Button>
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">New Credit Note</h1>
+            <p class="text-sm text-text-secondary">Issue a credit to a customer</p>
         </div>
     </header>
 
@@ -55,77 +50,56 @@
             class="h-full flex flex-col md:flex-row"
         >
             <!-- LEFT COLUMN: Main Details -->
-            <div
-                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
-            >
-                <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-8">
+            <div class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1">
+                <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Customer -->
                     <div class="space-y-2">
-                        <Label
-                            for="customer_id"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Customer *</Label
-                        >
+                        <Label for="customer_id" class="form-label">Customer <span class="text-destructive">*</span></Label>
                         <select
                             name="customer_id"
                             id="customer_id"
                             required
-                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                         >
                             <option value="">Select Customer</option>
                             {#each data.customers as customer}
-                                <option value={customer.id}
-                                    >{customer.name}</option
-                                >
+                                <option value={customer.id}>{customer.name}</option>
                             {/each}
                         </select>
                     </div>
 
-                    <div class="grid gap-6 grid-cols-2">
+                    <div class="grid gap-4 grid-cols-2">
                         <!-- Date -->
                         <div class="space-y-2">
-                            <Label
-                                for="date"
-                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                                >Date *</Label
-                            >
+                            <Label for="date" class="form-label">Date <span class="text-destructive">*</span></Label>
                             <Input
                                 type="date"
                                 name="date"
                                 required
                                 value={data.today}
-                                class="h-11 border-border-strong bg-surface-0"
                             />
                         </div>
 
                         <!-- Number -->
                         <div class="space-y-2">
-                            <Label
-                                for="number"
-                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                                >Credit Note #</Label
-                            >
+                            <Label for="number" class="form-label">Credit Note #</Label>
                             <Input
                                 name="number"
                                 value={data.autoNumber}
                                 readonly
-                                class="h-11 bg-surface-2/50 text-text-muted border-border font-mono text-sm"
+                                class="bg-surface-2/50 text-text-secondary font-mono"
                             />
                         </div>
                     </div>
 
                     <!-- Reason -->
                     <div class="space-y-2">
-                        <Label
-                            for="reason"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Reason *</Label
-                        >
+                        <Label for="reason" class="form-label">Reason <span class="text-destructive">*</span></Label>
                         <select
                             name="reason"
                             id="reason"
                             required
-                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                         >
                             <option value="Return">Return of Goods</option>
                             <option value="Damaged">Damaged Goods</option>
@@ -137,15 +111,11 @@
 
                     <!-- Notes -->
                     <div class="space-y-2">
-                        <Label
-                            for="notes"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Notes</Label
-                        >
+                        <Label for="notes" class="form-label">Notes</Label>
                         <textarea
                             name="notes"
-                            rows="4"
-                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+                            rows="3"
+                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong resize-none placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                             placeholder="Additional details..."
                         ></textarea>
                     </div>
@@ -153,23 +123,15 @@
             </div>
 
             <!-- RIGHT COLUMN: Financials -->
-            <div
-                class="w-full md:w-[400px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
-            >
-                <div class="space-y-8">
-                    <h3
-                        class="text-sm font-bold uppercase tracking-wider text-text-muted"
-                    >
+            <div class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto">
+                <div class="space-y-6">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-secondary">
                         Financials
                     </h3>
 
                     <!-- Amount -->
                     <div class="space-y-2">
-                        <Label
-                            for="amount"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Credit Amount *</Label
-                        >
+                        <Label for="amount" class="form-label">Credit Amount <span class="text-destructive">*</span></Label>
                         <Input
                             type="number"
                             name="amount"
@@ -178,19 +140,15 @@
                             step="0.01"
                             required
                             placeholder="0.00"
-                            class="h-12 border-border-strong text-text-strong bg-surface-1 text-xl font-bold font-mono text-right"
+                            class="h-12 text-text-strong bg-surface-1 text-xl font-bold font-mono text-right"
                         />
                     </div>
 
                     <!-- Summary -->
-                    <div class="space-y-3 pt-4 border-t border-border-dashed">
-                        <div class="flex justify-between items-baseline pt-2">
-                            <span class="font-bold text-text-strong"
-                                >Total Credit</span
-                            >
-                            <span
-                                class="font-mono text-2xl font-bold text-primary"
-                            >
+                    <div class="space-y-3 pt-4 border-t border-dashed border-border">
+                        <div class="flex justify-between items-baseline pt-3">
+                            <span class="font-semibold text-text-strong">Total Credit</span>
+                            <span class="font-mono text-2xl font-bold text-primary">
                                 {new Intl.NumberFormat("en-IN", {
                                     style: "currency",
                                     currency: "INR",
@@ -204,25 +162,17 @@
     </main>
 
     <!-- Bottom Action Bar -->
-    <div
-        class="flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20"
-    >
-        <div class="flex items-center gap-3">
+    <div class="action-bar">
+        <div class="action-bar-group">
             <Button
                 type="submit"
                 form="credit-note-form"
                 disabled={isSubmitting || amount <= 0}
-                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
             >
                 <Check class="mr-2 size-4" />
                 {isSubmitting ? "Saving..." : "Save Credit Note"}
             </Button>
-            <Button
-                href="/credit-notes"
-                variant="ghost"
-                type="button"
-                class="text-text-muted hover:text-destructive"
-            >
+            <Button variant="ghost" href="/credit-notes">
                 Cancel
             </Button>
         </div>

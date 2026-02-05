@@ -97,57 +97,20 @@
     }
 </script>
 
-{#if form?.error}
-    <div class="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
-        {form.error}
-    </div>
-{/if}
-
-{#if form?.success}
-    <div class="mb-4 p-3 rounded-md bg-green-50 text-green-700 text-sm">
-        {#if form.invoiceNumber}
-            Invoice issued successfully as <span class="font-mono font-medium"
-                >{form.invoiceNumber}</span
-            >
-        {:else}
-            Action completed successfully
-        {/if}
-    </div>
-{/if}
-
-{#if data.justRecordedPayment}
-    <div
-        class="mb-4 p-3 rounded-md bg-surface-2 text-text-strong text-sm border border-border-subtle"
-    >
-        Payment recorded:
-        <span class="font-mono font-medium"
-            >{formatCurrency(data.invoice.amount_paid || 0)}</span
-        >
-        · Balance due
-        <span class="font-mono font-medium"
-            >{formatCurrency(data.invoice.balance_due)}</span
-        >
-    </div>
-{/if}
-
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
-    <!-- Header control bar -->
-    <header
-        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-1 z-10"
-    >
+    <!-- Header -->
+    <header class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-20">
         <div class="flex items-center gap-4">
             <Button
                 variant="ghost"
                 href="/invoices"
                 size="icon"
-                class="h-8 w-8 text-text-muted hover:text-text-strong"
+                class="h-8 w-8"
             >
                 <ArrowLeft class="size-4" />
             </Button>
             <div class="flex items-center gap-3">
-                <h1
-                    class="text-xl font-bold tracking-tight text-text-strong font-mono"
-                >
+                <h1 class="text-xl font-bold tracking-tight text-text-strong font-mono">
                     {data.invoice.invoice_number}
                 </h1>
                 <span class="status-pill {getStatusClass(data.invoice.status)}">
@@ -158,31 +121,24 @@
 
         <div class="flex items-center gap-2">
             {#if data.invoice.status === "draft"}
-                <!-- Issue Form -->
                 <form method="POST" action="?/issue" use:enhance>
-                    <Button
-                        type="submit"
-                        size="sm"
-                        class="bg-primary text-primary-foreground font-semibold"
-                    >
-                        <Send class="mr-2 size-3" /> Issue
+                    <Button type="submit" size="sm">
+                        <Send class="mr-2 size-3" /> Issue Invoice
                     </Button>
                 </form>
             {/if}
             <Button
                 variant="outline"
                 size="sm"
-                class="text-text-muted"
                 onclick={downloadPdf}
                 disabled={isDownloading}
             >
                 <Download class="mr-2 size-3" />
-                {isDownloading ? "Generating..." : "Download PDF"}
+                {isDownloading ? "Generating..." : "PDF"}
             </Button>
             <Button
                 variant="outline"
                 size="sm"
-                class="text-text-muted"
                 onclick={() => window.print()}
             >
                 <Printer class="mr-2 size-3" /> Print
@@ -190,13 +146,36 @@
         </div>
     </header>
 
+    <!-- Alerts -->
+    {#if form?.error}
+        <div class="mx-6 mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20 flex items-center gap-2">
+            <XCircle class="size-4 flex-shrink-0" />
+            {form.error}
+        </div>
+    {/if}
+
+    {#if form?.success}
+        <div class="mx-6 mt-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm border border-green-200">
+            {#if form.invoiceNumber}
+                Invoice issued successfully as <span class="font-mono font-medium">{form.invoiceNumber}</span>
+            {:else}
+                Action completed successfully
+            {/if}
+        </div>
+    {/if}
+
+    {#if data.justRecordedPayment}
+        <div class="mx-6 mt-4 p-3 rounded-lg bg-primary/5 text-text-strong text-sm border border-primary/20">
+            Payment recorded: <span class="font-mono font-medium">{formatCurrency(data.invoice.amount_paid || 0)}</span>
+            · Balance due <span class="font-mono font-medium">{formatCurrency(data.invoice.balance_due)}</span>
+        </div>
+    {/if}
+
     <!-- Content: Paper View -->
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-2/30">
-        <div class="mx-auto max-w-5xl space-y-8">
+    <main class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30">
+        <div class="mx-auto max-w-4xl">
             <!-- Main Paper Sheet -->
-            <div
-                class="bg-surface-1 border border-border rounded-lg shadow-sm p-8 space-y-8"
-            >
+            <div class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8">
                 <!-- Top Meta Band -->
                 <div class="flex flex-col gap-6">
                     {#if data.org && data.org.logo_url}
@@ -209,7 +188,7 @@
                     <div class="flex justify-between items-start">
                         <div class="space-y-1">
                             <p
-                                class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                                class="text-xs font-semibold uppercase tracking-wide text-text-secondary"
                             >
                                 Bill To
                             </p>
@@ -230,7 +209,7 @@
                         >
                             <div>
                                 <p
-                                    class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
                                 >
                                     Invoice Date
                                 </p>
@@ -242,7 +221,7 @@
                             </div>
                             <div>
                                 <p
-                                    class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
                                 >
                                     Due Date
                                 </p>
@@ -255,7 +234,7 @@
                             {#if data.invoice.order_number}
                                 <div>
                                     <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                        class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
                                     >
                                         Reference #
                                     </p>
@@ -275,7 +254,7 @@
                     <table class="w-full text-sm">
                         <thead>
                             <tr
-                                class="bg-surface-2/50 border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-muted"
+                                class="bg-surface-2/50 border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-secondary"
                             >
                                 <th class="px-4 py-3 text-left">Item</th>
                                 <th class="px-4 py-3 text-right">Qty</th>
@@ -345,7 +324,7 @@
                     <div class="flex-1 space-y-2">
                         {#if data.invoice.terms}
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
                             >
                                 Terms & Conditions
                             </p>
@@ -361,7 +340,7 @@
                     <div class="w-full md:w-80 space-y-3 text-sm">
                         <!-- Available Credits Widget Removed (Moved to Bottom Bar) -->
 
-                        <div class="flex justify-between text-text-subtle">
+                        <div class="flex justify-between text-text-secondary">
                             <span>Sub Total</span>
                             <span class="font-mono font-medium text-text-strong"
                                 >{formatCurrency(data.invoice.subtotal)}</span
@@ -369,7 +348,7 @@
                         </div>
 
                         {#if data.invoice.is_inter_state}
-                            <div class="flex justify-between text-text-subtle">
+                            <div class="flex justify-between text-text-secondary">
                                 <span>IGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
@@ -377,14 +356,14 @@
                                 >
                             </div>
                         {:else}
-                            <div class="flex justify-between text-text-subtle">
+                            <div class="flex justify-between text-text-secondary">
                                 <span>CGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
                                     >{formatCurrency(data.invoice.cgst)}</span
                                 >
                             </div>
-                            <div class="flex justify-between text-text-subtle">
+                            <div class="flex justify-between text-text-secondary">
                                 <span>SGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
@@ -467,36 +446,31 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
-<!-- Fixed Bottom Bar -->
-{#if data.invoice.status !== "draft" && data.invoice.status !== "cancelled" && data.invoice.balance_due > 0.01}
-    <div
-        class="fixed bottom-0 left-[280px] right-0 bg-surface-1 border-t border-border p-4 flex justify-between items-center z-40 bg-opacity-95 backdrop-blur-sm"
-    >
-        <div class="flex flex-col">
-            <span
-                class="text-xs text-text-muted font-medium uppercase tracking-wider"
-                >Balance Due</span
-            >
-            <span class="text-lg font-bold font-mono text-primary"
-                >{formatCurrency(data.invoice.balance_due)}</span
-            >
+    <!-- Bottom Action Bar -->
+    {#if data.invoice.status !== "draft" && data.invoice.status !== "cancelled" && data.invoice.balance_due > 0.01}
+        <div class="action-bar">
+            <div class="action-bar-group">
+                <Button onclick={openPaymentModal}>Record Payment</Button>
+                {#if data.availableCredits && data.availableCredits.length > 0}
+                    <Button
+                        variant="outline"
+                        onclick={() => (showCreditsModal = true)}
+                    >
+                        Apply Credits ({data.availableCredits.length})
+                    </Button>
+                {/if}
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Balance Due</span>
+                    <span class="font-mono text-xl font-bold text-primary">{formatCurrency(data.invoice.balance_due)}</span>
+                </div>
+            </div>
         </div>
-        <div class="flex items-center gap-3">
-            {#if data.availableCredits && data.availableCredits.length > 0}
-                <Button
-                    variant="outline"
-                    onclick={() => (showCreditsModal = true)}
-                >
-                    Apply Credits ({data.availableCredits.length})
-                </Button>
-            {/if}
-            <Button onclick={openPaymentModal}>Record Payment</Button>
-        </div>
-    </div>
-{/if}
+    {/if}
+</div>
 
 <!-- Apply Credits Modal -->
 {#if showCreditsModal}
@@ -737,11 +711,8 @@
             >
                 <!-- Amount -->
                 <div class="space-y-2">
-                    <Label
-                        for="payment_amount"
-                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                    >
-                        Amount
+                    <Label for="payment_amount" class="form-label">
+                        Amount <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         type="number"
@@ -761,11 +732,8 @@
 
                 <!-- Date -->
                 <div class="space-y-2">
-                    <Label
-                        for="payment_date"
-                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                    >
-                        Date
+                    <Label for="payment_date" class="form-label">
+                        Date <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         type="date"
@@ -779,11 +747,7 @@
 
                 <!-- Payment Mode -->
                 <div class="space-y-2">
-                    <Label
-                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                    >
-                        Payment Mode
-                    </Label>
+                    <Label class="form-label">Payment Mode</Label>
                     <div class="flex gap-2">
                         <label class="flex-1">
                             <input
@@ -832,12 +796,7 @@
 
                 <!-- Reference -->
                 <div class="space-y-2">
-                    <Label
-                        for="payment_reference"
-                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                    >
-                        Reference (Optional)
-                    </Label>
+                    <Label for="payment_reference" class="form-label">Reference</Label>
                     <Input
                         type="text"
                         id="payment_reference"

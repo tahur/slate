@@ -96,7 +96,7 @@
                 variant="ghost"
                 href="/customers"
                 size="icon"
-                class="h-8 w-8 text-text-muted hover:text-text-strong"
+                class="h-8 w-8"
             >
                 <ArrowLeft class="size-4" />
             </Button>
@@ -105,7 +105,7 @@
                     {data.customer.name}
                 </h1>
                 {#if data.customer.company_name}
-                    <p class="text-sm text-text-muted">{data.customer.company_name}</p>
+                    <p class="text-sm text-text-secondary">{data.customer.company_name}</p>
                 {/if}
             </div>
         </div>
@@ -129,7 +129,7 @@
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div class="flex items-center gap-2 text-text-muted mb-1">
+                    <div class="flex items-center gap-2 text-text-secondary mb-1">
                         <TrendingUp class="size-4" />
                         <span class="text-xs font-medium uppercase tracking-wider">Invoiced</span>
                     </div>
@@ -138,7 +138,7 @@
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div class="flex items-center gap-2 text-text-muted mb-1">
+                    <div class="flex items-center gap-2 text-text-secondary mb-1">
                         <TrendingDown class="size-4" />
                         <span class="text-xs font-medium uppercase tracking-wider">Received</span>
                     </div>
@@ -147,7 +147,7 @@
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div class="flex items-center gap-2 text-text-muted mb-1">
+                    <div class="flex items-center gap-2 text-text-secondary mb-1">
                         <Wallet class="size-4" />
                         <span class="text-xs font-medium uppercase tracking-wider">Outstanding</span>
                     </div>
@@ -159,7 +159,7 @@
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div class="flex items-center gap-2 text-text-muted mb-1">
+                    <div class="flex items-center gap-2 text-text-secondary mb-1">
                         <BadgePercent class="size-4" />
                         <span class="text-xs font-medium uppercase tracking-wider">Available Credits</span>
                     </div>
@@ -173,16 +173,16 @@
             <div class="grid md:grid-cols-3 gap-4">
                 <!-- Contact Info Card -->
                 <div class="bg-surface-0 rounded-lg border border-border p-4 space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-text-muted">Contact</h3>
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-secondary">Contact</h3>
                     {#if data.customer.email}
                         <div class="flex items-center gap-2 text-sm">
-                            <Mail class="size-4 text-text-muted" />
+                            <Mail class="size-4 text-text-secondary" />
                             <span>{data.customer.email}</span>
                         </div>
                     {/if}
                     {#if data.customer.phone}
                         <div class="flex items-center gap-2 text-sm">
-                            <Phone class="size-4 text-text-muted" />
+                            <Phone class="size-4 text-text-secondary" />
                             <span>{data.customer.phone}</span>
                         </div>
                     {/if}
@@ -200,9 +200,9 @@
 
                 <!-- GST Info Card -->
                 <div class="bg-surface-0 rounded-lg border border-border p-4 space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-text-muted">GST Details</h3>
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-secondary">GST Details</h3>
                     <div class="flex items-center gap-2 text-sm">
-                        <Building2 class="size-4 text-text-muted" />
+                        <Building2 class="size-4 text-text-secondary" />
                         <span class="capitalize">{data.customer.gst_treatment || "Unregistered"}</span>
                     </div>
                     {#if data.customer.gstin}
@@ -219,7 +219,7 @@
 
                 <!-- Quick Actions Card -->
                 <div class="bg-surface-0 rounded-lg border border-border p-4 space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-text-muted">Quick Actions</h3>
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-secondary">Quick Actions</h3>
                     <div class="grid grid-cols-2 gap-2">
                         <Button variant="outline" size="sm" href="/invoices/new?customer={data.customer.id}" class="justify-start">
                             <FileText class="mr-2 size-3" />
@@ -281,7 +281,7 @@
                         {:else}
                             <table class="w-full text-sm">
                                 <thead>
-                                    <tr class="text-left text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                                    <tr class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border">
                                         <th class="pb-3 pr-4">Date</th>
                                         <th class="pb-3 pr-4">Type</th>
                                         <th class="pb-3 pr-4">Number</th>
@@ -340,7 +340,7 @@
                         {:else}
                             <table class="w-full text-sm">
                                 <thead>
-                                    <tr class="text-left text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                                    <tr class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border">
                                         <th class="pb-3 pr-4">Date</th>
                                         <th class="pb-3 pr-4">Invoice #</th>
                                         <th class="pb-3 pr-4">Due Date</th>
@@ -388,7 +388,7 @@
                         {:else}
                             <table class="w-full text-sm">
                                 <thead>
-                                    <tr class="text-left text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                                    <tr class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border">
                                         <th class="pb-3 pr-4">Date</th>
                                         <th class="pb-3 pr-4">Payment #</th>
                                         <th class="pb-3 pr-4">Mode</th>
@@ -427,7 +427,7 @@
                                 {:else}
                                     <table class="w-full text-sm">
                                         <thead>
-                                            <tr class="text-left text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                                            <tr class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border">
                                                 <th class="pb-3 pr-4">Date</th>
                                                 <th class="pb-3 pr-4">Number</th>
                                                 <th class="pb-3 pr-4">Reason</th>
@@ -469,7 +469,7 @@
                                 {:else}
                                     <table class="w-full text-sm">
                                         <thead>
-                                            <tr class="text-left text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                                            <tr class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border">
                                                 <th class="pb-3 pr-4">Date</th>
                                                 <th class="pb-3 pr-4">Source</th>
                                                 <th class="pb-3 pr-4 text-right">Original</th>

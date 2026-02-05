@@ -12,10 +12,10 @@
 				destructive:
 					"bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white border border-destructive/60 shadow-hairline",
 				outline:
-					"bg-surface-1 hover:bg-surface-2 text-text-strong border border-border-strong shadow-hairline",
+					"bg-surface-0 hover:bg-surface-1 text-text-strong border border-border-strong shadow-hairline",
 				secondary:
-					"bg-surface-2 text-text-strong hover:bg-surface-3 border border-border-subtle shadow-hairline",
-				ghost: "hover:bg-surface-2 hover:text-text-strong",
+					"bg-secondary text-secondary-foreground hover:bg-secondary-hover border border-border-strong shadow-hairline",
+				ghost: "text-text-secondary hover:bg-surface-2 hover:text-text-strong",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 			size: {

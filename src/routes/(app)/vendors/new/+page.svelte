@@ -31,13 +31,13 @@
             variant="ghost"
             href="/vendors"
             size="icon"
-            class="h-8 w-8 text-text-muted hover:text-text-strong"
+            class="h-8 w-8"
         >
             <ArrowLeft class="size-4" />
         </Button>
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">New Vendor</h1>
-            <p class="text-sm text-text-muted">Add a supplier or service provider</p>
+            <p class="text-sm text-text-secondary">Add a supplier or service provider</p>
         </div>
     </header>
 
@@ -45,20 +45,20 @@
     <div class="flex-1 overflow-y-auto bg-surface-1">
         <form id="vendor-form" method="POST" use:enhance class="max-w-4xl mx-auto p-6 pb-8 space-y-6">
             <!-- Basic Info -->
-            <div class="bg-surface-0 rounded-xl border border-border p-6 space-y-6">
-                <div class="flex items-center gap-3 pb-4 border-b border-border">
-                    <div class="p-2 bg-primary/10 rounded-lg">
+            <div class="form-section">
+                <div class="form-section-header">
+                    <div class="form-section-icon bg-primary/10">
                         <Building2 class="size-5 text-primary" />
                     </div>
                     <div>
-                        <h2 class="font-semibold text-text-strong">Basic Information</h2>
-                        <p class="text-sm text-text-muted">Vendor identity and contact details</p>
+                        <h2 class="form-section-title">Basic Information</h2>
+                        <p class="form-section-subtitle">Vendor identity and contact details</p>
                     </div>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2">
                     <div class="space-y-2">
-                        <Label for="name">Vendor Name <span class="text-destructive">*</span></Label>
+                        <Label for="name" class="form-label">Vendor Name <span class="text-destructive">*</span></Label>
                         <Input
                             id="name"
                             name="name"
@@ -67,11 +67,11 @@
                             class={$errors.name ? "border-destructive" : ""}
                         />
                         {#if $errors.name}
-                            <p class="text-xs text-destructive">{$errors.name}</p>
+                            <p class="form-error">{$errors.name}</p>
                         {/if}
                     </div>
                     <div class="space-y-2">
-                        <Label for="company_name">Company Name</Label>
+                        <Label for="company_name" class="form-label">Company Name</Label>
                         <Input
                             id="company_name"
                             name="company_name"
@@ -80,17 +80,17 @@
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="display_name">Display Name</Label>
+                        <Label for="display_name" class="form-label">Display Name</Label>
                         <Input
                             id="display_name"
                             name="display_name"
                             bind:value={$form.display_name}
                             placeholder="How to show in lists (optional)"
                         />
-                        <p class="text-xs text-text-muted">Leave blank to use vendor name</p>
+                        <p class="form-hint">Leave blank to use vendor name</p>
                     </div>
                     <div class="space-y-2">
-                        <Label for="email">Email</Label>
+                        <Label for="email" class="form-label">Email</Label>
                         <Input
                             id="email"
                             name="email"
@@ -100,7 +100,7 @@
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="phone">Phone</Label>
+                        <Label for="phone" class="form-label">Phone</Label>
                         <Input
                             id="phone"
                             name="phone"
@@ -109,7 +109,7 @@
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="website">Website</Label>
+                        <Label for="website" class="form-label">Website</Label>
                         <Input
                             id="website"
                             name="website"
@@ -121,20 +121,20 @@
             </div>
 
             <!-- Address -->
-            <div class="bg-surface-0 rounded-xl border border-border p-6 space-y-6">
-                <div class="flex items-center gap-3 pb-4 border-b border-border">
-                    <div class="p-2 bg-blue-100 rounded-lg">
+            <div class="form-section">
+                <div class="form-section-header">
+                    <div class="form-section-icon bg-blue-100">
                         <MapPin class="size-5 text-blue-600" />
                     </div>
                     <div>
-                        <h2 class="font-semibold text-text-strong">Address</h2>
-                        <p class="text-sm text-text-muted">Vendor billing address</p>
+                        <h2 class="form-section-title">Address</h2>
+                        <p class="form-section-subtitle">Vendor billing address</p>
                     </div>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2">
                     <div class="space-y-2 md:col-span-2">
-                        <Label for="billing_address">Address Line</Label>
+                        <Label for="billing_address" class="form-label">Address Line</Label>
                         <Input
                             id="billing_address"
                             name="billing_address"
@@ -143,7 +143,7 @@
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="city">City</Label>
+                        <Label for="city" class="form-label">City</Label>
                         <Input
                             id="city"
                             name="city"
@@ -152,7 +152,7 @@
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="state_code">State</Label>
+                        <Label for="state_code" class="form-label">State</Label>
                         <Select.Root type="single" name="state_code" bind:value={$form.state_code}>
                             <Select.Trigger id="state_code">
                                 {INDIAN_STATES.find((s) => s.code === $form.state_code)?.name || "Select state"}
@@ -165,7 +165,7 @@
                         </Select.Root>
                     </div>
                     <div class="space-y-2">
-                        <Label for="pincode">Pincode</Label>
+                        <Label for="pincode" class="form-label">Pincode</Label>
                         <Input
                             id="pincode"
                             name="pincode"
@@ -178,20 +178,20 @@
             </div>
 
             <!-- GST Details -->
-            <div class="bg-surface-0 rounded-xl border border-border p-6 space-y-6">
-                <div class="flex items-center gap-3 pb-4 border-b border-border">
-                    <div class="p-2 bg-green-100 rounded-lg">
+            <div class="form-section">
+                <div class="form-section-header">
+                    <div class="form-section-icon bg-green-100">
                         <FileText class="size-5 text-green-600" />
                     </div>
                     <div>
-                        <h2 class="font-semibold text-text-strong">GST Details</h2>
-                        <p class="text-sm text-text-muted">Tax registration information</p>
+                        <h2 class="form-section-title">GST Details</h2>
+                        <p class="form-section-subtitle">Tax registration information</p>
                     </div>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2">
                     <div class="space-y-2">
-                        <Label for="gst_treatment">GST Treatment</Label>
+                        <Label for="gst_treatment" class="form-label">GST Treatment</Label>
                         <Select.Root type="single" name="gst_treatment" bind:value={$form.gst_treatment}>
                             <Select.Trigger id="gst_treatment">
                                 {VENDOR_GST_TREATMENTS.find((t) => t.value === $form.gst_treatment)?.label || "Select"}
@@ -204,7 +204,7 @@
                         </Select.Root>
                     </div>
                     <div class="space-y-2">
-                        <Label for="gstin">GSTIN</Label>
+                        <Label for="gstin" class="form-label">GSTIN</Label>
                         <Input
                             id="gstin"
                             name="gstin"
@@ -213,11 +213,11 @@
                             class="uppercase font-mono {$errors.gstin ? 'border-destructive' : ''}"
                         />
                         {#if $errors.gstin}
-                            <p class="text-xs text-destructive">{$errors.gstin}</p>
+                            <p class="form-error">{$errors.gstin}</p>
                         {/if}
                     </div>
                     <div class="space-y-2">
-                        <Label for="pan">PAN</Label>
+                        <Label for="pan" class="form-label">PAN</Label>
                         <Input
                             id="pan"
                             name="pan"
@@ -227,7 +227,7 @@
                         />
                     </div>
                     <div class="space-y-2">
-                        <Label for="payment_terms">Payment Terms (days)</Label>
+                        <Label for="payment_terms" class="form-label">Payment Terms (days)</Label>
                         <Input
                             id="payment_terms"
                             name="payment_terms"
@@ -241,14 +241,14 @@
             </div>
 
             <!-- TDS Details -->
-            <div class="bg-surface-0 rounded-xl border border-border p-6 space-y-6">
-                <div class="flex items-center gap-3 pb-4 border-b border-border">
-                    <div class="p-2 bg-purple-100 rounded-lg">
+            <div class="form-section">
+                <div class="form-section-header">
+                    <div class="form-section-icon bg-purple-100">
                         <Receipt class="size-5 text-purple-600" />
                     </div>
                     <div>
-                        <h2 class="font-semibold text-text-strong">TDS Details</h2>
-                        <p class="text-sm text-text-muted">Tax deduction at source settings</p>
+                        <h2 class="form-section-title">TDS Details</h2>
+                        <p class="form-section-subtitle">Tax deduction at source settings</p>
                     </div>
                 </div>
 
@@ -259,11 +259,11 @@
                             bind:checked={$form.tds_applicable}
                         />
                         <input type="hidden" name="tds_applicable" value={$form.tds_applicable ? "true" : "false"} />
-                        <Label for="tds_applicable" class="cursor-pointer">TDS Applicable</Label>
+                        <Label for="tds_applicable" class="cursor-pointer text-sm text-text-strong">TDS Applicable</Label>
                     </div>
                     {#if $form.tds_applicable}
                         <div class="space-y-2">
-                            <Label for="tds_section">TDS Section</Label>
+                            <Label for="tds_section" class="form-label">TDS Section</Label>
                             <Select.Root type="single" name="tds_section" bind:value={$form.tds_section}>
                                 <Select.Trigger id="tds_section">
                                     {TDS_SECTIONS.find((s) => s.value === $form.tds_section)?.label || "Select section"}
@@ -280,41 +280,28 @@
             </div>
 
             <!-- Notes -->
-            <div class="bg-surface-0 rounded-xl border border-border p-6 space-y-4">
-                <Label for="notes">Notes</Label>
+            <div class="form-section">
+                <Label for="notes" class="form-label">Notes</Label>
                 <textarea
                     id="notes"
                     name="notes"
                     bind:value={$form.notes}
                     rows="3"
-                    class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+                    class="flex w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong shadow-hairline placeholder:text-text-placeholder focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
                     placeholder="Internal notes about this vendor..."
                 ></textarea>
             </div>
-
         </form>
     </div>
 
     <!-- Bottom Action Bar -->
-    <div
-        class="flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20"
-    >
-        <div class="flex items-center gap-3">
-            <Button
-                type="submit"
-                form="vendor-form"
-                disabled={$submitting}
-                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
-            >
+    <div class="action-bar">
+        <div class="action-bar-group">
+            <Button type="submit" form="vendor-form" disabled={$submitting}>
                 <Save class="mr-2 size-4" />
                 {$submitting ? "Saving..." : "Save Vendor"}
             </Button>
-            <Button
-                href="/vendors"
-                variant="ghost"
-                type="button"
-                class="text-text-muted hover:text-destructive"
-            >
+            <Button variant="ghost" href="/vendors">
                 Cancel
             </Button>
         </div>

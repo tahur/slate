@@ -46,12 +46,9 @@
                 Credit Notes
             </h1>
         </div>
-        <Button
-            href="/credit-notes/new"
-            class="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
+        <Button href="/credit-notes/new">
             <Plus class="mr-2 size-4" />
-            New
+            New Credit Note
         </Button>
     </div>
 
@@ -65,7 +62,7 @@
                 <h3 class="text-lg font-bold text-text-strong">
                     No credit notes yet
                 </h3>
-                <p class="text-sm text-text-muted mb-6">
+                <p class="text-sm text-text-secondary mb-6">
                     Create your first credit note to get started
                 </p>
                 <Button

@@ -149,7 +149,7 @@
                 <h1 class="text-xl font-bold tracking-tight text-text-strong mb-2">
                     Settings
                 </h1>
-                <p class="text-xs text-text-muted">
+                <p class="text-xs text-text-secondary">
                     Configure your business and invoice preferences.
                 </p>
             </div>
@@ -248,7 +248,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Business Details</h2>
-                                <p class="text-sm text-text-muted">Your legal business information.</p>
+                                <p class="text-sm text-text-secondary">Your legal business information.</p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -301,7 +301,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">GST Registration</h2>
-                                <p class="text-sm text-text-muted">Your GST details for tax invoices.</p>
+                                <p class="text-sm text-text-secondary">Your GST details for tax invoices.</p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -328,7 +328,7 @@
                                     {#if $orgErrors.gstin}
                                         <p class="text-xs text-destructive">{$orgErrors.gstin}</p>
                                     {:else}
-                                        <p class="text-xs text-text-muted">15-character GST number</p>
+                                        <p class="text-xs text-text-secondary">15-character GST number</p>
                                     {/if}
                                 </div>
                                 <div class="space-y-2">
@@ -343,7 +343,7 @@
                                             {/each}
                                         </Select.Content>
                                     </Select.Root>
-                                    <p class="text-xs text-text-muted">Place of supply for GST</p>
+                                    <p class="text-xs text-text-secondary">Place of supply for GST</p>
                                 </div>
                             </div>
                         </Card>
@@ -352,7 +352,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Business Address</h2>
-                                <p class="text-sm text-text-muted">This appears on your invoices.</p>
+                                <p class="text-sm text-text-secondary">This appears on your invoices.</p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -409,7 +409,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">Bank Account</h2>
-                                    <p class="text-sm text-text-muted">Bank details shown on invoices for payments.</p>
+                                    <p class="text-sm text-text-secondary">Bank details shown on invoices for payments.</p>
                                 </div>
                                 <Button
                                     variant="outline"
@@ -496,7 +496,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">UPI Payment</h2>
-                                    <p class="text-sm text-text-muted">Accept payments via UPI.</p>
+                                    <p class="text-sm text-text-secondary">Accept payments via UPI.</p>
                                 </div>
                             </div>
 
@@ -509,7 +509,7 @@
                                     class="font-mono"
                                     placeholder="business@upi"
                                 />
-                                <p class="text-xs text-text-muted">Your UPI ID for receiving payments (e.g., yourname@paytm)</p>
+                                <p class="text-xs text-text-secondary">Your UPI ID for receiving payments (e.g., yourname@paytm)</p>
                             </div>
                         </Card>
 
@@ -537,7 +537,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">Digital Signature</h2>
-                                    <p class="text-sm text-text-muted">Appears on invoices for authorization.</p>
+                                    <p class="text-sm text-text-secondary">Appears on invoices for authorization.</p>
                                 </div>
                             </div>
 
@@ -598,7 +598,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Default Content</h2>
-                                <p class="text-sm text-text-muted">Pre-fill these on new invoices.</p>
+                                <p class="text-sm text-text-secondary">Pre-fill these on new invoices.</p>
                             </div>
 
                             <div class="space-y-4">
@@ -641,7 +641,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Number Series</h2>
-                                <p class="text-sm text-text-muted">
+                                <p class="text-sm text-text-secondary">
                                     Customize document prefixes for FY {data.fyYear}.
                                     Format: PREFIX-YYYY-YY-NNNN
                                 </p>
@@ -751,7 +751,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">My Profile</h2>
-                                    <p class="text-sm text-text-muted">Your personal account details.</p>
+                                    <p class="text-sm text-text-secondary">Your personal account details.</p>
                                 </div>
                             </div>
 
