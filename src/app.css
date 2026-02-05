@@ -70,6 +70,19 @@
 
     --font-sans: Inter, sans-serif;
     --font-mono: "JetBrains Mono", monospace;
+
+    /* Poly Theme */
+    --color-brand: #ea580c;
+    --color-brand-hover: #c2410c;
+    --color-bg-light: #f8fafc;
+    --color-bg-dark: #0f172a;
+    --color-surf-light: #ffffff;
+    --color-surf-dark: #1e293b;
+    --color-bord-light: #e2e8f0;
+    --color-bord-dark: #334155;
+    --color-txt-light: #334155;
+    --color-txt-dark: #cbd5e1;
+    --shadow-glow: 0 0 20px -5px rgba(234, 88, 12, 0.3);
 }
 
 @plugin "tailwindcss-animate";
@@ -115,6 +128,7 @@
         /* Dust */
 
         /* Identity - Cloudflare/Radiance */
+        /* ... */
         --primary: 28 90% 54%;
         /* Princeton Orange */
         --primary-foreground: 0 0% 100%;
@@ -123,32 +137,7 @@
         /* Soft Gray */
         --secondary-foreground: 220 15% 25%;
 
-        --accent: 150 60% 45%;
-        /* Sea Green (Success/Growth) */
-        --accent-foreground: 0 0% 100%;
-
-        --muted: 210 20% 96%;
-        --muted-foreground: 220 10% 45%;
-
-        --card: 0 0% 100%;
-        --card-foreground: 220 15% 25%;
-
-        --popover: 0 0% 100%;
-        --popover-foreground: 220 15% 25%;
-
-        /* Status */
-        --positive: 150 60% 45%;
-        /* Sea Green */
-        --positive-foreground: 0 0% 100%;
-        --warning: 35 90% 50%;
-        /* Amber */
-        --warning-foreground: 0 0% 100%;
-        --negative: 0 72% 51%;
-        /* Red */
-        --negative-foreground: 0 0% 100%;
-        --info: 210 90% 50%;
-        /* Sky */
-        --info-foreground: 0 0% 100%;
+        /* ... */
 
         --radius: 0.5rem;
         /* 8px - Friendly */
@@ -209,6 +198,24 @@
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         font-variant-numeric: tabular-nums;
         text-align: right;
+    }
+
+    .bg-grid {
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+
+    .dark .bg-grid {
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-image: linear-gradient(135deg, #ea580c, #f97316);
     }
 }
 
@@ -299,5 +306,25 @@
 
     .kpi-sub {
         @apply text-[12px] font-medium text-text-subtle;
+    }
+}
+
+@layer components {
+    .bg-grid {
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+    }
+
+    .dark .bg-grid {
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-image: linear-gradient(135deg, #ea580c, #f97316);
     }
 }

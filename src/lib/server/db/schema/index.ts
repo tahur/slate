@@ -11,3 +11,4 @@ export * from './payments';
 export * from './expenses';
 export * from './credit_notes';
 export * from './credit_allocations';
+export * from './vendors';

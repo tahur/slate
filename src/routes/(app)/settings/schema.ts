@@ -28,9 +28,11 @@ export const orgSettingsSchema = z.object({
     branch: z.string().optional().or(z.literal('')),
     account_number: z.string().optional().or(z.literal('')),
     ifsc: z.string().optional().or(z.literal('')),
+    upi_id: z.string().optional().or(z.literal('')),
 
-    // Defaults & Logo
+    // Defaults & Logo & Signature
     logo_url: z.string().optional().or(z.literal('')),
+    signature_url: z.string().optional().or(z.literal('')),
     invoice_notes_default: z.string().optional().or(z.literal('')),
     invoice_terms_default: z.string().optional().or(z.literal(''))
 }).refine(
@@ -55,6 +57,7 @@ export const numberSeriesSchema = z.object({
     invoice_prefix: z.string().min(2).max(6),
     payment_prefix: z.string().min(2).max(6),
     expense_prefix: z.string().min(2).max(6),
+    credit_note_prefix: z.string().min(2).max(6),
     journal_prefix: z.string().min(2).max(6)
 });
 

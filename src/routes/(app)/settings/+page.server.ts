@@ -9,7 +9,7 @@ import { getCurrentFiscalYear, getDefaultPrefix } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import type { Actions, PageServerLoad } from './$types';
 
-const MODULES = ['invoice', 'payment', 'expense', 'journal'] as const;
+const MODULES = ['invoice', 'payment', 'expense', 'credit_note', 'journal'] as const;
 
 export const load: PageServerLoad = async ({ locals }) => {
     try {
@@ -62,7 +62,9 @@ export const load: PageServerLoad = async ({ locals }) => {
                 branch: org.branch || '',
                 account_number: org.account_number || '',
                 ifsc: org.ifsc || '',
+                upi_id: (org as any).upi_id || '',
                 logo_url: org.logo_url || '',
+                signature_url: (org as any).signature_url || '',
                 invoice_notes_default: org.invoice_notes_default || '',
                 invoice_terms_default: org.invoice_terms_default || ''
             },
@@ -84,6 +86,7 @@ export const load: PageServerLoad = async ({ locals }) => {
                 invoice_prefix: seriesMap.get('invoice') || getDefaultPrefix('invoice'),
                 payment_prefix: seriesMap.get('payment') || getDefaultPrefix('payment'),
                 expense_prefix: seriesMap.get('expense') || getDefaultPrefix('expense'),
+                credit_note_prefix: seriesMap.get('credit_note') || getDefaultPrefix('credit_note'),
                 journal_prefix: seriesMap.get('journal') || getDefaultPrefix('journal')
             },
             zod4(numberSeriesSchema),
@@ -133,11 +136,13 @@ export const actions: Actions = {
                 branch: form.data.branch || null,
                 account_number: form.data.account_number || null,
                 ifsc: form.data.ifsc || null,
+                upi_id: form.data.upi_id || null,
                 logo_url: form.data.logo_url || null,
+                signature_url: form.data.signature_url || null,
                 invoice_notes_default: form.data.invoice_notes_default || null,
                 invoice_terms_default: form.data.invoice_terms_default || null,
                 updated_at: new Date().toISOString()
-            })
+            } as any)
             .where(eq(organizations.id, locals.user.orgId));
 
         setFlash(cookies, {
@@ -203,6 +208,7 @@ export const actions: Actions = {
             { module: 'invoice', prefix: form.data.invoice_prefix.toUpperCase() },
             { module: 'payment', prefix: form.data.payment_prefix.toUpperCase() },
             { module: 'expense', prefix: form.data.expense_prefix.toUpperCase() },
+            { module: 'credit_note', prefix: form.data.credit_note_prefix.toUpperCase() },
             { module: 'journal', prefix: form.data.journal_prefix.toUpperCase() }
         ] as const;
 

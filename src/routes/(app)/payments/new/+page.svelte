@@ -55,6 +55,7 @@
     let remainingAmount = $derived(amount - totalAllocated);
 
     let hasExcess = $derived(remainingAmount > 0.01 && totalAllocated > 0);
+    let isPureAdvance = $derived(amount > 0.01 && totalAllocated < 0.01);
 
     // Load invoices when customer changes
     async function loadInvoices(customerId: string) {
@@ -482,15 +483,31 @@
                 >
             </div>
 
-            {#if hasExcess}
+            {#if isPureAdvance}
+                <div class="flex flex-col items-end text-blue-600">
+                    <span
+                        class="text-[10px] uppercase tracking-wider font-semibold"
+                        >Full Advance</span
+                    >
+                    <span class="font-mono font-bold"
+                        >{formatCurrency(amount)}</span
+                    >
+                    <span class="text-[10px] text-text-muted">
+                        No invoice allocated - saved as advance
+                    </span>
+                </div>
+            {:else if hasExcess}
                 <div class="flex flex-col items-end text-amber-600">
                     <span
                         class="text-[10px] uppercase tracking-wider font-semibold"
-                        >Excess</span
+                        >Customer Advance</span
                     >
                     <span class="font-mono font-bold"
                         >{formatCurrency(remainingAmount)}</span
                     >
+                    <span class="text-[10px] text-text-muted">
+                        Excess saved for future invoices
+                    </span>
                 </div>
             {/if}
         </div>

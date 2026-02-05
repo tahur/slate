@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
 import { journal_entries } from './journals';
+import { vendors } from './vendors';
 
 export const expenses = sqliteTable(
     'expenses',
@@ -18,7 +19,8 @@ export const expenses = sqliteTable(
         // Details
         expense_date: text('expense_date').notNull(),
         category: text('category').notNull(), // Account ID from Chart of Accounts
-        vendor: text('vendor'),
+        vendor_id: text('vendor_id').references(() => vendors.id), // Link to vendor
+        vendor_name: text('vendor_name'), // Denormalized or for quick entry without vendor
         description: text('description'),
 
         // Amounts

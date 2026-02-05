@@ -23,6 +23,10 @@ export const organizations = sqliteTable('organizations', {
     branch: text('branch'),
     account_number: text('account_number'),
     ifsc: text('ifsc'),
+    upi_id: text('upi_id'),
+
+    // Signature
+    signature_url: text('signature_url'),
 
     created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`)

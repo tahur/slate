@@ -147,17 +147,23 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 
 	// --- Footer left content ---
 	const totalWords = numberToWords(invoice.total || 0);
+	const bankLines = [
+		`Bank: ${org?.bank_name || '\u2014'}`,
+		`A/c No: ${org?.account_number || '\u2014'}`,
+		`IFSC: ${org?.ifsc || '\u2014'}`,
+		`Branch: ${org?.branch || '\u2014'}`
+	];
+	// Add UPI if available
+	if ((org as any)?.upi_id) {
+		bankLines.push(`UPI: ${(org as any).upi_id}`);
+	}
+
 	const footerLeftContent: Content[] = [
 		{ text: 'Total In Words', fontSize: 8, color: '#666' },
 		{ text: totalWords, italics: true, bold: true, fontSize: 9, margin: [0, 2, 0, 12] },
 		{ text: 'Bank Details', bold: true, fontSize: 9, margin: [0, 0, 0, 2] },
 		{
-			text: [
-				`Bank: ${org?.bank_name || '\u2014'}\n`,
-				`A/c No: ${org?.account_number || '\u2014'}\n`,
-				`IFSC: ${org?.ifsc || '\u2014'}\n`,
-				`Branch: ${org?.branch || '\u2014'}`
-			],
+			text: bankLines.join('\n'),
 			fontSize: 8,
 			lineHeight: 1.4
 		}
@@ -425,10 +431,17 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 													fontSize: 9
 												},
 												// Signature box
-												{
-													text: '',
-													margin: [0, 30, 0, 0]
-												},
+												(org as any)?.signature_url
+													? {
+															image: (org as any).signature_url,
+															width: 80,
+															alignment: 'center' as const,
+															margin: [0, 10, 0, 5] as [number, number, number, number]
+														}
+													: {
+															text: '',
+															margin: [0, 30, 0, 0] as [number, number, number, number]
+														},
 												{
 													text: 'Authorized Signature',
 													bold: true,
