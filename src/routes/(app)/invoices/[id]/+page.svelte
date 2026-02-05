@@ -22,7 +22,10 @@
     function openPaymentModal() {
         // Check if there's actually a balance to pay
         if (data.invoice.balance_due <= 0.01) {
-            addToast({ type: "info", message: "This invoice is already fully paid" });
+            addToast({
+                type: "info",
+                message: "This invoice is already fully paid",
+            });
             return;
         }
         paymentAmount = data.invoice.balance_due;
@@ -195,64 +198,75 @@
                 class="bg-surface-1 border border-border rounded-lg shadow-sm p-8 space-y-8"
             >
                 <!-- Top Meta Band -->
-                <div class="flex justify-between items-start">
-                    <div class="space-y-1">
-                        <p
-                            class="text-xs font-bold uppercase tracking-wider text-text-muted"
-                        >
-                            Bill To
-                        </p>
-                        <h3 class="text-lg font-bold text-text-strong">
-                            {data.customer?.name}
-                        </h3>
-                        {#if data.customer?.billing_address}
+                <div class="flex flex-col gap-6">
+                    {#if data.org && data.org.logo_url}
+                        <img
+                            src={data.org.logo_url}
+                            alt={data.org.name}
+                            class="h-16 w-auto object-contain self-start"
+                        />
+                    {/if}
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-1">
                             <p
-                                class="text-sm text-text-subtle whitespace-pre-line max-w-xs"
+                                class="text-xs font-bold uppercase tracking-wider text-text-muted"
                             >
-                                {data.customer.billing_address}
+                                Bill To
                             </p>
-                        {/if}
-                    </div>
+                            <h3 class="text-lg font-bold text-text-strong">
+                                {data.customer?.name}
+                            </h3>
+                            {#if data.customer?.billing_address}
+                                <p
+                                    class="text-sm text-text-subtle whitespace-pre-line max-w-xs"
+                                >
+                                    {data.customer.billing_address}
+                                </p>
+                            {/if}
+                        </div>
 
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-right">
-                        <div>
-                            <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
-                            >
-                                Invoice Date
-                            </p>
-                            <p
-                                class="text-sm font-mono font-medium text-text-strong"
-                            >
-                                {formatDate(data.invoice.invoice_date)}
-                            </p>
-                        </div>
-                        <div>
-                            <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
-                            >
-                                Due Date
-                            </p>
-                            <p
-                                class="text-sm font-mono font-medium text-text-strong"
-                            >
-                                {formatDate(data.invoice.due_date)}
-                            </p>
-                        </div>
-                        {#if data.invoice.order_number}
+                        <div
+                            class="grid grid-cols-2 gap-x-8 gap-y-4 text-right"
+                        >
                             <div>
                                 <p
                                     class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
                                 >
-                                    Reference #
+                                    Invoice Date
                                 </p>
                                 <p
                                     class="text-sm font-mono font-medium text-text-strong"
                                 >
-                                    {data.invoice.order_number}
+                                    {formatDate(data.invoice.invoice_date)}
                                 </p>
                             </div>
-                        {/if}
+                            <div>
+                                <p
+                                    class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                >
+                                    Due Date
+                                </p>
+                                <p
+                                    class="text-sm font-mono font-medium text-text-strong"
+                                >
+                                    {formatDate(data.invoice.due_date)}
+                                </p>
+                            </div>
+                            {#if data.invoice.order_number}
+                                <div>
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                    >
+                                        Reference #
+                                    </p>
+                                    <p
+                                        class="text-sm font-mono font-medium text-text-strong"
+                                    >
+                                        {data.invoice.order_number}
+                                    </p>
+                                </div>
+                            {/if}
+                        </div>
                     </div>
                 </div>
 
@@ -393,19 +407,33 @@
 
                         {#if data.paymentHistory && data.paymentHistory.length > 0}
                             <!-- Show each adjustment as a line item -->
-                            <div class="mt-2 space-y-1.5 border-t border-border-dashed pt-3">
+                            <div
+                                class="mt-2 space-y-1.5 border-t border-border-dashed pt-3"
+                            >
                                 {#each data.paymentHistory as txn}
                                     <div class="flex justify-between text-sm">
                                         <span class="text-text-subtle">
-                                            {#if txn.type === 'credit_note'}
-                                                <span class="text-blue-600">Adjusted</span>
-                                                <span class="font-mono text-xs">({txn.reference})</span>
-                                            {:else if txn.type === 'advance'}
-                                                <span class="text-purple-600">Advance</span>
-                                                <span class="font-mono text-xs">({txn.reference})</span>
+                                            {#if txn.type === "credit_note"}
+                                                <span class="text-blue-600"
+                                                    >Adjusted</span
+                                                >
+                                                <span class="font-mono text-xs"
+                                                    >({txn.reference})</span
+                                                >
+                                            {:else if txn.type === "advance"}
+                                                <span class="text-purple-600"
+                                                    >Advance</span
+                                                >
+                                                <span class="font-mono text-xs"
+                                                    >({txn.reference})</span
+                                                >
                                             {:else}
-                                                <span class="text-green-600">Payment</span>
-                                                <span class="font-mono text-xs">({txn.reference})</span>
+                                                <span class="text-green-600"
+                                                    >Payment</span
+                                                >
+                                                <span class="font-mono text-xs"
+                                                    >({txn.reference})</span
+                                                >
                                             {/if}
                                         </span>
                                         <span class="font-mono text-green-600">
@@ -420,8 +448,17 @@
                             <div
                                 class="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-border-strong"
                             >
-                                <span>{data.invoice.balance_due <= 0.01 ? 'Paid' : 'Balance Due'}</span>
-                                <span class="font-mono {data.invoice.balance_due <= 0.01 ? 'text-green-600' : 'text-primary'}">
+                                <span
+                                    >{data.invoice.balance_due <= 0.01
+                                        ? "Paid"
+                                        : "Balance Due"}</span
+                                >
+                                <span
+                                    class="font-mono {data.invoice
+                                        .balance_due <= 0.01
+                                        ? 'text-green-600'
+                                        : 'text-primary'}"
+                                >
                                     {formatCurrency(data.invoice.balance_due)}
                                 </span>
                             </div>
@@ -456,9 +493,7 @@
                     Apply Credits ({data.availableCredits.length})
                 </Button>
             {/if}
-            <Button onclick={openPaymentModal}>
-                Record Payment
-            </Button>
+            <Button onclick={openPaymentModal}>Record Payment</Button>
         </div>
     </div>
 {/if}
@@ -510,10 +545,15 @@
                             isSubmitting = false;
                             if (result.type === "success") {
                                 showCreditsModal = false;
-                                addToast({ type: "success", message: "Credits applied successfully" });
+                                addToast({
+                                    type: "success",
+                                    message: "Credits applied successfully",
+                                });
                                 await update(); // Refresh page data
                             } else if (result.type === "failure") {
-                                const errorMsg = (result.data as { error?: string })?.error || "Failed to apply credits";
+                                const errorMsg =
+                                    (result.data as { error?: string })
+                                        ?.error || "Failed to apply credits";
                                 addToast({ type: "error", message: errorMsg });
                             }
                         };
@@ -595,7 +635,8 @@
                         <Button
                             type="submit"
                             onclick={(e) => {
-                                const btn = e.currentTarget as HTMLButtonElement;
+                                const btn =
+                                    e.currentTarget as HTMLButtonElement;
                                 const form = btn.form;
                                 if (!form) return;
                                 const checkboxes = form.querySelectorAll(
@@ -609,13 +650,17 @@
                                     return;
                                 }
                                 const selected = Array.from(checkboxes).map(
-                                    (cb) => JSON.parse((cb as HTMLInputElement).value),
+                                    (cb) =>
+                                        JSON.parse(
+                                            (cb as HTMLInputElement).value,
+                                        ),
                                 );
                                 const hiddenInput = form.querySelector(
                                     "#credits_json_input_modal",
                                 ) as HTMLInputElement;
                                 if (hiddenInput) {
-                                    hiddenInput.value = JSON.stringify(selected);
+                                    hiddenInput.value =
+                                        JSON.stringify(selected);
                                 }
                             }}
                         >
@@ -675,10 +720,15 @@
                         isSubmitting = false;
                         if (result.type === "success") {
                             showPaymentModal = false;
-                            addToast({ type: "success", message: "Payment recorded successfully" });
+                            addToast({
+                                type: "success",
+                                message: "Payment recorded successfully",
+                            });
                             await update();
                         } else if (result.type === "failure") {
-                            const errorMsg = (result.data as { error?: string })?.error || "Failed to record payment";
+                            const errorMsg =
+                                (result.data as { error?: string })?.error ||
+                                "Failed to record payment";
                             addToast({ type: "error", message: errorMsg });
                         }
                     };
@@ -687,7 +737,10 @@
             >
                 <!-- Amount -->
                 <div class="space-y-2">
-                    <Label for="payment_amount" class="text-xs uppercase tracking-wider text-text-muted font-bold">
+                    <Label
+                        for="payment_amount"
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                    >
                         Amount
                     </Label>
                     <Input
@@ -708,7 +761,10 @@
 
                 <!-- Date -->
                 <div class="space-y-2">
-                    <Label for="payment_date" class="text-xs uppercase tracking-wider text-text-muted font-bold">
+                    <Label
+                        for="payment_date"
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                    >
                         Date
                     </Label>
                     <Input
@@ -723,25 +779,51 @@
 
                 <!-- Payment Mode -->
                 <div class="space-y-2">
-                    <Label class="text-xs uppercase tracking-wider text-text-muted font-bold">
+                    <Label
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                    >
                         Payment Mode
                     </Label>
                     <div class="flex gap-2">
                         <label class="flex-1">
-                            <input type="radio" name="payment_mode" value="bank" bind:group={paymentMode} class="peer sr-only" />
-                            <div class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2">
+                            <input
+                                type="radio"
+                                name="payment_mode"
+                                value="bank"
+                                bind:group={paymentMode}
+                                class="peer sr-only"
+                            />
+                            <div
+                                class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2"
+                            >
                                 <span class="text-sm font-medium">Bank</span>
                             </div>
                         </label>
                         <label class="flex-1">
-                            <input type="radio" name="payment_mode" value="cash" bind:group={paymentMode} class="peer sr-only" />
-                            <div class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2">
+                            <input
+                                type="radio"
+                                name="payment_mode"
+                                value="cash"
+                                bind:group={paymentMode}
+                                class="peer sr-only"
+                            />
+                            <div
+                                class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2"
+                            >
                                 <span class="text-sm font-medium">Cash</span>
                             </div>
                         </label>
                         <label class="flex-1">
-                            <input type="radio" name="payment_mode" value="upi" bind:group={paymentMode} class="peer sr-only" />
-                            <div class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2">
+                            <input
+                                type="radio"
+                                name="payment_mode"
+                                value="upi"
+                                bind:group={paymentMode}
+                                class="peer sr-only"
+                            />
+                            <div
+                                class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2"
+                            >
                                 <span class="text-sm font-medium">UPI</span>
                             </div>
                         </label>
@@ -750,7 +832,10 @@
 
                 <!-- Reference -->
                 <div class="space-y-2">
-                    <Label for="payment_reference" class="text-xs uppercase tracking-wider text-text-muted font-bold">
+                    <Label
+                        for="payment_reference"
+                        class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                    >
                         Reference (Optional)
                     </Label>
                     <Input
@@ -771,7 +856,10 @@
                     >
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={isSubmitting || paymentAmount <= 0}>
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting || paymentAmount <= 0}
+                    >
                         {isSubmitting ? "Recording..." : "Record Payment"}
                     </Button>
                 </div>
