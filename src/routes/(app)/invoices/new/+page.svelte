@@ -3,7 +3,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { Card } from "$lib/components/ui/card";
+
     import * as Select from "$lib/components/ui/select";
     import { GST_RATES, calculateInvoiceTotals, type LineItem } from "./schema";
     import { addToast } from "$lib/stores/toast";
@@ -36,80 +36,8 @@
     let autoInvoiceNumber = data.autoInvoiceNumber as string;
     let invoiceNumberMode = $state<"auto" | "manual">("auto");
     let manualInvoiceNumber = $state(autoInvoiceNumber);
-    let capturePayment = $state(false);
-    let paymentAmount = $state(0);
-    let paymentAmountTouched = $state(false);
-    let paymentDate = $state(formData.invoice_date);
-    let paymentDateTouched = $state(false);
-    let paymentMode = $state<"cash" | "bank" | "upi">("upi");
-    let paymentReference = $state("");
+
     let customerSearch = $state("");
-
-    // Credits State
-    let availableCredits = $state<
-        {
-            id: string;
-            amount: number;
-            type: "advance" | "credit_note";
-            notes?: string;
-            number?: string;
-            date: string;
-        }[]
-    >([]);
-    let usedCredits = $state<
-        { id: string; amount: number; type: "advance" | "credit_note" }[]
-    >([]);
-    let isLoadingCredits = $state(false);
-
-    $effect(() => {
-        if (formData.customer_id) {
-            loadCredits(formData.customer_id);
-        } else {
-            availableCredits = [];
-            usedCredits = [];
-        }
-    });
-
-    async function loadCredits(customerId: string) {
-        isLoadingCredits = true;
-        try {
-            const res = await fetch(`/api/customers/${customerId}/credits`);
-            if (res.ok) {
-                const data = await res.json();
-                const advances = data.advances.map((a: any) => ({
-                    ...a,
-                    type: "advance",
-                }));
-                const credits = data.credits.map((c: any) => ({
-                    ...c,
-                    type: "credit_note",
-                }));
-                availableCredits = [...advances, ...credits];
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            isLoadingCredits = false;
-        }
-    }
-
-    function toggleCreditUsage(credit: (typeof availableCredits)[number]) {
-        const existingIndex = usedCredits.findIndex((u) => u.id === credit.id);
-        if (existingIndex >= 0) {
-            // Remove
-            usedCredits = usedCredits.filter((u) => u.id !== credit.id);
-        } else {
-            // Add (Full amount)
-            usedCredits = [
-                ...usedCredits,
-                { id: credit.id, amount: credit.amount, type: credit.type },
-            ];
-        }
-    }
-
-    let totalCreditsApplied = $derived(
-        usedCredits.reduce((sum, c) => sum + c.amount, 0),
-    );
 
     // Drag and Drop State
     let dragItemIndex = $state<number | null>(null);
@@ -160,18 +88,6 @@
 
     // Calculate totals reactively
     let totals = $derived(calculateInvoiceTotals(formData.items, isInterState));
-
-    $effect(() => {
-        if (!paymentAmountTouched) {
-            paymentAmount = totals.total;
-        }
-    });
-
-    $effect(() => {
-        if (!paymentDateTouched) {
-            paymentDate = formData.invoice_date;
-        }
-    });
 
     function formatCurrency(amount: number): string {
         return new Intl.NumberFormat("en-IN", {
@@ -226,18 +142,19 @@
 
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header -->
-    <header class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20">
-        <Button
-            variant="ghost"
-            href="/invoices"
-            size="icon"
-            class="h-8 w-8"
-        >
+    <header
+        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+    >
+        <Button variant="ghost" href="/invoices" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
         </Button>
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">New Invoice</h1>
-            <p class="text-sm text-text-secondary">Create a new sales invoice</p>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                New Invoice
+            </h1>
+            <p class="text-sm text-text-secondary">
+                Create a new sales invoice
+            </p>
         </div>
     </header>
 
@@ -276,12 +193,15 @@
             }}
         >
             <!-- LEFT COLUMN: Main Details -->
-            <div class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border">
+            <div
+                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
+            >
                 <div class="max-w-3xl space-y-8">
-
                     <!-- Section: Customer & Invoice Details -->
                     <section class="space-y-6">
-                        <h3 class="text-xs font-bold uppercase tracking-wide text-text-secondary">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                        >
                             Customer & Invoice Details
                         </h3>
 
@@ -289,7 +209,9 @@
                             <!-- Customer Selector -->
                             <div class="space-y-2 md:col-span-2">
                                 <Label for="customer_id" class="form-label">
-                                    Customer <span class="text-destructive">*</span>
+                                    Customer <span class="text-destructive"
+                                        >*</span
+                                    >
                                 </Label>
                                 <Select.Root
                                     type="single"
@@ -300,56 +222,102 @@
                                         id="customer_id"
                                         class="w-full border-border-strong bg-surface-0 focus:ring-1 focus:ring-primary/20 items-start whitespace-normal data-[size=default]:h-auto data-[size=default]:min-h-[3.25rem] py-2"
                                     >
-                                        <div class="flex min-w-0 flex-col text-left gap-0.5">
-                                            <span class="text-sm font-semibold text-text-strong truncate">
-                                                {selectedCustomer?.name || "Select a customer"}
+                                        <div
+                                            class="flex min-w-0 flex-col text-left gap-0.5"
+                                        >
+                                            <span
+                                                class="text-sm font-semibold text-text-strong truncate"
+                                            >
+                                                {selectedCustomer?.name ||
+                                                    "Select a customer"}
                                             </span>
                                             {#if selectedCustomer}
-                                                <span class="text-xs text-text-strong/80 font-medium truncate">
-                                                    {selectedCustomer.company_name || selectedCustomer.email || selectedCustomer.phone || "—"}
+                                                <span
+                                                    class="text-xs text-text-strong/80 font-medium truncate"
+                                                >
+                                                    {selectedCustomer.company_name ||
+                                                        selectedCustomer.email ||
+                                                        selectedCustomer.phone ||
+                                                        "—"}
                                                 </span>
                                             {:else}
-                                                <span class="text-[11px] text-text-muted truncate">
+                                                <span
+                                                    class="text-[11px] text-text-muted truncate"
+                                                >
                                                     Search or add a customer
                                                 </span>
                                             {/if}
                                         </div>
                                     </Select.Trigger>
-                                    <Select.Content class="bg-surface-1 border-border shadow-lg min-w-[22rem]">
-                                        <div class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border-subtle space-y-2">
+                                    <Select.Content
+                                        class="bg-surface-1 border-border shadow-lg min-w-[22rem]"
+                                    >
+                                        <div
+                                            class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border-subtle space-y-2"
+                                        >
                                             <Input
                                                 bind:value={customerSearch}
                                                 placeholder="Search customers"
                                                 class="h-8 border-border-strong text-sm"
                                             />
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">
+                                            <div
+                                                class="flex items-center justify-between"
+                                            >
+                                                <span
+                                                    class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold"
+                                                >
                                                     Customers
                                                 </span>
-                                                <Button href="/customers/new" variant="ghost" size="xs" class="text-primary">
+                                                <Button
+                                                    href="/customers/new"
+                                                    variant="ghost"
+                                                    size="xs"
+                                                    class="text-primary"
+                                                >
                                                     New Customer
                                                 </Button>
                                             </div>
                                         </div>
 
                                         {#if filteredCustomers.length === 0}
-                                            <div class="px-3 py-4 text-xs text-text-muted">
+                                            <div
+                                                class="px-3 py-4 text-xs text-text-muted"
+                                            >
                                                 No customers match "{customerSearch}"
                                             </div>
                                         {:else}
                                             {#each filteredCustomers as customer}
-                                                <Select.Item value={customer.id} class="hover:bg-surface-2 focus:bg-surface-2 cursor-pointer">
-                                                    <div class="flex flex-col text-left">
-                                                        <span class="font-medium text-text-strong">{customer.name}</span>
+                                                <Select.Item
+                                                    value={customer.id}
+                                                    class="hover:bg-surface-2 focus:bg-surface-2 cursor-pointer"
+                                                >
+                                                    <div
+                                                        class="flex flex-col text-left"
+                                                    >
+                                                        <span
+                                                            class="font-medium text-text-strong"
+                                                            >{customer.name}</span
+                                                        >
                                                         {#if customer.company_name}
-                                                            <span class="text-[10px] text-text-muted uppercase tracking-wide">{customer.company_name}</span>
+                                                            <span
+                                                                class="text-[10px] text-text-muted uppercase tracking-wide"
+                                                                >{customer.company_name}</span
+                                                            >
                                                         {/if}
                                                         {#if customer.gstin}
-                                                            <span class="text-[10px] font-mono text-text-muted">GSTIN {customer.gstin}</span>
+                                                            <span
+                                                                class="text-[10px] font-mono text-text-muted"
+                                                                >GSTIN {customer.gstin}</span
+                                                            >
                                                         {/if}
                                                         {#if customer.city || customer.state_code}
-                                                            <span class="text-[10px] text-text-muted">
-                                                                {customer.city || "—"}{customer.state_code ? `, ${customer.state_code}` : ""}
+                                                            <span
+                                                                class="text-[10px] text-text-muted"
+                                                            >
+                                                                {customer.city ||
+                                                                    "—"}{customer.state_code
+                                                                    ? `, ${customer.state_code}`
+                                                                    : ""}
                                                             </span>
                                                         {/if}
                                                     </div>
@@ -359,18 +327,26 @@
                                     </Select.Content>
                                 </Select.Root>
                                 {#if selectedCustomer}
-                                    <div class="flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted mt-2">
+                                    <div
+                                        class="flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted mt-2"
+                                    >
                                         <span class="font-semibold">GSTIN</span>
-                                        <span class="font-mono text-[11px] text-text-strong">
+                                        <span
+                                            class="font-mono text-[11px] text-text-strong"
+                                        >
                                             {selectedCustomer.gstin || "—"}
                                         </span>
                                         {#if selectedCustomer.gst_treatment}
-                                            <span class="rounded-sm bg-surface-2 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
+                                            <span
+                                                class="rounded-sm bg-surface-2 px-2 py-0.5 text-[10px] font-semibold text-text-muted"
+                                            >
                                                 {selectedCustomer.gst_treatment}
                                             </span>
                                         {/if}
                                         {#if isInterState}
-                                            <span class="rounded-sm bg-info/10 text-info px-2 py-0.5 text-[10px] font-semibold">
+                                            <span
+                                                class="rounded-sm bg-info/10 text-info px-2 py-0.5 text-[10px] font-semibold"
+                                            >
                                                 IGST
                                             </span>
                                         {/if}
@@ -381,12 +357,16 @@
                             <!-- Invoice Number -->
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
-                                    <Label for="invoice_number" class="form-label">Invoice #</Label>
+                                    <Label
+                                        for="invoice_number"
+                                        class="form-label">Invoice #</Label
+                                    >
                                     {#if invoiceNumberMode === "auto"}
                                         <button
                                             type="button"
                                             class="text-[10px] uppercase tracking-wider text-primary font-semibold hover:underline"
-                                            onclick={() => (invoiceNumberMode = "manual")}
+                                            onclick={() =>
+                                                (invoiceNumberMode = "manual")}
                                         >
                                             Manual
                                         </button>
@@ -394,7 +374,8 @@
                                         <button
                                             type="button"
                                             class="text-[10px] uppercase tracking-wider text-text-muted font-semibold hover:text-text-strong hover:underline"
-                                            onclick={() => (invoiceNumberMode = "auto")}
+                                            onclick={() =>
+                                                (invoiceNumberMode = "auto")}
                                         >
                                             Use Auto
                                         </button>
@@ -415,13 +396,25 @@
                                         class="border-border-strong text-text-strong bg-surface-0 focus:border-primary font-mono"
                                     />
                                 {/if}
-                                <input type="hidden" name="invoice_number_mode" value={invoiceNumberMode} />
-                                <input type="hidden" name="invoice_number" value={invoiceNumberMode === "auto" ? autoInvoiceNumber : manualInvoiceNumber} />
+                                <input
+                                    type="hidden"
+                                    name="invoice_number_mode"
+                                    value={invoiceNumberMode}
+                                />
+                                <input
+                                    type="hidden"
+                                    name="invoice_number"
+                                    value={invoiceNumberMode === "auto"
+                                        ? autoInvoiceNumber
+                                        : manualInvoiceNumber}
+                                />
                             </div>
 
                             <!-- Order Number -->
                             <div class="space-y-2">
-                                <Label for="order_number" class="form-label">Order / PO Number</Label>
+                                <Label for="order_number" class="form-label"
+                                    >Order / PO Number</Label
+                                >
                                 <Input
                                     id="order_number"
                                     name="order_number"
@@ -435,14 +428,18 @@
 
                     <!-- Section: Dates -->
                     <section class="space-y-6">
-                        <h3 class="text-xs font-bold uppercase tracking-wide text-text-secondary">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                        >
                             Dates
                         </h3>
 
                         <div class="grid gap-6 md:grid-cols-3">
                             <div class="space-y-2">
                                 <Label for="invoice_date" class="form-label">
-                                    Invoice Date <span class="text-destructive">*</span>
+                                    Invoice Date <span class="text-destructive"
+                                        >*</span
+                                    >
                                 </Label>
                                 <Input
                                     id="invoice_date"
@@ -453,23 +450,44 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="terms" class="form-label">Terms</Label>
-                                <Select.Root type="single" bind:value={formData.terms}>
-                                    <Select.Trigger class="h-9 border-border-strong text-sm bg-surface-0">
+                                <Label for="terms" class="form-label"
+                                    >Terms</Label
+                                >
+                                <Select.Root
+                                    type="single"
+                                    bind:value={formData.terms}
+                                >
+                                    <Select.Trigger
+                                        class="h-9 border-border-strong text-sm bg-surface-0"
+                                    >
                                         {formData.terms || "Due on Receipt"}
                                     </Select.Trigger>
                                     <Select.Content>
-                                        <Select.Item value="Due on Receipt">Due on Receipt</Select.Item>
-                                        <Select.Item value="Net 15">Net 15</Select.Item>
-                                        <Select.Item value="Net 30">Net 30</Select.Item>
-                                        <Select.Item value="Net 45">Net 45</Select.Item>
+                                        <Select.Item value="Due on Receipt"
+                                            >Due on Receipt</Select.Item
+                                        >
+                                        <Select.Item value="Net 15"
+                                            >Net 15</Select.Item
+                                        >
+                                        <Select.Item value="Net 30"
+                                            >Net 30</Select.Item
+                                        >
+                                        <Select.Item value="Net 45"
+                                            >Net 45</Select.Item
+                                        >
                                     </Select.Content>
                                 </Select.Root>
-                                <input type="hidden" name="terms" value={formData.terms} />
+                                <input
+                                    type="hidden"
+                                    name="terms"
+                                    value={formData.terms}
+                                />
                             </div>
                             <div class="space-y-2">
                                 <Label for="due_date" class="form-label">
-                                    Due Date <span class="text-destructive">*</span>
+                                    Due Date <span class="text-destructive"
+                                        >*</span
+                                    >
                                 </Label>
                                 <Input
                                     id="due_date"
@@ -485,42 +503,78 @@
                     <!-- Section: Line Items -->
                     <section class="space-y-4">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-xs font-bold uppercase tracking-wide text-text-secondary">
+                            <h3
+                                class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                            >
                                 Line Items
                             </h3>
                         </div>
 
-                        <div class="rounded-lg border border-border overflow-hidden bg-surface-0">
+                        <div
+                            class="rounded-lg border border-border overflow-hidden bg-surface-0"
+                        >
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm">
                                     <thead>
-                                        <tr class="border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-secondary bg-surface-2/50">
-                                            <th class="px-2 py-3 w-8 text-center"></th>
-                                            <th class="px-4 py-3 text-left">Item Details</th>
-                                            <th class="px-3 py-3 text-left w-24">HSN/SAC</th>
-                                            <th class="px-3 py-3 text-right w-20">Qty</th>
-                                            <th class="px-3 py-3 text-right w-28">Rate</th>
-                                            <th class="px-3 py-3 text-right w-24">Tax</th>
-                                            <th class="px-4 py-3 text-right w-28">Amount</th>
+                                        <tr
+                                            class="border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-secondary bg-surface-2/50"
+                                        >
+                                            <th
+                                                class="px-2 py-3 w-8 text-center"
+                                            ></th>
+                                            <th class="px-4 py-3 text-left"
+                                                >Item Details</th
+                                            >
+                                            <th class="px-3 py-3 text-left w-24"
+                                                >HSN/SAC</th
+                                            >
+                                            <th
+                                                class="px-3 py-3 text-right w-20"
+                                                >Qty</th
+                                            >
+                                            <th
+                                                class="px-3 py-3 text-right w-28"
+                                                >Rate</th
+                                            >
+                                            <th
+                                                class="px-3 py-3 text-right w-24"
+                                                >Tax</th
+                                            >
+                                            <th
+                                                class="px-4 py-3 text-right w-28"
+                                                >Amount</th
+                                            >
                                             <th class="px-2 py-3 w-10"></th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-border-subtle">
+                                    <tbody
+                                        class="divide-y divide-border-subtle"
+                                    >
                                         {#each formData.items as item, index}
                                             <tr
-                                                class="group hover:bg-surface-2/30 transition-colors {dragItemIndex === index ? 'opacity-50 border-2 border-dashed border-primary/50' : ''}"
+                                                class="group hover:bg-surface-2/30 transition-colors {dragItemIndex ===
+                                                index
+                                                    ? 'opacity-50 border-2 border-dashed border-primary/50'
+                                                    : ''}"
                                                 draggable={true}
-                                                ondragstart={() => handleDragStart(index)}
+                                                ondragstart={() =>
+                                                    handleDragStart(index)}
                                                 ondragover={handleDragOver}
                                                 ondrop={() => handleDrop(index)}
                                             >
-                                                <td class="px-2 py-3 align-middle text-center cursor-move text-text-muted/50 hover:text-text-strong touch-none">
-                                                    <GripVertical class="size-4 mx-auto" />
+                                                <td
+                                                    class="px-2 py-3 align-middle text-center cursor-move text-text-muted/50 hover:text-text-strong touch-none"
+                                                >
+                                                    <GripVertical
+                                                        class="size-4 mx-auto"
+                                                    />
                                                 </td>
                                                 <td class="px-4 py-3 align-top">
                                                     <Input
                                                         name="items[{index}].description"
-                                                        bind:value={item.description}
+                                                        bind:value={
+                                                            item.description
+                                                        }
                                                         placeholder="Item description"
                                                         class="h-9 w-full border-transparent hover:border-border focus:border-primary bg-transparent text-sm font-medium placeholder:text-text-placeholder"
                                                     />
@@ -528,7 +582,9 @@
                                                 <td class="px-3 py-3 align-top">
                                                     <Input
                                                         name="items[{index}].hsn_code"
-                                                        bind:value={item.hsn_code}
+                                                        bind:value={
+                                                            item.hsn_code
+                                                        }
                                                         placeholder="HSN"
                                                         class="h-9 w-full border-transparent hover:border-border bg-transparent text-xs font-mono text-text-secondary"
                                                     />
@@ -537,7 +593,9 @@
                                                     <Input
                                                         name="items[{index}].quantity"
                                                         type="number"
-                                                        bind:value={item.quantity}
+                                                        bind:value={
+                                                            item.quantity
+                                                        }
                                                         min="0.01"
                                                         step="0.01"
                                                         class="h-9 border-border-subtle text-right bg-surface-1 focus:border-primary font-mono"
@@ -556,25 +614,39 @@
                                                 <td class="px-3 py-3 align-top">
                                                     <select
                                                         name="items[{index}].gst_rate"
-                                                        bind:value={item.gst_rate}
+                                                        bind:value={
+                                                            item.gst_rate
+                                                        }
                                                         class="h-9 w-full border border-border-subtle rounded-md bg-surface-1 text-right text-xs font-mono focus:border-primary focus:outline-none px-2"
                                                     >
                                                         {#each GST_RATES as rate}
-                                                            <option value={rate}>{rate}%</option>
+                                                            <option value={rate}
+                                                                >{rate}%</option
+                                                            >
                                                         {/each}
                                                     </select>
                                                 </td>
-                                                <td class="px-4 py-3 align-top text-right font-mono font-medium text-text-strong pt-2.5">
-                                                    {formatCurrency(getLineAmount(item))}
+                                                <td
+                                                    class="px-4 py-3 align-top text-right font-mono font-medium text-text-strong pt-2.5"
+                                                >
+                                                    {formatCurrency(
+                                                        getLineAmount(item),
+                                                    )}
                                                 </td>
-                                                <td class="px-2 py-3 align-top pt-2">
+                                                <td
+                                                    class="px-2 py-3 align-top pt-2"
+                                                >
                                                     <button
                                                         type="button"
                                                         class="text-text-muted hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                                                        onclick={() => removeItem(index)}
-                                                        disabled={formData.items.length === 1}
+                                                        onclick={() =>
+                                                            removeItem(index)}
+                                                        disabled={formData.items
+                                                            .length === 1}
                                                     >
-                                                        <Trash2 class="size-4" />
+                                                        <Trash2
+                                                            class="size-4"
+                                                        />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -600,7 +672,9 @@
 
                     <!-- Section: Notes -->
                     <section class="space-y-4">
-                        <h3 class="text-xs font-bold uppercase tracking-wide text-text-secondary">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                        >
                             Notes
                         </h3>
                         <textarea
@@ -616,9 +690,13 @@
             </div>
 
             <!-- RIGHT COLUMN: Financials -->
-            <div class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto">
+            <div
+                class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
+            >
                 <div class="space-y-6">
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-secondary">
+                    <h3
+                        class="text-sm font-bold uppercase tracking-wide text-text-secondary"
+                    >
                         Summary
                     </h3>
 
@@ -626,118 +704,53 @@
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between text-text-secondary">
                             <span>Subtotal</span>
-                            <span class="font-mono font-medium text-text-strong">{formatCurrency(totals.subtotal)}</span>
+                            <span class="font-mono font-medium text-text-strong"
+                                >{formatCurrency(totals.subtotal)}</span
+                            >
                         </div>
                         {#if isInterState}
-                            <div class="flex justify-between text-text-secondary">
+                            <div
+                                class="flex justify-between text-text-secondary"
+                            >
                                 <span>IGST</span>
-                                <span class="font-mono font-medium text-text-strong">{formatCurrency(totals.igst)}</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(totals.igst)}</span
+                                >
                             </div>
                         {:else}
-                            <div class="flex justify-between text-text-secondary">
+                            <div
+                                class="flex justify-between text-text-secondary"
+                            >
                                 <span>CGST</span>
-                                <span class="font-mono font-medium text-text-strong">{formatCurrency(totals.cgst)}</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(totals.cgst)}</span
+                                >
                             </div>
-                            <div class="flex justify-between text-text-secondary">
+                            <div
+                                class="flex justify-between text-text-secondary"
+                            >
                                 <span>SGST</span>
-                                <span class="font-mono font-medium text-text-strong">{formatCurrency(totals.sgst)}</span>
+                                <span
+                                    class="font-mono font-medium text-text-strong"
+                                    >{formatCurrency(totals.sgst)}</span
+                                >
                             </div>
                         {/if}
 
-                        {#if totalCreditsApplied > 0}
-                            <div class="flex justify-between text-info text-sm pt-2 border-t border-dashed border-border">
-                                <span>Credits Applied</span>
-                                <span class="font-mono font-medium">-{formatCurrency(totalCreditsApplied)}</span>
-                            </div>
-                        {/if}
-
-                        <div class="flex justify-between items-baseline pt-3 border-t border-dashed border-border">
-                            <span class="font-semibold text-text-strong">Total</span>
-                            <span class="font-mono text-2xl font-bold text-primary">
+                        <div
+                            class="flex justify-between items-baseline pt-3 border-t border-dashed border-border"
+                        >
+                            <span class="font-semibold text-text-strong"
+                                >Total</span
+                            >
+                            <span
+                                class="font-mono text-2xl font-bold text-primary"
+                            >
                                 {formatCurrency(totals.total)}
                             </span>
                         </div>
-
-                        {#if totalCreditsApplied > 0}
-                            <div class="flex justify-between text-text-strong text-sm font-semibold">
-                                <span>Balance Due</span>
-                                <span class="font-mono">{formatCurrency(Math.max(0, totals.total - totalCreditsApplied))}</span>
-                            </div>
-                        {/if}
-                    </div>
-
-                    <!-- Record Payment Option -->
-                    <div class="pt-4 border-t border-border space-y-4">
-                        <label class="flex items-center gap-2 text-sm font-medium text-text-strong cursor-pointer">
-                            <input
-                                type="checkbox"
-                                name="capture_payment"
-                                bind:checked={capturePayment}
-                                class="h-4 w-4 rounded border-border-strong text-primary"
-                            />
-                            Record payment now
-                        </label>
-
-                        {#if capturePayment}
-                            <div class="space-y-4 p-4 rounded-lg bg-surface-1 border border-border-subtle">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="space-y-1.5">
-                                        <Label for="payment_amount" class="form-label">Amount</Label>
-                                        <Input
-                                            id="payment_amount"
-                                            name="payment_amount"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            bind:value={paymentAmount}
-                                            oninput={() => (paymentAmountTouched = true)}
-                                            class="h-9 border-border-strong text-right font-mono bg-surface-0"
-                                        />
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <Label for="payment_date" class="form-label">Date</Label>
-                                        <Input
-                                            id="payment_date"
-                                            name="payment_date"
-                                            type="date"
-                                            bind:value={paymentDate}
-                                            oninput={() => (paymentDateTouched = true)}
-                                            class="h-9 border-border-strong bg-surface-0"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="space-y-1.5">
-                                        <Label for="payment_mode" class="form-label">Mode</Label>
-                                        <select
-                                            id="payment_mode"
-                                            name="payment_mode"
-                                            bind:value={paymentMode}
-                                            class="h-9 w-full border border-border-strong rounded-md bg-surface-0 text-sm text-text-strong focus:border-primary focus:outline-none px-2"
-                                        >
-                                            <option value="cash">Cash</option>
-                                            <option value="bank">Bank</option>
-                                            <option value="upi">UPI</option>
-                                        </select>
-                                    </div>
-                                    <div class="space-y-1.5">
-                                        <Label for="payment_reference" class="form-label">Reference</Label>
-                                        <Input
-                                            id="payment_reference"
-                                            name="payment_reference"
-                                            bind:value={paymentReference}
-                                            placeholder="UTR / Cheque"
-                                            class="h-9 border-border-strong bg-surface-0"
-                                        />
-                                    </div>
-                                </div>
-
-                                <p class="text-[10px] text-text-muted">
-                                    Payment recorded only with "Save & Issue"
-                                </p>
-                            </div>
-                        {/if}
                     </div>
                 </div>
             </div>
@@ -755,7 +768,7 @@
                 disabled={submitting}
             >
                 <Save class="mr-2 size-4" />
-                {submitting ? "Saving..." : "Save & Issue"}
+                {submitting ? "Saving..." : "Issue Invoice"}
             </Button>
             <Button
                 type="submit"
@@ -767,9 +780,7 @@
             >
                 Save Draft
             </Button>
-            <Button variant="ghost" href="/invoices">
-                Cancel
-            </Button>
+            <Button variant="ghost" href="/invoices">Cancel</Button>
         </div>
     </div>
 </div>

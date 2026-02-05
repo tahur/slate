@@ -16,6 +16,8 @@ import { eq, and, sql, gt, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postInvoiceIssuance, postPaymentReceipt } from '$lib/server/services';
 
+
+
 export const load: PageServerLoad = async ({ locals, params, url }) => {
     if (!locals.user) {
         redirect(302, '/login');
@@ -519,6 +521,166 @@ export const actions: Actions = {
         } catch (e) {
             console.error('Failed to record payment:', e);
             return fail(500, { error: 'Failed to record payment: ' + (e instanceof Error ? e.message : String(e)) });
+        }
+    },
+    settle: async ({ request, locals, params }) => {
+        if (!locals.user) return fail(401);
+
+        const orgId = locals.user.orgId;
+        const invoiceId = params.id;
+        const formData = await request.formData();
+
+        // 1. Parse Inputs
+        const paymentAmount = parseFloat(formData.get('payment_amount') as string) || 0;
+        const paymentDate = formData.get('payment_date') as string;
+        const paymentMode = formData.get('payment_mode') as string || 'bank';
+        const paymentReference = formData.get('payment_reference') as string || '';
+        const creditsJson = formData.get('credits') as string || '[]';
+
+        let credits: any[] = [];
+        try {
+            credits = JSON.parse(creditsJson);
+        } catch (e) {
+            return fail(400, { error: 'Invalid credits data' });
+        }
+
+        if (paymentAmount <= 0 && credits.length === 0) {
+            return fail(400, { error: 'No payment or credits selected to settle' });
+        }
+
+        // 2. Fetch Invoice
+        const invoice = await db.query.invoices.findFirst({
+            where: and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId))
+        });
+
+        if (!invoice) return fail(404, { error: 'Invoice not found' });
+        if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+            return fail(400, { error: 'Invoice is already paid or cancelled' });
+        }
+
+        let currentBalanceDue = invoice.balance_due;
+        let totalSettled = 0;
+
+        try {
+            // 3. Apply Credits
+            if (credits.length > 0) {
+                for (const credit of credits) {
+                    if (currentBalanceDue <= 0.01) break;
+
+                    const amountToApply = Math.min(credit.amount, currentBalanceDue);
+                    if (amountToApply <= 0) continue;
+
+                    // Allocation
+                    await db.insert(credit_allocations).values({
+                        id: crypto.randomUUID(),
+                        org_id: orgId,
+                        invoice_id: invoiceId,
+                        credit_note_id: credit.type === 'credit_note' ? credit.id : null,
+                        advance_id: credit.type === 'advance' ? credit.id : null,
+                        amount: amountToApply,
+                        created_at: new Date().toISOString()
+                    });
+
+                    // Update Source Balance
+                    if (credit.type === 'advance') {
+                        await db.update(customer_advances)
+                            .set({ balance: sql`${customer_advances.balance} - ${amountToApply}` })
+                            .where(eq(customer_advances.id, credit.id));
+                    } else {
+                        const newStatus = (credit.amount - amountToApply) <= 0.01 ? 'applied' : 'issued';
+                        await db.update(credit_notes)
+                            .set({
+                                balance: sql`${credit_notes.balance} - ${amountToApply}`,
+                                status: newStatus
+                            })
+                            .where(eq(credit_notes.id, credit.id));
+                    }
+
+                    currentBalanceDue -= amountToApply;
+                    totalSettled += amountToApply;
+                }
+            }
+
+            // 4. Record Payment (if applicable)
+            let paymentNumber = '';
+            if (paymentAmount > 0) {
+                if (paymentAmount > currentBalanceDue + 0.01) {
+                    return fail(400, { error: 'Payment amount exceeds remaining balance due' });
+                }
+
+                paymentNumber = await getNextNumber(orgId, 'payment');
+                const paymentId = crypto.randomUUID();
+
+                // Posting
+                const paymentModeForPosting = paymentMode === 'cash' ? 'cash' : 'bank';
+                const postingResult = await postPaymentReceipt(orgId, {
+                    paymentId,
+                    paymentNumber,
+                    date: paymentDate,
+                    customerId: invoice.customer_id,
+                    amount: paymentAmount,
+                    paymentMode: paymentModeForPosting,
+                    userId: locals.user.id
+                });
+
+                // Deposit Account
+                const depositAccountCode = paymentMode === 'cash' ? '1000' : '1100';
+                const depositAccount = await db.query.accounts.findFirst({
+                    where: and(eq(accounts.account_code, depositAccountCode), eq(accounts.org_id, orgId))
+                });
+
+                await db.insert(payments).values({
+                    id: paymentId,
+                    org_id: orgId,
+                    customer_id: invoice.customer_id,
+                    payment_number: paymentNumber,
+                    payment_date: paymentDate,
+                    amount: paymentAmount,
+                    payment_mode: paymentMode,
+                    deposit_to: depositAccount?.id || '',
+                    reference: paymentReference,
+                    journal_entry_id: postingResult.journalEntryId,
+                    created_by: locals.user.id
+                });
+
+                await db.insert(payment_allocations).values({
+                    id: crypto.randomUUID(),
+                    payment_id: paymentId,
+                    invoice_id: invoiceId,
+                    amount: paymentAmount
+                });
+
+                // Update Customer Balance (only for new money)
+                await db.update(customers)
+                    .set({
+                        balance: sql`${customers.balance} - ${paymentAmount}`,
+                        updated_at: new Date().toISOString()
+                    })
+                    .where(eq(customers.id, invoice.customer_id));
+
+                totalSettled += paymentAmount;
+                currentBalanceDue -= paymentAmount;
+            }
+
+            // 5. Update Invoice Status
+            const newAmountPaid = (invoice.amount_paid || 0) + totalSettled;
+            const newBalanceDue = Math.max(0, invoice.total - newAmountPaid);
+            const newStatus = newBalanceDue <= 0.01 ? 'paid' : 'partially_paid';
+
+            await db.update(invoices)
+                .set({
+                    amount_paid: newAmountPaid,
+                    balance_due: newBalanceDue,
+                    status: newStatus,
+                    updated_at: new Date().toISOString()
+                })
+                .where(eq(invoices.id, invoiceId));
+
+            return { success: true, message: 'Settlement recorded successfully' };
+
+        } catch (e) {
+            console.error('Settlement Failed:', e);
+            return fail(500, { error: 'Settlement failed: ' + (e instanceof Error ? e.message : String(e)) });
         }
     }
 };

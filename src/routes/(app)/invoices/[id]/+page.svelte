@@ -10,28 +10,44 @@
     let { data, form } = $props();
     let isSubmitting = $state(false);
     let isDownloading = $state(false);
-    let showCreditsModal = $state(false);
-    let showPaymentModal = $state(false);
+    let showSettleModal = $state(false);
 
-    // Payment form state
-    let paymentAmount = $state(data.invoice.balance_due);
+    // Settlement State
+    let selectedCredits = $state<any[]>([]);
+
+    // Computed totals
+    let selectedCreditsTotal = $derived(
+        selectedCredits.reduce((sum, c) => sum + c.amount, 0),
+    );
+
+    let netPayable = $derived(
+        Math.max(0, data.invoice.balance_due - selectedCreditsTotal),
+    );
+
+    // Payment Form State
+    let paymentAmount = $state(0);
     let paymentMode = $state("bank");
     let paymentDate = $state(new Date().toISOString().split("T")[0]);
     let paymentReference = $state("");
 
-    function openPaymentModal() {
-        // Check if there's actually a balance to pay
+    // Auto-update payment amount when credits change
+    $effect(() => {
+        paymentAmount = netPayable;
+    });
+
+    function openSettleModal() {
         if (data.invoice.balance_due <= 0.01) {
             addToast({
                 type: "info",
-                message: "This invoice is already fully paid",
+                message: "invoice is already fully paid",
             });
             return;
         }
+        selectedCredits = [];
         paymentAmount = data.invoice.balance_due;
         paymentDate = new Date().toISOString().split("T")[0];
         paymentReference = "";
-        showPaymentModal = true;
+        showSettleModal = true;
     }
 
     async function downloadPdf() {
@@ -99,7 +115,9 @@
 
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
     <!-- Header -->
-    <header class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-20">
+    <header
+        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-20"
+    >
         <div class="flex items-center gap-4">
             <Button
                 variant="ghost"
@@ -110,7 +128,9 @@
                 <ArrowLeft class="size-4" />
             </Button>
             <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold tracking-tight text-text-strong font-mono">
+                <h1
+                    class="text-xl font-bold tracking-tight text-text-strong font-mono"
+                >
                     {data.invoice.invoice_number}
                 </h1>
                 <span class="status-pill {getStatusClass(data.invoice.status)}">
@@ -136,11 +156,7 @@
                 <Download class="mr-2 size-3" />
                 {isDownloading ? "Generating..." : "PDF"}
             </Button>
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={() => window.print()}
-            >
+            <Button variant="outline" size="sm" onclick={() => window.print()}>
                 <Printer class="mr-2 size-3" /> Print
             </Button>
         </div>
@@ -148,16 +164,22 @@
 
     <!-- Alerts -->
     {#if form?.error}
-        <div class="mx-6 mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20 flex items-center gap-2">
+        <div
+            class="mx-6 mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20 flex items-center gap-2"
+        >
             <XCircle class="size-4 flex-shrink-0" />
             {form.error}
         </div>
     {/if}
 
     {#if form?.success}
-        <div class="mx-6 mt-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm border border-green-200">
+        <div
+            class="mx-6 mt-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm border border-green-200"
+        >
             {#if form.invoiceNumber}
-                Invoice issued successfully as <span class="font-mono font-medium">{form.invoiceNumber}</span>
+                Invoice issued successfully as <span
+                    class="font-mono font-medium">{form.invoiceNumber}</span
+                >
             {:else}
                 Action completed successfully
             {/if}
@@ -165,9 +187,16 @@
     {/if}
 
     {#if data.justRecordedPayment}
-        <div class="mx-6 mt-4 p-3 rounded-lg bg-primary/5 text-text-strong text-sm border border-primary/20">
-            Payment recorded: <span class="font-mono font-medium">{formatCurrency(data.invoice.amount_paid || 0)}</span>
-            · Balance due <span class="font-mono font-medium">{formatCurrency(data.invoice.balance_due)}</span>
+        <div
+            class="mx-6 mt-4 p-3 rounded-lg bg-primary/5 text-text-strong text-sm border border-primary/20"
+        >
+            Payment recorded: <span class="font-mono font-medium"
+                >{formatCurrency(data.invoice.amount_paid || 0)}</span
+            >
+            · Balance due
+            <span class="font-mono font-medium"
+                >{formatCurrency(data.invoice.balance_due)}</span
+            >
         </div>
     {/if}
 
@@ -175,7 +204,9 @@
     <main class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30">
         <div class="mx-auto max-w-4xl">
             <!-- Main Paper Sheet -->
-            <div class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8">
+            <div
+                class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8"
+            >
                 <!-- Top Meta Band -->
                 <div class="flex flex-col gap-6">
                     {#if data.org && data.org.logo_url}
@@ -348,7 +379,9 @@
                         </div>
 
                         {#if data.invoice.is_inter_state}
-                            <div class="flex justify-between text-text-secondary">
+                            <div
+                                class="flex justify-between text-text-secondary"
+                            >
                                 <span>IGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
@@ -356,14 +389,18 @@
                                 >
                             </div>
                         {:else}
-                            <div class="flex justify-between text-text-secondary">
+                            <div
+                                class="flex justify-between text-text-secondary"
+                            >
                                 <span>CGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
                                     >{formatCurrency(data.invoice.cgst)}</span
                                 >
                             </div>
-                            <div class="flex justify-between text-text-secondary">
+                            <div
+                                class="flex justify-between text-text-secondary"
+                            >
                                 <span>SGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
@@ -452,375 +489,260 @@
     {#if data.invoice.status !== "draft" && data.invoice.status !== "cancelled" && data.invoice.balance_due > 0.01}
         <div class="action-bar">
             <div class="action-bar-group">
-                <Button onclick={openPaymentModal}>Record Payment</Button>
-                {#if data.availableCredits && data.availableCredits.length > 0}
-                    <Button
-                        variant="outline"
-                        onclick={() => (showCreditsModal = true)}
-                    >
-                        Apply Credits ({data.availableCredits.length})
-                    </Button>
-                {/if}
+                <Button
+                    onclick={openSettleModal}
+                    class="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                >
+                    Settle & Close
+                </Button>
             </div>
             <div class="flex items-center gap-4 text-sm">
                 <div class="flex flex-col items-end">
-                    <span class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Balance Due</span>
-                    <span class="font-mono text-xl font-bold text-primary">{formatCurrency(data.invoice.balance_due)}</span>
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold"
+                        >Balance Due</span
+                    >
+                    <span class="font-mono text-xl font-bold text-primary"
+                        >{formatCurrency(data.invoice.balance_due)}</span
+                    >
                 </div>
             </div>
         </div>
     {/if}
 </div>
 
-<!-- Apply Credits Modal -->
-{#if showCreditsModal}
+<!-- Settle Invoice Modal (Unified) -->
+{#if showSettleModal}
     <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
     >
         <div
-            class="bg-surface-1 rounded-xl shadow-2xl w-full max-w-lg border border-border overflow-hidden transform transition-all scale-100"
+            class="bg-surface-1 rounded-xl shadow-2xl w-full max-w-lg border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         >
             <div
                 class="p-4 border-b border-border flex justify-between items-center bg-surface-2"
             >
                 <div>
-                    <h3 class="font-bold text-lg">Apply Credits</h3>
+                    <h3 class="font-bold text-lg text-text-strong">
+                        Settle Invoice
+                    </h3>
                     <p class="text-xs text-text-muted">
-                        Select credits to offset this invoice.
+                        Apply credits or record payment to close this invoice.
                     </p>
                 </div>
                 <button
-                    onclick={() => (showCreditsModal = false)}
+                    onclick={() => (showSettleModal = false)}
                     class="text-text-muted hover:text-text-strong"
                 >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                        />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="p-4 max-h-[60vh] overflow-y-auto">
-                <form
-                    method="POST"
-                    action="?/applyCredits"
-                    use:enhance={() => {
-                        isSubmitting = true;
-                        return async ({ result, update }) => {
-                            isSubmitting = false;
-                            if (result.type === "success") {
-                                showCreditsModal = false;
-                                addToast({
-                                    type: "success",
-                                    message: "Credits applied successfully",
-                                });
-                                await update(); // Refresh page data
-                            } else if (result.type === "failure") {
-                                const errorMsg =
-                                    (result.data as { error?: string })
-                                        ?.error || "Failed to apply credits";
-                                addToast({ type: "error", message: errorMsg });
-                            }
-                        };
-                    }}
-                >
-                    <div class="space-y-3">
-                        {#each data.availableCredits as credit}
-                            <label
-                                class="block relative group/item cursor-pointer"
-                            >
-                                <input
-                                    type="checkbox"
-                                    name="credits_select"
-                                    value={JSON.stringify({
-                                        id: credit.id,
-                                        amount: credit.amount,
-                                        type: credit.type,
-                                    })}
-                                    class="peer sr-only"
-                                />
-                                <div
-                                    class="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-2/30 hover:bg-surface-2 transition-all peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:shadow-sm"
-                                >
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="w-5 h-5 rounded-full border border-border peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center text-white transition-all"
-                                        >
-                                            <svg
-                                                class="w-3 h-3 opacity-0 peer-checked:opacity-100"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="3"
-                                                    d="M5 13l4 4L19 7"
-                                                />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <div class="font-medium text-sm">
-                                                {credit.type === "credit_note"
-                                                    ? "Credit Note"
-                                                    : "Advance"} #{credit.number ||
-                                                    "—"}
-                                            </div>
-                                            <div
-                                                class="text-[11px] text-text-muted"
-                                            >
-                                                {formatDate(credit.date)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="font-mono font-bold text-sm">
-                                        {formatCurrency(credit.amount)}
-                                    </div>
-                                </div>
-                            </label>
-                        {/each}
-                    </div>
-
-                    <input
-                        type="hidden"
-                        name="credits"
-                        id="credits_json_input_modal"
-                    />
-
-                    <div
-                        class="mt-6 flex justify-end gap-3 pt-4 border-t border-border"
-                    >
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onclick={() => (showCreditsModal = false)}
-                            >Cancel</Button
-                        >
-                        <Button
-                            type="submit"
-                            onclick={(e) => {
-                                const btn =
-                                    e.currentTarget as HTMLButtonElement;
-                                const form = btn.form;
-                                if (!form) return;
-                                const checkboxes = form.querySelectorAll(
-                                    'input[name="credits_select"]:checked',
-                                );
-                                if (checkboxes.length === 0) {
-                                    e.preventDefault();
-                                    alert(
-                                        "Please select at least one credit to apply.",
-                                    );
-                                    return;
-                                }
-                                const selected = Array.from(checkboxes).map(
-                                    (cb) =>
-                                        JSON.parse(
-                                            (cb as HTMLInputElement).value,
-                                        ),
-                                );
-                                const hiddenInput = form.querySelector(
-                                    "#credits_json_input_modal",
-                                ) as HTMLInputElement;
-                                if (hiddenInput) {
-                                    hiddenInput.value =
-                                        JSON.stringify(selected);
-                                }
-                            }}
-                        >
-                            Apply Selected
-                        </Button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-{/if}
-
-<!-- Record Payment Modal -->
-{#if showPaymentModal}
-    <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-    >
-        <div
-            class="bg-surface-1 rounded-xl shadow-2xl w-full max-w-md border border-border overflow-hidden"
-        >
-            <div
-                class="p-4 border-b border-border flex justify-between items-center bg-surface-2"
-            >
-                <div>
-                    <h3 class="font-bold text-lg">Record Payment</h3>
-                    <p class="text-xs text-text-muted">
-                        Against {data.invoice.invoice_number}
-                    </p>
-                </div>
-                <button
-                    onclick={() => (showPaymentModal = false)}
-                    class="text-text-muted hover:text-text-strong"
-                    aria-label="Close"
-                >
-                    <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                        />
-                    </svg>
+                    <XCircle class="size-5" />
                 </button>
             </div>
 
             <form
                 method="POST"
-                action="?/recordPayment"
+                action="?/settle"
                 use:enhance={() => {
                     isSubmitting = true;
                     return async ({ result, update }) => {
                         isSubmitting = false;
                         if (result.type === "success") {
-                            showPaymentModal = false;
+                            showSettleModal = false;
                             addToast({
                                 type: "success",
-                                message: "Payment recorded successfully",
+                                message: "Invoice settled successfully",
                             });
                             await update();
                         } else if (result.type === "failure") {
                             const errorMsg =
                                 (result.data as { error?: string })?.error ||
-                                "Failed to record payment";
+                                "Settlement failed";
                             addToast({ type: "error", message: errorMsg });
                         }
                     };
                 }}
-                class="p-4 space-y-4"
             >
-                <!-- Amount -->
-                <div class="space-y-2">
-                    <Label for="payment_amount" class="form-label">
-                        Amount <span class="text-destructive">*</span>
-                    </Label>
-                    <Input
-                        type="number"
-                        id="payment_amount"
-                        name="amount"
-                        bind:value={paymentAmount}
-                        min="0.01"
-                        max={data.invoice.balance_due}
-                        step="0.01"
-                        required
-                        class="h-12 text-xl font-bold font-mono text-right"
-                    />
-                    <p class="text-xs text-text-muted">
-                        Balance due: {formatCurrency(data.invoice.balance_due)}
-                    </p>
-                </div>
+                <div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto">
+                    <!-- Top Summary -->
+                    <div
+                        class="bg-surface-2/50 p-4 rounded-lg flex justify-between items-center border border-border-subtle"
+                    >
+                        <span class="text-sm font-medium text-text-secondary"
+                            >Amount Due</span
+                        >
+                        <span
+                            class="text-2xl font-bold font-mono text-text-strong"
+                        >
+                            {formatCurrency(data.invoice.balance_due)}
+                        </span>
+                    </div>
 
-                <!-- Date -->
-                <div class="space-y-2">
-                    <Label for="payment_date" class="form-label">
-                        Date <span class="text-destructive">*</span>
-                    </Label>
-                    <Input
-                        type="date"
-                        id="payment_date"
-                        name="payment_date"
-                        bind:value={paymentDate}
-                        required
-                        class="h-10"
-                    />
-                </div>
+                    <!-- 1. Available Credits -->
+                    {#if data.availableCredits && data.availableCredits.length > 0}
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <Label
+                                    class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                                >
+                                    Apply Credits
+                                </Label>
+                                {#if selectedCreditsTotal > 0}
+                                    <span
+                                        class="text-xs font-mono font-medium text-info"
+                                    >
+                                        -{formatCurrency(selectedCreditsTotal)} applied
+                                    </span>
+                                {/if}
+                            </div>
 
-                <!-- Payment Mode -->
-                <div class="space-y-2">
-                    <Label class="form-label">Payment Mode</Label>
-                    <div class="flex gap-2">
-                        <label class="flex-1">
-                            <input
-                                type="radio"
-                                name="payment_mode"
-                                value="bank"
-                                bind:group={paymentMode}
-                                class="peer sr-only"
-                            />
-                            <div
-                                class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2"
-                            >
-                                <span class="text-sm font-medium">Bank</span>
+                            <div class="space-y-2">
+                                {#each data.availableCredits as credit}
+                                    <label
+                                        class="block relative group cursor-pointer"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            bind:group={selectedCredits}
+                                            value={credit}
+                                            class="peer sr-only"
+                                        />
+                                        <div
+                                            class="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-0 hover:bg-surface-2 transition-all peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:shadow-sm"
+                                        >
+                                            <div>
+                                                <div
+                                                    class="font-medium text-sm text-text-strong"
+                                                >
+                                                    {credit.type ===
+                                                    "credit_note"
+                                                        ? "Credit Note"
+                                                        : "Advance"}
+                                                    <span
+                                                        class="text-text-muted"
+                                                        >#{credit.number}</span
+                                                    >
+                                                </div>
+                                                <div
+                                                    class="text-[10px] text-text-muted"
+                                                >
+                                                    {formatDate(credit.date)}
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="font-mono font-bold text-sm text-text-strong"
+                                            >
+                                                {formatCurrency(credit.amount)}
+                                            </div>
+                                        </div>
+                                    </label>
+                                {/each}
                             </div>
-                        </label>
-                        <label class="flex-1">
-                            <input
-                                type="radio"
-                                name="payment_mode"
-                                value="cash"
-                                bind:group={paymentMode}
-                                class="peer sr-only"
-                            />
-                            <div
-                                class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2"
+                        </div>
+                    {/if}
+
+                    <!-- 2. Payment Details -->
+                    <div class="space-y-4 pt-4 border-t border-border-dashed">
+                        <div class="flex items-center justify-between">
+                            <Label
+                                class="text-xs font-bold uppercase tracking-wide text-text-secondary"
                             >
-                                <span class="text-sm font-medium">Cash</span>
+                                Remaining Payment
+                            </Label>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <Label for="payment_amount" class="form-label"
+                                    >Amount</Label
+                                >
+                                <Input
+                                    id="payment_amount"
+                                    name="payment_amount"
+                                    type="number"
+                                    step="0.01"
+                                    bind:value={paymentAmount}
+                                    class="text-right font-mono font-bold bg-surface-0"
+                                />
                             </div>
-                        </label>
-                        <label class="flex-1">
-                            <input
-                                type="radio"
-                                name="payment_mode"
-                                value="upi"
-                                bind:group={paymentMode}
-                                class="peer sr-only"
-                            />
-                            <div
-                                class="p-3 rounded-lg border border-border text-center cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-2"
-                            >
-                                <span class="text-sm font-medium">UPI</span>
+                            <div class="space-y-1.5">
+                                <Label for="payment_date" class="form-label"
+                                    >Date</Label
+                                >
+                                <Input
+                                    id="payment_date"
+                                    name="payment_date"
+                                    type="date"
+                                    bind:value={paymentDate}
+                                    class="bg-surface-0"
+                                />
                             </div>
-                        </label>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <Label for="payment_mode" class="form-label"
+                                    >Mode</Label
+                                >
+                                <select
+                                    id="payment_mode"
+                                    name="payment_mode"
+                                    bind:value={paymentMode}
+                                    class="h-9 w-full border border-border-strong rounded-md bg-surface-0 text-sm text-text-strong px-2"
+                                >
+                                    <option value="bank">Bank Transfer</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI / QR</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label
+                                    for="payment_reference"
+                                    class="form-label">Ref (Opt)</Label
+                                >
+                                <Input
+                                    id="payment_reference"
+                                    name="payment_reference"
+                                    bind:value={paymentReference}
+                                    placeholder="UTR / Txn ID"
+                                    class="bg-surface-0"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Reference -->
-                <div class="space-y-2">
-                    <Label for="payment_reference" class="form-label">Reference</Label>
-                    <Input
-                        type="text"
-                        id="payment_reference"
-                        name="reference"
-                        bind:value={paymentReference}
-                        placeholder="UTR / Cheque No / Transaction ID"
-                        class="h-10"
-                    />
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4 border-t border-border">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onclick={() => (showPaymentModal = false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        disabled={isSubmitting || paymentAmount <= 0}
-                    >
-                        {isSubmitting ? "Recording..." : "Record Payment"}
-                    </Button>
+                <!-- Footer Summary & Action -->
+                <div
+                    class="p-4 bg-surface-2 border-t border-border flex justify-between items-center"
+                >
+                    <div class="text-xs text-text-muted">
+                        {#if netPayable <= 0.01}
+                            <span class="text-green-600 font-medium"
+                                >Fully Settled</span
+                            >
+                        {:else}
+                            Remaining Due: <span class="font-mono"
+                                >{formatCurrency(
+                                    Math.max(0, netPayable - paymentAmount),
+                                )}</span
+                            >
+                        {/if}
+                    </div>
+                    <div class="flex gap-3">
+                        <input
+                            type="hidden"
+                            name="credits"
+                            value={JSON.stringify(selectedCredits)}
+                        />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onclick={() => (showSettleModal = false)}
+                            >Cancel</Button
+                        >
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? "Processing..." : "Settle Invoice"}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </div>

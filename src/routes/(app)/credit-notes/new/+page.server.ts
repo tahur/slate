@@ -48,22 +48,30 @@ export const actions: Actions = {
         let number = data.get('number') as string;
 
         // Collision Check & Recovery
-        const existingIV = await db.query.credit_notes.findFirst({
-            where: and(
-                eq(credit_notes.org_id, orgId),
-                eq(credit_notes.credit_note_number, number)
-            )
-        });
+        try {
+            const existingIV = await db.query.credit_notes.findFirst({
+                where: and(
+                    eq(credit_notes.org_id, orgId),
+                    eq(credit_notes.credit_note_number, number)
+                )
+            });
 
-        if (existingIV) {
-            console.log('Collision detected for credit note number:', number);
-            // Force generate next number
-            number = await getNextNumber(orgId, 'credit_note');
-        } else if (!number) {
-            number = await getNextNumber(orgId, 'credit_note');
+            if (existingIV) {
+                console.log('Collision detected for credit note number:', number);
+                fs.appendFileSync('debug_log.txt', `Collision detected for ${number}. Generating new number...\n`);
+                // Force generate next number
+                number = await getNextNumber(orgId, 'credit_note');
+            } else if (!number) {
+                fs.appendFileSync('debug_log.txt', `No number provided. Generating new number...\n`);
+                number = await getNextNumber(orgId, 'credit_note');
+            }
+        } catch (numErr) {
+            fs.appendFileSync('debug_log.txt', `Number Gen Error: ${numErr}\n`);
+            throw numErr;
         }
 
         if (!customer_id || !amount || !reason || !date) {
+            fs.appendFileSync('debug_log.txt', `Missing fields: customer_id=${customer_id}, amount=${amount}, reason=${reason}, date=${date}\n`);
             return fail(400, { error: 'Missing required fields' });
         }
 
@@ -112,9 +120,14 @@ export const actions: Actions = {
             // Ensure the number series is updated if we used a manual/peeked number
             await bumpNumberSeriesIfHigher(orgId, 'credit_note', number);
 
+            fs.appendFileSync('debug_log.txt', `Success! Created CN ${number} for ${amount}\n`);
+
         } catch (e) {
             console.error('SERVER ERROR Creating Credit Note:', e);
-            return fail(500, { error: 'Failed to create credit note: ' + (e instanceof Error ? e.message : String(e)) });
+            const errMsg = e instanceof Error ? e.message : String(e);
+            const stack = e instanceof Error ? e.stack : '';
+            fs.appendFileSync('debug_log.txt', `ERROR: ${errMsg}\nSTACK: ${stack}\n`);
+            return fail(500, { error: 'Failed to create credit note: ' + errMsg });
         }
 
         redirect(302, '/credit-notes');
