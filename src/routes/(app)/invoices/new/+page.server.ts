@@ -8,6 +8,8 @@ import {
     payments,
     payment_allocations,
     customer_advances,
+    credit_notes,
+    credit_allocations,
     accounts
 } from '$lib/server/db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
@@ -73,6 +75,11 @@ export const actions: Actions = {
 
         const formData = await event.request.formData();
 
+        // DEBUG LOGGING
+        const fs = await import('node:fs');
+        const log = (msg: string) => fs.appendFileSync('debug_log.txt', `[${new Date().toISOString()}] ${msg}\n`);
+        log('Starting Default Action');
+
         // Parse form data
         const customer_id = formData.get('customer_id') as string;
         const invoice_date = formData.get('invoice_date') as string;
@@ -88,6 +95,15 @@ export const actions: Actions = {
         const payment_date = formData.get('payment_date') as string;
         const payment_mode = (formData.get('payment_mode') as string) || '';
         const payment_reference = (formData.get('payment_reference') as string) || '';
+
+        // Credits (New)
+        const used_credits_json = (formData.get('used_credits') as string) || '[]';
+        let used_credits: { id: string; type: 'advance' | 'credit_note'; amount: number }[] = [];
+        try {
+            used_credits = JSON.parse(used_credits_json);
+        } catch (e) {
+            console.error('Failed to parse used_credits', e);
+        }
 
         // Validation
         if (!customer_id) {
@@ -374,7 +390,98 @@ export const actions: Actions = {
                     })
                     .where(eq(customers.id, customer_id));
             }
+
+            // --- Apply Credits Logic ---
+            if (isIssue && used_credits.length > 0) {
+                let totalCredited = 0;
+                // Calculate initial remaining balance to be covered by credits
+                const amountPaidNow = capturePayment ? Math.min(payment_amount, totals.total) : 0;
+                let remainingInvoiceBalance = totals.total - amountPaidNow;
+
+                for (const credit of used_credits) {
+                    log(`Processing credit: ${JSON.stringify(credit)}`);
+                    if (remainingInvoiceBalance <= 0.01) break; // Invoice fully paid
+
+                    // Allocation Check: Use min(Credit Available, Invoice Remaining)
+                    const allocationAmount = Math.min(credit.amount, remainingInvoiceBalance);
+
+                    if (allocationAmount <= 0) continue;
+
+                    if (credit.type === 'advance') {
+                        await db.insert(credit_allocations).values({
+                            id: crypto.randomUUID(),
+                            org_id: orgId,
+                            invoice_id: invoiceId,
+                            advance_id: credit.id,
+                            amount: allocationAmount
+                        });
+
+                        // Reduce Advance Balance
+                        await db.update(customer_advances)
+                            .set({
+                                balance: sql`${customer_advances.balance} - ${allocationAmount}`
+                            })
+                            .where(eq(customer_advances.id, credit.id));
+
+                    } else if (credit.type === 'credit_note') {
+                        await db.insert(credit_allocations).values({
+                            id: crypto.randomUUID(),
+                            org_id: orgId,
+                            invoice_id: invoiceId,
+                            credit_note_id: credit.id,
+                            amount: allocationAmount
+                        });
+
+                        // Mark CN as Applied (Update status if fully used)
+                        // Assuming CN schema limitation: if we use it, we mark applied.
+                        // Ideally we should have a 'balance' on CN.
+                        await db.update(credit_notes)
+                            .set({ status: 'applied' })
+                            .where(eq(credit_notes.id, credit.id));
+                    }
+
+                    totalCredited += allocationAmount;
+                    remainingInvoiceBalance -= allocationAmount;
+                }
+
+                // Update Invoice Balance Due
+                if (totalCredited > 0) {
+                    // Get current invoice state (it might have been paid partially above)
+                    // Because we ran the payment logic first, balance_due might already be reduced.
+                    // But wait, the `update` query above (line 346) set the balance_due. 
+                    // We need to fetch it or just calculate based on previous knowledge.
+
+                    // Current Logic Flow:
+                    // 1. Calculate Totals (Line 160)
+                    // 2. Insert Invoice (Line 243) -> Balance Due = Total
+                    // 3. Payment Logic (Line 301) -> Reduces Balance Due
+                    // 4. NOW: Credit Logic -> Further Reduces Balance Due
+
+                    // We need to query the invoice again to be safe, or use SQL decrement
+
+                    // Determine new status
+                    // We can't easily Determine Valid Status with SQL update only without reading back.
+                    // So let's just do a db update with SQL math and then a status check?
+                    // Or easier: Just calculate it here since we know values.
+
+                    const amountAlreadyPaid = capturePayment ? Math.min(payment_amount, totals.total) : 0;
+                    const currentBalanceDue = Math.max(0, totals.total - amountAlreadyPaid);
+                    const finalBalanceDue = Math.max(0, currentBalanceDue - totalCredited);
+                    const finalStatus = finalBalanceDue <= 0 ? 'paid' : 'partially_paid';
+
+                    await db.update(invoices)
+                        .set({
+                            balance_due: finalBalanceDue,
+                            status: finalStatus,
+                            updated_at: new Date().toISOString()
+                        })
+                        .where(eq(invoices.id, invoiceId));
+                }
+            }
         } catch (e) {
+            // DEBUG LOGGING
+            const fs = await import('node:fs');
+            fs.appendFileSync('debug_log.txt', `[ERROR] Invoice creation error: ${e instanceof Error ? e.stack : JSON.stringify(e)}\n`);
             console.error('Invoice creation error:', e);
             return fail(500, { error: 'Failed to create invoice' });
         }

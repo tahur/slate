@@ -27,6 +27,7 @@ export const credit_notes = sqliteTable(
         sgst: real('sgst').default(0),
         igst: real('igst').default(0),
         total: real('total').notNull(),
+        balance: real('balance').default(0),
 
         reason: text('reason').notNull(), // return, discount, error, etc.
         notes: text('notes'),

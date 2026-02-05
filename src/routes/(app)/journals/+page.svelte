@@ -1,7 +1,18 @@
 <script lang="ts">
-    import { FileText } from "lucide-svelte";
+    import { goto } from "$app/navigation";
+    import { Button } from "$lib/components/ui/button";
+    import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import { FileText, RefreshCw } from "lucide-svelte";
 
     let { data } = $props();
+
+    let startDate = $state(data.startDate);
+    let endDate = $state(data.endDate);
+
+    function applyFilter() {
+        goto(`/journals?from=${startDate}&to=${endDate}`);
+    }
 
     function formatCurrency(amount: number | null): string {
         if (amount === null || amount === undefined) return "₹0.00";
@@ -44,6 +55,32 @@
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Journal Entries
             </h1>
+        </div>
+
+        <!-- Date Filter -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <Label for="from" class="text-xs text-text-muted whitespace-nowrap">From</Label>
+                <Input
+                    type="date"
+                    id="from"
+                    bind:value={startDate}
+                    class="h-9 w-36 text-sm"
+                />
+            </div>
+            <div class="flex items-center gap-2">
+                <Label for="to" class="text-xs text-text-muted whitespace-nowrap">To</Label>
+                <Input
+                    type="date"
+                    id="to"
+                    bind:value={endDate}
+                    class="h-9 w-36 text-sm"
+                />
+            </div>
+            <Button size="sm" variant="outline" onclick={applyFilter}>
+                <RefreshCw class="size-3 mr-1.5" />
+                Apply
+            </Button>
         </div>
     </div>
 

@@ -49,14 +49,6 @@
     <!-- Scrollable Content -->
     <main class="flex-1 overflow-y-auto bg-background p-6">
         <div class="max-w-3xl mx-auto space-y-6">
-            {#if data.error}
-                <div
-                    class="bg-destructive/10 text-destructive p-3 rounded-md text-sm font-medium border border-destructive/20"
-                >
-                    {data.error}
-                </div>
-            {/if}
-
             <form
                 id="customer-form"
                 method="POST"

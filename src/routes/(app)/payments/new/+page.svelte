@@ -26,7 +26,24 @@
     $effect(() => {
         if (data.unpaidInvoices) {
             unpaidInvoices = data.unpaidInvoices;
-            allocations = {};
+            // Removed reset allocations = {}, we should keep it if user revisits?
+            // Better to only reset if customer changes, strictly handled by loadInvoices?
+            // Actually, data.unpaidInvoices changes on load.
+            // If preSelectedInvoiceId exists, allocate to it.
+            if (data.preSelectedInvoiceId) {
+                // Use data.unpaidInvoices to avoid reading state inside effect that writes to it
+                const targetInv = data.unpaidInvoices.find(
+                    (inv: any) => inv.id === data.preSelectedInvoiceId,
+                );
+                if (targetInv) {
+                    allocations = { [targetInv.id]: targetInv.balance_due };
+                    amount = targetInv.balance_due; // also set payment amount
+                } else {
+                    allocations = {};
+                }
+            } else {
+                allocations = {};
+            }
         }
     });
 

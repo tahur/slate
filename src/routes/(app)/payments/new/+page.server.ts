@@ -49,6 +49,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     // Check if a customer is pre-selected (from invoice page)
     const customerId = url.searchParams.get('customer');
+    const preSelectedInvoiceId = url.searchParams.get('invoice');
     let unpaidInvoices: any[] = [];
 
     if (customerId) {
@@ -77,6 +78,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         customers: customerList,
         depositAccounts,
         selectedCustomer: customerId || '',
+        preSelectedInvoiceId,
         unpaidInvoices,
         defaults: {
             payment_date: new Date().toISOString().split('T')[0]

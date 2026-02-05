@@ -2,6 +2,7 @@ import { db } from '../db';
 import { journal_entries, journal_lines, accounts } from '../db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { getNextNumber } from './number-series';
+import { addCurrency, round2, currencyEquals } from '$lib/utils/currency';
 
 export type PostingType =
     | 'INVOICE_ISSUED'
@@ -10,6 +11,7 @@ export type PostingType =
     | 'PAYMENT_REVERSED'
     | 'EXPENSE_RECORDED'
     | 'EXPENSE_REVERSED'
+    | 'CREDIT_NOTE_ISSUED'
     | 'MANUAL_ENTRY';
 
 interface JournalLineInput {
@@ -80,17 +82,14 @@ export async function post(
     orgId: string,
     input: PostingInput
 ): Promise<PostingResult> {
-    // Calculate totals
-    let totalDebit = 0;
-    let totalCredit = 0;
-
-    for (const line of input.lines) {
-        totalDebit += line.debit || 0;
-        totalCredit += line.credit || 0;
-    }
+    // Calculate totals using decimal.js for precision
+    const debits = input.lines.map(l => l.debit || 0);
+    const credits = input.lines.map(l => l.credit || 0);
+    const totalDebit = addCurrency(...debits);
+    const totalCredit = addCurrency(...credits);
 
     // Validate: debits = credits
-    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    if (!currencyEquals(totalDebit, totalCredit)) {
         throw new Error(
             `Journal entry unbalanced: Debit ₹${totalDebit.toFixed(2)} ≠ Credit ₹${totalCredit.toFixed(2)}`
         );
@@ -131,8 +130,8 @@ export async function post(
 
     for (const line of input.lines) {
         const accountId = accountMap.get(line.accountCode)!;
-        const debit = line.debit || 0;
-        const credit = line.credit || 0;
+        const debit = round2(line.debit || 0);
+        const credit = round2(line.credit || 0);
 
         await db.insert(journal_lines).values({
             id: crypto.randomUUID(),
@@ -148,12 +147,12 @@ export async function post(
         // Update account balance
         // Assets/Expenses: Debit increases, Credit decreases
         // Liabilities/Equity/Income: Credit increases, Debit decreases
-        const balanceChange = debit - credit;
+        const balanceChange = round2(debit - credit);
 
         await db
             .update(accounts)
             .set({
-                balance: sql`${accounts.balance} + ${balanceChange}`
+                balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)`
             })
             .where(eq(accounts.id, accountId));
 
@@ -468,6 +467,89 @@ export async function postExpense(
         date: input.date,
         referenceId: input.expenseId,
         narration: input.description,
+        lines,
+        userId: input.userId
+    });
+}
+
+// ============================================================
+// CREDIT NOTE POSTING RULES
+// ============================================================
+
+interface CreditNotePostingInput {
+    creditNoteId: string;
+    creditNoteNumber: string;
+    date: string;
+    customerId: string;
+    subtotal: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    total: number;
+    userId?: string;
+}
+
+/**
+ * Post a credit note issuance (reverse of invoice)
+ *
+ * Debit: Sales Revenue (4000) - Subtotal (reversing revenue)
+ * Debit: Output CGST (2100) - if intra-state (reversing tax liability)
+ * Debit: Output SGST (2101) - if intra-state (reversing tax liability)
+ * Debit: Output IGST (2102) - if inter-state (reversing tax liability)
+ * Credit: Accounts Receivable (1200) - Total (reducing customer balance)
+ */
+export async function postCreditNote(
+    orgId: string,
+    input: CreditNotePostingInput
+): Promise<PostingResult> {
+    const lines: JournalLineInput[] = [
+        // Debit Sales (reversing revenue)
+        {
+            accountCode: '4000', // Sales Revenue
+            debit: input.subtotal,
+            narration: `Credit Note ${input.creditNoteNumber}`
+        }
+    ];
+
+    // Add GST debits (reversing tax liability)
+    if (input.cgst > 0) {
+        lines.push({
+            accountCode: '2100', // Output CGST
+            debit: input.cgst,
+            narration: `CGST reversal on Credit Note ${input.creditNoteNumber}`
+        });
+    }
+
+    if (input.sgst > 0) {
+        lines.push({
+            accountCode: '2101', // Output SGST
+            debit: input.sgst,
+            narration: `SGST reversal on Credit Note ${input.creditNoteNumber}`
+        });
+    }
+
+    if (input.igst > 0) {
+        lines.push({
+            accountCode: '2102', // Output IGST
+            debit: input.igst,
+            narration: `IGST reversal on Credit Note ${input.creditNoteNumber}`
+        });
+    }
+
+    // Credit AR (reducing customer balance)
+    lines.push({
+        accountCode: '1200', // Accounts Receivable
+        credit: input.total,
+        partyType: 'customer',
+        partyId: input.customerId,
+        narration: `Credit Note ${input.creditNoteNumber}`
+    });
+
+    return post(orgId, {
+        type: 'CREDIT_NOTE_ISSUED',
+        date: input.date,
+        referenceId: input.creditNoteId,
+        narration: `Credit Note issued: ${input.creditNoteNumber}`,
         lines,
         userId: input.userId
     });

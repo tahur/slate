@@ -93,7 +93,6 @@
                             <th>Customer Name</th>
                             <th class="w-32">Mode</th>
                             <th class="text-right w-32">Amount</th>
-                            <th class="text-right w-32">Unused</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -118,7 +117,7 @@
                                         <span
                                             class="font-medium text-text-strong text-sm"
                                         >
-                                            {payment.customer?.name}
+                                            {payment.customer_name || payment.customer_company || "—"}
                                         </span>
                                         {#if payment.reference}
                                             <span
@@ -140,11 +139,6 @@
                                     class="text-right font-mono font-medium text-text-strong"
                                 >
                                     {formatCurrency(payment.amount)}
-                                </td>
-                                <td
-                                    class="text-right font-mono text-text-subtle"
-                                >
-                                    {formatCurrency(payment.unused_amount)}
                                 </td>
                             </tr>
                         {/each}

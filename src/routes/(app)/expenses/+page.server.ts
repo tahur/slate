@@ -15,6 +15,9 @@ export const load: PageServerLoad = async ({ locals }) => {
             vendor: expenses.vendor,
             description: expenses.description,
             amount: expenses.amount,
+            cgst: expenses.cgst,
+            sgst: expenses.sgst,
+            igst: expenses.igst,
             total: expenses.total,
             category_name: accounts.account_name,
         })

@@ -6,6 +6,7 @@
         AlertTriangle,
         AlertCircle,
     } from "lucide-svelte";
+    import type { ComponentType } from "svelte";
 
     export let status: string;
     export let className: string = "";
@@ -20,7 +21,7 @@
         | "success"
         | "warning"
         | "info";
-    let Icon;
+    let Icon: ComponentType | null;
 
     $: {
         switch (normalizedStatus) {

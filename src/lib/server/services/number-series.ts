@@ -2,13 +2,14 @@ import { db } from '../db';
 import { number_series } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export type NumberSeriesModule = 'invoice' | 'payment' | 'expense' | 'journal';
+export type NumberSeriesModule = 'invoice' | 'payment' | 'expense' | 'journal' | 'credit_note';
 
 const MODULE_PREFIXES: Record<NumberSeriesModule, string> = {
     invoice: 'INV',
     payment: 'PAY',
     expense: 'EXP',
-    journal: 'JE'
+    journal: 'JE',
+    credit_note: 'CN'
 };
 
 export function getDefaultPrefix(module: NumberSeriesModule): string {

@@ -45,6 +45,72 @@
     let paymentReference = $state("");
     let customerSearch = $state("");
 
+    // Credits State
+    let availableCredits = $state<
+        {
+            id: string;
+            amount: number;
+            type: "advance" | "credit_note";
+            notes?: string;
+            number?: string;
+            date: string;
+        }[]
+    >([]);
+    let usedCredits = $state<
+        { id: string; amount: number; type: "advance" | "credit_note" }[]
+    >([]);
+    let isLoadingCredits = $state(false);
+
+    $effect(() => {
+        if (formData.customer_id) {
+            loadCredits(formData.customer_id);
+        } else {
+            availableCredits = [];
+            usedCredits = [];
+        }
+    });
+
+    async function loadCredits(customerId: string) {
+        isLoadingCredits = true;
+        try {
+            const res = await fetch(`/api/customers/${customerId}/credits`);
+            if (res.ok) {
+                const data = await res.json();
+                const advances = data.advances.map((a: any) => ({
+                    ...a,
+                    type: "advance",
+                }));
+                const credits = data.credits.map((c: any) => ({
+                    ...c,
+                    type: "credit_note",
+                }));
+                availableCredits = [...advances, ...credits];
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            isLoadingCredits = false;
+        }
+    }
+
+    function toggleCreditUsage(credit: (typeof availableCredits)[number]) {
+        const existingIndex = usedCredits.findIndex((u) => u.id === credit.id);
+        if (existingIndex >= 0) {
+            // Remove
+            usedCredits = usedCredits.filter((u) => u.id !== credit.id);
+        } else {
+            // Add (Full amount)
+            usedCredits = [
+                ...usedCredits,
+                { id: credit.id, amount: credit.amount, type: credit.type },
+            ];
+        }
+    }
+
+    let totalCreditsApplied = $derived(
+        usedCredits.reduce((sum, c) => sum + c.amount, 0),
+    );
+
     // Drag and Drop State
     let dragItemIndex = $state<number | null>(null);
 
@@ -791,6 +857,34 @@
                                     >{formatCurrency(totals.total)}</span
                                 >
                             </div>
+
+                            {#if totalCreditsApplied > 0}
+                                <div
+                                    class="flex justify-between text-info text-sm mt-2"
+                                >
+                                    <span>Credits Applied</span>
+                                    <span class="font-mono font-medium"
+                                        >-{formatCurrency(
+                                            totalCreditsApplied,
+                                        )}</span
+                                    >
+                                </div>
+
+                                <div
+                                    class="flex justify-between text-text-strong text-sm mt-2 pt-2 border-t border-border-subtle font-semibold"
+                                >
+                                    <span>Balance Due</span>
+                                    <span class="font-mono"
+                                        >{formatCurrency(
+                                            Math.max(
+                                                0,
+                                                totals.total -
+                                                    totalCreditsApplied,
+                                            ),
+                                        )}</span
+                                    >
+                                </div>
+                            {/if}
                         </div>
 
                         <div class="border-t border-border mt-4 pt-4 space-y-3">
