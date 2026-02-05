@@ -28,10 +28,10 @@ export const actions: Actions = {
             return fail(401, { form, error: 'Unauthorized' });
         }
 
-        try {
-            const data = form.data;
-            const id = crypto.randomUUID();
+        const data = form.data;
+        const id = crypto.randomUUID();
 
+        try {
             await db.insert(vendors).values({
                 id,
                 org_id: event.locals.user.orgId,
@@ -54,11 +54,11 @@ export const actions: Actions = {
                 notes: data.notes || null,
                 created_by: event.locals.user.id,
             });
-
-            redirect(302, '/vendors');
         } catch (e) {
             console.error(e);
             return fail(500, { form, error: 'Failed to create vendor' });
         }
+
+        redirect(302, '/vendors');
     }
 };

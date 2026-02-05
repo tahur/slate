@@ -54,7 +54,10 @@ export const vendorSchema = z.object({
     payment_terms: z.coerce.number().min(0).max(365).default(30),
 
     // TDS
-    tds_applicable: z.coerce.boolean().default(false),
+    tds_applicable: z.preprocess(
+        (val) => val === true || val === 'true' || val === '1' || val === 'on',
+        z.boolean().default(false)
+    ),
     tds_section: z.string().optional().or(z.literal('')),
 
     notes: z.string().optional().or(z.literal('')),

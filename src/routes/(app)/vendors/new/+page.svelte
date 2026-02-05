@@ -43,7 +43,7 @@
 
     <!-- Form -->
     <div class="flex-1 overflow-y-auto bg-surface-1">
-        <form method="POST" use:enhance class="max-w-4xl mx-auto p-6 space-y-6">
+        <form id="vendor-form" method="POST" use:enhance class="max-w-4xl mx-auto p-6 pb-8 space-y-6">
             <!-- Basic Info -->
             <div class="bg-surface-0 rounded-xl border border-border p-6 space-y-6">
                 <div class="flex items-center gap-3 pb-4 border-b border-border">
@@ -256,9 +256,9 @@
                     <div class="flex items-center gap-3">
                         <Checkbox
                             id="tds_applicable"
-                            name="tds_applicable"
                             bind:checked={$form.tds_applicable}
                         />
+                        <input type="hidden" name="tds_applicable" value={$form.tds_applicable ? "true" : "false"} />
                         <Label for="tds_applicable" class="cursor-pointer">TDS Applicable</Label>
                     </div>
                     {#if $form.tds_applicable}
@@ -292,16 +292,31 @@
                 ></textarea>
             </div>
 
-            <!-- Actions -->
-            <div class="flex justify-end gap-3 pt-4">
-                <Button variant="outline" href="/vendors">
-                    Cancel
-                </Button>
-                <Button type="submit" disabled={$submitting}>
-                    <Save class="mr-2 size-4" />
-                    {$submitting ? "Saving..." : "Save Vendor"}
-                </Button>
-            </div>
         </form>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div
+        class="flex-none bg-surface-1 border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4 flex items-center justify-between z-20"
+    >
+        <div class="flex items-center gap-3">
+            <Button
+                type="submit"
+                form="vendor-form"
+                disabled={$submitting}
+                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
+            >
+                <Save class="mr-2 size-4" />
+                {$submitting ? "Saving..." : "Save Vendor"}
+            </Button>
+            <Button
+                href="/vendors"
+                variant="ghost"
+                type="button"
+                class="text-text-muted hover:text-destructive"
+            >
+                Cancel
+            </Button>
+        </div>
     </div>
 </div>

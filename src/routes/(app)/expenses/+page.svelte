@@ -121,7 +121,13 @@
                                     </div>
                                 </td>
                                 <td class="text-sm text-text-strong">
-                                    {expense.vendor_name || "—"}
+                                    {#if expense.vendor_id}
+                                        <a href="/vendors/{expense.vendor_id}" class="text-primary hover:underline">
+                                            {expense.vendor_display_name || expense.vendor_actual_name || expense.vendor_name}
+                                        </a>
+                                    {:else}
+                                        {expense.vendor_name || "—"}
+                                    {/if}
                                 </td>
                                 <td
                                     class="text-right font-mono text-text-subtle"

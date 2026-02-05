@@ -41,13 +41,19 @@
             ],
         },
         {
-            title: "FINANCE",
+            title: "PURCHASES",
             items: [
-                { href: "/payments", label: "Payments", icon: Banknote },
+                { href: "/vendors", label: "Vendors", icon: Briefcase },
                 { href: "/expenses", label: "Expenses", icon: Wallet },
             ],
         },
-
+        {
+            title: "FINANCE",
+            items: [
+                { href: "/payments", label: "Payments", icon: Banknote },
+                { href: "/journals", label: "Journal Entries", icon: BookOpen },
+            ],
+        },
         {
             title: "SETTINGS",
             items: [{ href: "/settings", label: "Settings", icon: Settings }],

@@ -1,12 +1,12 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { expenses, accounts } from '$lib/server/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { expenses, accounts, vendors } from '$lib/server/db/schema';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postExpense } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
         redirect(302, '/login');
     }
@@ -45,9 +45,32 @@ export const load: PageServerLoad = async ({ locals }) => {
             )
         );
 
+    // Get vendors list
+    const vendorList = await db
+        .select({
+            id: vendors.id,
+            name: vendors.name,
+            display_name: vendors.display_name,
+            gstin: vendors.gstin,
+            state_code: vendors.state_code,
+        })
+        .from(vendors)
+        .where(
+            and(
+                eq(vendors.org_id, orgId),
+                eq(vendors.is_active, 1)
+            )
+        )
+        .orderBy(vendors.name);
+
+    // Check for pre-selected vendor from URL
+    const selectedVendorId = url.searchParams.get('vendor');
+
     return {
         expenseAccounts,
         paymentAccounts,
+        vendors: vendorList,
+        selectedVendorId,
         defaults: {
             expense_date: new Date().toISOString().split('T')[0]
         }
@@ -66,7 +89,8 @@ export const actions: Actions = {
         // Parse form data
         const expense_date = formData.get('expense_date') as string;
         const category = formData.get('category') as string;
-        const vendor_name = formData.get('vendor') as string || '';
+        const vendor_id = formData.get('vendor_id') as string || null;
+        const vendor_name = formData.get('vendor_name') as string || '';
         const description = formData.get('description') as string || '';
         const amount = parseFloat(formData.get('amount') as string) || 0;
         const gst_rate = parseFloat(formData.get('gst_rate') as string) || 0;
@@ -142,6 +166,7 @@ export const actions: Actions = {
                 expense_number: expenseNumber,
                 expense_date,
                 category,
+                vendor_id: vendor_id || null,
                 vendor_name,
                 description,
                 amount,

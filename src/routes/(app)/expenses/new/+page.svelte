@@ -3,7 +3,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { ArrowLeft, Check, Save } from "lucide-svelte";
+    import { ArrowLeft, Check, Save, Plus } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
 
@@ -14,6 +14,20 @@
     let amount = $state(0);
     let gstRate = $state(0);
     let isInterState = $state(false);
+    let selectedVendorId = $state(data.selectedVendorId || "");
+    let vendorName = $state("");
+
+    // When vendor is selected, update the display name
+    const selectedVendor = $derived(
+        data.vendors.find(v => v.id === selectedVendorId)
+    );
+
+    // Auto-set inter-state based on vendor's state vs org state
+    $effect(() => {
+        if (selectedVendor) {
+            vendorName = selectedVendor.display_name || selectedVendor.name;
+        }
+    });
 
     // Computed GST
     let gstAmount = $derived((amount * gstRate) / 100);
@@ -120,18 +134,45 @@
 
                     <!-- Vendor -->
                     <div class="space-y-2">
-                        <Label
-                            for="vendor"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Vendor</Label
+                        <div class="flex items-center justify-between">
+                            <Label
+                                for="vendor_id"
+                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                                >Vendor</Label
+                            >
+                            <a href="/vendors/new" class="text-xs text-primary hover:underline flex items-center gap-1">
+                                <Plus class="size-3" />
+                                New Vendor
+                            </a>
+                        </div>
+                        <select
+                            id="vendor_id"
+                            name="vendor_id"
+                            bind:value={selectedVendorId}
+                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                         >
-                        <Input
-                            type="text"
-                            id="vendor"
-                            name="vendor"
-                            placeholder="Vendor or supplier name"
-                            class="h-11 border-border-strong bg-surface-0"
-                        />
+                            <option value="">Select vendor or type below...</option>
+                            {#each data.vendors as vendor}
+                                <option value={vendor.id}>
+                                    {vendor.display_name || vendor.name}
+                                    {#if vendor.gstin}
+                                        <span class="text-text-muted"> (GST)</span>
+                                    {/if}
+                                </option>
+                            {/each}
+                        </select>
+                        {#if !selectedVendorId}
+                            <Input
+                                type="text"
+                                id="vendor_name"
+                                name="vendor_name"
+                                bind:value={vendorName}
+                                placeholder="Or type vendor name for quick entry"
+                                class="h-10 border-border bg-surface-0 text-sm"
+                            />
+                        {:else}
+                            <input type="hidden" name="vendor_name" value={vendorName} />
+                        {/if}
                     </div>
 
                     <!-- Description -->
