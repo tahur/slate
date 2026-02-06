@@ -4,7 +4,7 @@ import { users, password_reset_tokens } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { hash } from '@node-rs/argon2';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
     if (!token) {
         return {
-            form: await superValidate(zod4(resetPasswordSchema)),
+            form: await superValidate(zod(resetPasswordSchema)),
             valid: false,
             error: 'Invalid reset link. Please request a new one.'
         };
@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
     if (!resetToken) {
         return {
-            form: await superValidate(zod4(resetPasswordSchema)),
+            form: await superValidate(zod(resetPasswordSchema)),
             valid: false,
             error: 'Invalid reset link. Please request a new one.'
         };
@@ -50,14 +50,14 @@ export const load: PageServerLoad = async ({ url, locals }) => {
         // Delete expired token
         await db.delete(password_reset_tokens).where(eq(password_reset_tokens.id, resetToken.id));
         return {
-            form: await superValidate(zod4(resetPasswordSchema)),
+            form: await superValidate(zod(resetPasswordSchema)),
             valid: false,
             error: 'This reset link has expired. Please request a new one.'
         };
     }
 
     return {
-        form: await superValidate(zod4(resetPasswordSchema)),
+        form: await superValidate(zod(resetPasswordSchema)),
         valid: true,
         token
     };
@@ -65,7 +65,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
 export const actions: Actions = {
     default: async ({ request, url }) => {
-        const form = await superValidate(request, zod4(resetPasswordSchema));
+        const form = await superValidate(request, zod(resetPasswordSchema));
 
         if (!form.valid) {
             return fail(400, { form });

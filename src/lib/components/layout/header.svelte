@@ -1,7 +1,6 @@
 <script lang="ts">
-    import { page } from "$app/stores";
     import { buttonVariants } from "$lib/components/ui/button";
-    import { Menu, ChevronRight } from "lucide-svelte";
+    import { Menu } from "lucide-svelte";
     import {
         Sheet,
         SheetContent,
@@ -19,29 +18,6 @@
             .join("")
             .substring(0, 2)
             .toUpperCase();
-    }
-
-    // Helper to get page title from pathname
-    function getPageTitle(pathname: string) {
-        if (pathname === "/dashboard")
-            return { section: "CRM", page: "Dashboard" };
-        if (pathname.startsWith("/invoices"))
-            return { section: "Clients", page: "Invoices" };
-        if (pathname.startsWith("/payments"))
-            return { section: "Finance", page: "Payments" };
-        if (pathname.startsWith("/expenses"))
-            return { section: "Finance", page: "Expenses" };
-        if (pathname.startsWith("/customers"))
-            return { section: "Clients", page: "Customers" };
-        if (pathname.startsWith("/credit-notes"))
-            return { section: "Clients", page: "Credit Notes" };
-        if (pathname.startsWith("/accounts"))
-            return { section: "Accounting", page: "Chart of Accounts" };
-        if (pathname.startsWith("/journals"))
-            return { section: "Accounting", page: "Journal Entries" };
-        if (pathname.startsWith("/settings"))
-            return { section: "System", page: "Settings" };
-        return { section: "App", page: "OpenBill" };
     }
 </script>
 
@@ -65,18 +41,6 @@
                 <Sidebar class="flex h-full w-full flex-col bg-sidebar-bg" />
             </SheetContent>
         </Sheet>
-    </div>
-
-    <!-- Breadcrumbs / Title -->
-    <div class="flex items-center gap-2">
-        <span
-            class="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-muted"
-            >{getPageTitle($page.url.pathname).section}</span
-        >
-        <ChevronRight class="size-3 text-text-muted/60" />
-        <span class="text-base font-semibold text-text-strong"
-            >{getPageTitle($page.url.pathname).page}</span
-        >
     </div>
 
     <div class="ml-auto flex items-center gap-3">

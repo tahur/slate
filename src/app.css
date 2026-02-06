@@ -13,21 +13,67 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
+    --radius: 0.5rem;
+
     --color-brand: #fb631b;
     --color-brand-hover: #e04f0d;
 
-    --color-sidebar-bg: #18181b;
-    --color-sidebar-fg: #f4f4f5;
+    /* Surfaces (Friendly Grays from Style Guide) */
+    --color-surface-0: hsl(0 0% 100%);
+    --color-surface-1: hsl(210 20% 98%);
+    --color-surface-2: hsl(210 20% 96%);
+    --color-surface-3: hsl(210 20% 92%);
+
+    /* Text (Legible & Easy) */
+    --color-text-strong: hsl(220 20% 15%);
+    --color-text-subtle: hsl(220 10% 45%);
+    --color-text-muted: hsl(220 10% 65%);
+    --color-text-placeholder: hsl(220 10% 72%);
+    --color-text-secondary: hsl(220 10% 55%);
+
+    /* Borders */
+    --color-border-strong: hsl(220 15% 85%);
+    --color-border-subtle: hsl(220 15% 92%);
+    --color-border-dashed: hsl(220 15% 88%);
+
+    /* Sidebar (Light) */
+    --color-sidebar-bg: hsl(0 0% 100%);
+    --color-sidebar-fg: hsl(220 15% 40%);
     --color-sidebar-primary: #fb631b;
-    --color-sidebar-accent: #27272a;
-    --color-sidebar-border: #27272a;
+    --color-sidebar-accent: hsl(24 90% 97%);
+    --color-sidebar-accent-fg: hsl(24 80% 40%);
+    --color-sidebar-border: hsl(220 15% 93%);
 
-    --color-background: 0 0% 100%;
-    --color-foreground: 240 10% 3.9%;
+    /* Semantic status colors (used by Badge component) */
+    --color-positive: hsl(150 60% 38%);
+    --color-negative: hsl(0 72% 51%);
+    --color-warning: hsl(38 92% 50%);
+    --color-warning-foreground: hsl(30 80% 28%);
+    --color-info: hsl(210 70% 48%);
 
-    --color-border: 240 5.9% 90%;
-    --color-input: 240 5.9% 90%;
-    --color-ring: 240 10% 3.9%;
+    /* Shadcn-compatible tokens */
+    --color-background: hsl(0 0% 100%);
+    --color-foreground: hsl(220 15% 25%);
+    --color-primary: #fb631b;
+    --color-primary-foreground: hsl(0 0% 100%);
+    --color-secondary: hsl(210 20% 96%);
+    --color-secondary-foreground: hsl(220 20% 15%);
+    --color-muted: hsl(210 20% 96%);
+    --color-muted-foreground: hsl(220 10% 45%);
+    --color-accent: hsl(150 60% 45%);
+    --color-accent-foreground: hsl(0 0% 100%);
+    --color-destructive: hsl(0 84% 60%);
+    --color-destructive-foreground: hsl(0 0% 100%);
+    --color-card: hsl(0 0% 100%);
+    --color-card-foreground: hsl(220 15% 25%);
+    --color-popover: hsl(0 0% 100%);
+    --color-popover-foreground: hsl(220 15% 25%);
+
+    --color-border: hsl(220 15% 92%);
+    --color-input: hsl(220 15% 92%);
+    --color-ring: #fb631b;
+
+    --shadow-hairline: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 
     --animate-accordion-down: accordion-down 0.2s ease-out;
     --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -107,5 +153,268 @@
 
     .shadow-glow {
         box-shadow: 0 0 20px -5px var(--color-brand);
+    }
+}
+
+/* ── Data Table ─────────────────────────────────────── */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+}
+
+.data-table thead {
+    background-color: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.data-table th {
+    padding: 0.625rem 1rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 0.75rem 1rem;
+    color: var(--color-text-strong);
+    border-bottom: 1px solid var(--color-border-subtle);
+    vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr {
+    transition: background-color 0.1s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--color-surface-2);
+}
+
+/* Cell variants */
+.data-cell--muted {
+    color: var(--color-text-muted);
+}
+
+.data-cell--number {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+}
+
+.data-cell--primary {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* Row link: makes entire cell clickable without changing appearance */
+.data-row-link {
+    display: flex;
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+    width: 100%;
+    height: 100%;
+}
+
+/* ── Status Pills ───────────────────────────────────── */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    letter-spacing: 0.01em;
+}
+
+.status-pill--positive {
+    background-color: hsl(150 60% 95%);
+    color: hsl(150 60% 30%);
+}
+
+.status-pill--warning {
+    background-color: hsl(40 95% 93%);
+    color: hsl(30 80% 35%);
+}
+
+.status-pill--info {
+    background-color: hsl(210 90% 95%);
+    color: hsl(210 70% 40%);
+}
+
+.status-pill--negative {
+    background-color: hsl(0 85% 95%);
+    color: hsl(0 70% 40%);
+}
+
+/* ── Form Labels ────────────────────────────────────── */
+.form-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+}
+
+/* ── Action Bar (sticky bottom bar for forms) ───────── */
+.action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-surface-0);
+    z-index: 20;
+    flex-shrink: 0;
+}
+
+.action-bar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ── App Surface ────────────────────────────────────── */
+.app-surface {
+    background-color: var(--color-surface-1);
+}
+
+/* ── Full-bleed page (cancels layout padding) ───────── */
+/* Used by pages that need edge-to-edge layout (invoice forms, detail views) */
+/* The layout's <main> is: flex-1 overflow-auto p-4 md:p-5 */
+/* This class cancels the padding and fills the full area */
+.page-full-bleed {
+    display: flex;
+    flex-direction: column;
+    /* Height = parent content area + padding it cancels via negative margin */
+    height: calc(100% + 2rem);
+    margin: -1rem;
+}
+
+@media (min-width: 768px) {
+    .page-full-bleed {
+        height: calc(100% + 2.5rem);
+        margin: -1.25rem;
+    }
+}
+
+/* ── Print Styles ──────────────────────────────────── */
+@media print {
+    @page {
+        size: A4;
+        margin: 15mm 12mm;
+    }
+
+    /* Colors print accurately */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Unlock the viewport: the app shell uses h-screen + overflow-hidden */
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+    }
+
+    /* 1. Hide sidebar (the <aside> in layout) */
+    aside {
+        display: none !important;
+    }
+
+    /* 2. Hide the layout header (breadcrumbs bar) */
+    .app-surface > header {
+        display: none !important;
+    }
+
+    /* 3. Hide any element explicitly marked print-hide (page-level toolbars) */
+    .print-hide {
+        display: none !important;
+    }
+
+    /* 4. Hide action bars and bottom bars */
+    .action-bar {
+        display: none !important;
+    }
+
+    /* 5. App shell — unwrap flex/overflow so content can flow to printer */
+    .flex.h-screen {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .app-surface {
+        display: block !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    /* 6. Layout <main> — remove padding that page-full-bleed normally cancels */
+    .app-surface > main {
+        display: block !important;
+        overflow: visible !important;
+        height: auto !important;
+        padding: 0 !important;
+    }
+
+    /* 7. page-full-bleed — neutralise its negative margin + fixed height */
+    .page-full-bleed {
+        display: block !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+    }
+
+    /* 8. The scrollable content area inside page-full-bleed */
+    .print-bg-white {
+        background: white !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    /* 9. The paper sheet — strip screen chrome, let it fill the page */
+    .print-sheet {
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+    }
+
+    /* 10. Images (logos) must be visible */
+    .print-sheet img {
+        display: inline-block !important;
+        visibility: visible !important;
+        max-height: 60px;
+        width: auto;
+        break-inside: avoid;
+    }
+
+    /* 11. Links look like plain text when printed */
+    .print-no-link {
+        color: inherit !important;
+        text-decoration: none !important;
+    }
+
+    /* 12. Tables and rows don't break across pages */
+    table, tr {
+        page-break-inside: avoid;
     }
 }

@@ -50,13 +50,6 @@
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 All Invoices
             </h1>
-            <div class="h-6 w-px bg-border-subtle"></div>
-            <!-- Placeholder for filters -->
-            <button
-                class="text-xs font-semibold uppercase tracking-wider text-primary hover:underline"
-            >
-                Filter
-            </button>
         </div>
         <Button
             href="/invoices/new"
@@ -96,59 +89,59 @@
                 <table class="data-table w-full">
                     <thead>
                         <tr>
-                            <th class="w-32">Date</th>
-                            <th class="w-40">Invoice #</th>
+                            <th class="w-28">Date</th>
+                            <th>Invoice #</th>
                             <th>Customer Name</th>
-                            <th class="text-right w-32">Status</th>
+                            <th class="text-right w-28">Status</th>
                             <th class="text-right w-32">Amount</th>
                             <th class="text-right w-32">Balance Due</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.invoices as invoice}
-                            <tr
-                                class="group hover:bg-surface-2 transition-colors cursor-pointer"
-                                onclick={() =>
-                                    (window.location.href = `/invoices/${invoice.id}`)}
-                            >
+                            <tr class="group cursor-pointer">
                                 <td class="data-cell--muted font-medium">
-                                    {formatDate(invoice.invoice_date)}
+                                    <a href="/invoices/{invoice.id}" class="data-row-link">
+                                        {formatDate(invoice.invoice_date)}
+                                    </a>
                                 </td>
                                 <td>
-                                    <a
-                                        href="/invoices/{invoice.id}"
-                                        class="font-mono text-sm font-medium text-primary hover:underline"
-                                    >
+                                    <a href="/invoices/{invoice.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
                                         {invoice.invoice_number}
                                     </a>
                                 </td>
                                 <td>
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="text-sm font-semibold text-text-strong"
-                                            >{invoice.customer_name ||
-                                                "—"}</span
-                                        >
-                                        {#if invoice.customer_company}
+                                    <a href="/invoices/{invoice.id}" class="data-row-link">
+                                        <div class="flex flex-col">
                                             <span
-                                                class="text-[11px] text-text-muted uppercase tracking-wide"
+                                                class="text-sm font-semibold text-text-strong"
+                                                >{invoice.customer_name ||
+                                                    "—"}</span
                                             >
-                                                {invoice.customer_company}
-                                            </span>
-                                        {/if}
-                                    </div>
+                                            {#if invoice.customer_company}
+                                                <span
+                                                    class="text-[11px] text-text-muted uppercase tracking-wide"
+                                                >
+                                                    {invoice.customer_company}
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </a>
                                 </td>
                                 <td class="text-right">
-                                    <StatusBadge
-                                        status={invoice.status.replace(
-                                            "_",
-                                            " ",
-                                        )}
-                                        className="justify-end"
-                                    />
+                                    <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
+                                        <StatusBadge
+                                            status={invoice.status.replace(
+                                                "_",
+                                                " ",
+                                            )}
+                                        />
+                                    </a>
                                 </td>
                                 <td class="data-cell--number text-text-strong">
-                                    {formatCurrency(invoice.total)}
+                                    <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
+                                        {formatCurrency(invoice.total)}
+                                    </a>
                                 </td>
                                 <td
                                     class="data-cell--number font-bold {invoice.balance_due >
@@ -156,7 +149,9 @@
                                         ? 'text-text-strong'
                                         : 'text-text-muted'}"
                                 >
-                                    {formatCurrency(invoice.balance_due)}
+                                    <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
+                                        {formatCurrency(invoice.balance_due)}
+                                    </a>
                                 </td>
                             </tr>
                         {/each}

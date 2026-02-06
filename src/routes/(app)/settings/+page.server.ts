@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { organizations, users, number_series, app_settings } from '$lib/server/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { orgSettingsSchema, profileSchema, numberSeriesSchema, smtpSettingsSchema } from './schema';
 import { getCurrentFiscalYear, getDefaultPrefix } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
@@ -69,7 +69,7 @@ export const load: PageServerLoad = async ({ locals }) => {
                 invoice_notes_default: org.invoice_notes_default || '',
                 invoice_terms_default: org.invoice_terms_default || ''
             },
-            zod4(orgSettingsSchema),
+            zod(orgSettingsSchema),
             { id: 'org-settings' }
         );
 
@@ -78,7 +78,7 @@ export const load: PageServerLoad = async ({ locals }) => {
                 name: user?.name || '',
                 email: user?.email || ''
             },
-            zod4(profileSchema),
+            zod(profileSchema),
             { id: 'profile-settings' }
         );
 
@@ -90,7 +90,7 @@ export const load: PageServerLoad = async ({ locals }) => {
                 credit_note_prefix: seriesMap.get('credit_note') || getDefaultPrefix('credit_note'),
                 journal_prefix: seriesMap.get('journal') || getDefaultPrefix('journal')
             },
-            zod4(numberSeriesSchema),
+            zod(numberSeriesSchema),
             { id: 'series-settings' }
         );
 
@@ -108,7 +108,7 @@ export const load: PageServerLoad = async ({ locals }) => {
                 smtp_from: smtpSettings?.smtp_from || '',
                 smtp_secure: smtpSettings?.smtp_secure || false
             },
-            zod4(smtpSettingsSchema),
+            zod(smtpSettingsSchema),
             { id: 'smtp-settings' }
         );
 
@@ -132,7 +132,7 @@ export const actions: Actions = {
             redirect(302, '/login');
         }
 
-        const form = await superValidate(request, zod4(orgSettingsSchema), {
+        const form = await superValidate(request, zod(orgSettingsSchema), {
             id: 'org-settings'
         });
         if (!form.valid) {
@@ -179,7 +179,7 @@ export const actions: Actions = {
             redirect(302, '/login');
         }
 
-        const form = await superValidate(request, zod4(profileSchema), {
+        const form = await superValidate(request, zod(profileSchema), {
             id: 'profile-settings'
         });
         if (!form.valid) {
@@ -215,7 +215,7 @@ export const actions: Actions = {
             redirect(302, '/login');
         }
 
-        const form = await superValidate(request, zod4(numberSeriesSchema), {
+        const form = await superValidate(request, zod(numberSeriesSchema), {
             id: 'series-settings'
         });
         if (!form.valid) {
@@ -273,7 +273,7 @@ export const actions: Actions = {
             redirect(302, '/login');
         }
 
-        const form = await superValidate(request, zod4(smtpSettingsSchema), {
+        const form = await superValidate(request, zod(smtpSettingsSchema), {
             id: 'smtp-settings'
         });
 
@@ -337,7 +337,7 @@ export const actions: Actions = {
             redirect(302, '/login');
         }
 
-        const form = await superValidate(request, zod4(smtpSettingsSchema), {
+        const form = await superValidate(request, zod(smtpSettingsSchema), {
             id: 'smtp-settings'
         });
 

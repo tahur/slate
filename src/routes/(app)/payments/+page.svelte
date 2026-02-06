@@ -43,13 +43,6 @@
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Payments Received
             </h1>
-            <div class="h-6 w-px bg-border-subtle"></div>
-            <!-- Placeholder for filters -->
-            <button
-                class="text-xs font-semibold uppercase tracking-wider text-primary hover:underline"
-            >
-                Filter
-            </button>
         </div>
         <Button
             href="/payments/new"
@@ -89,8 +82,8 @@
                 <table class="data-table w-full">
                     <thead>
                         <tr>
-                            <th class="w-32">Date</th>
-                            <th class="w-40">Payment #</th>
+                            <th class="w-28">Date</th>
+                            <th>Payment #</th>
                             <th>Customer Name</th>
                             <th class="w-32">Mode</th>
                             <th class="text-right w-32">Amount</th>
@@ -98,51 +91,51 @@
                     </thead>
                     <tbody>
                         {#each data.payments as payment}
-                            <tr
-                                class="group hover:bg-surface-2 transition-colors cursor-pointer"
-                                onclick={() =>
-                                    (window.location.href = `/payments/${payment.id}`)}
-                            >
-                                <td class="font-mono text-xs text-text-strong">
-                                    {formatDate(payment.payment_date)}
+                            <tr class="group cursor-pointer">
+                                <td class="data-cell--muted font-medium">
+                                    <a href="/payments/{payment.id}" class="data-row-link">
+                                        {formatDate(payment.payment_date)}
+                                    </a>
                                 </td>
                                 <td>
-                                    <span
-                                        class="font-mono text-xs font-medium text-primary hover:underline"
-                                    >
+                                    <a href="/payments/{payment.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
                                         {payment.payment_number}
-                                    </span>
+                                    </a>
                                 </td>
                                 <td>
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="font-medium text-text-strong text-sm"
-                                        >
-                                            {payment.customer_name ||
-                                                payment.customer_company ||
-                                                "—"}
-                                        </span>
-                                        {#if payment.reference}
+                                    <a href="/payments/{payment.id}" class="data-row-link">
+                                        <div class="flex flex-col">
                                             <span
-                                                class="text-[10px] text-text-muted truncate max-w-[12rem]"
+                                                class="font-medium text-text-strong text-sm"
                                             >
-                                                Ref: {payment.reference}
+                                                {payment.customer_name ||
+                                                    payment.customer_company ||
+                                                    "—"}
                                             </span>
-                                        {/if}
-                                    </div>
+                                            {#if payment.reference}
+                                                <span
+                                                    class="text-[10px] text-text-muted truncate max-w-[12rem]"
+                                                >
+                                                    Ref: {payment.reference}
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </a>
                                 </td>
                                 <td>
-                                    <Badge
-                                        variant="outline"
-                                        class="capitalize bg-surface-1"
-                                    >
-                                        {getModeLabel(payment.payment_mode)}
-                                    </Badge>
+                                    <a href="/payments/{payment.id}" class="data-row-link">
+                                        <Badge
+                                            variant="outline"
+                                            class="capitalize bg-surface-1"
+                                        >
+                                            {getModeLabel(payment.payment_mode)}
+                                        </Badge>
+                                    </a>
                                 </td>
-                                <td
-                                    class="text-right font-mono font-medium text-text-strong"
-                                >
-                                    {formatCurrency(payment.amount)}
+                                <td class="data-cell--number text-text-strong">
+                                    <a href="/payments/{payment.id}" class="data-row-link justify-end">
+                                        {formatCurrency(payment.amount)}
+                                    </a>
                                 </td>
                             </tr>
                         {/each}

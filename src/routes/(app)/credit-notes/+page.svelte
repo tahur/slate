@@ -81,8 +81,8 @@
                 <table class="data-table w-full">
                     <thead>
                         <tr>
-                            <th class="w-32">Date</th>
-                            <th class="w-40">CN #</th>
+                            <th class="w-28">Date</th>
+                            <th>CN #</th>
                             <th>Customer</th>
                             <th>Reason</th>
                             <th class="text-right w-28">Status</th>
@@ -91,41 +91,44 @@
                     </thead>
                     <tbody>
                         {#each data.creditNotes as cn}
-                            <tr
-                                class="group hover:bg-surface-2 transition-colors cursor-pointer"
-                                onclick={() =>
-                                    (window.location.href = `/credit-notes/${cn.id}`)}
-                            >
+                            <tr class="group cursor-pointer">
                                 <td class="data-cell--muted font-medium">
-                                    {formatDate(cn.credit_note_date)}
+                                    <a href="/credit-notes/{cn.id}" class="data-row-link">
+                                        {formatDate(cn.credit_note_date)}
+                                    </a>
                                 </td>
                                 <td>
-                                    <span
-                                        class="font-mono text-sm font-medium text-primary"
-                                    >
+                                    <a href="/credit-notes/{cn.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
                                         {cn.credit_note_number}
-                                    </span>
+                                    </a>
                                 </td>
                                 <td>
-                                    <span
-                                        class="text-sm font-semibold text-text-strong"
-                                        >{cn.customer_name || "—"}</span
-                                    >
+                                    <a href="/credit-notes/{cn.id}" class="data-row-link">
+                                        <span
+                                            class="text-sm font-semibold text-text-strong"
+                                            >{cn.customer_name || "—"}</span
+                                        >
+                                    </a>
                                 </td>
                                 <td>
-                                    <span
-                                        class="text-sm text-text-subtle capitalize"
-                                        >{cn.reason}</span
-                                    >
+                                    <a href="/credit-notes/{cn.id}" class="data-row-link">
+                                        <span
+                                            class="text-sm text-text-subtle capitalize"
+                                            >{cn.reason}</span
+                                        >
+                                    </a>
                                 </td>
                                 <td class="text-right">
-                                    <StatusBadge
-                                        status={cn.status}
-                                        className="justify-end"
-                                    />
+                                    <a href="/credit-notes/{cn.id}" class="data-row-link justify-end">
+                                        <StatusBadge
+                                            status={cn.status}
+                                        />
+                                    </a>
                                 </td>
                                 <td class="data-cell--number text-text-strong">
-                                    {formatCurrency(cn.total)}
+                                    <a href="/credit-notes/{cn.id}" class="data-row-link justify-end">
+                                        {formatCurrency(cn.total)}
+                                    </a>
                                 </td>
                             </tr>
                         {/each}

@@ -11,6 +11,7 @@
         FileText,
         CheckCircle2,
         XCircle,
+        TriangleAlert,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
 
@@ -31,33 +32,16 @@
         }).format(amount);
     }
 
-    function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
-
     function downloadCSV() {
-        window.open(
-            `/api/reports/gstr3b/csv?from=${startDate}&to=${endDate}`,
-            "_blank",
-        );
+        window.open(`/api/reports/gstr3b/csv?from=${startDate}&to=${endDate}`, "_blank");
     }
 
     function downloadPDF() {
-        window.open(
-            `/api/reports/gstr3b/pdf?from=${startDate}&to=${endDate}`,
-            "_blank",
-        );
+        window.open(`/api/reports/gstr3b/pdf?from=${startDate}&to=${endDate}`, "_blank");
     }
 
     function downloadJSON() {
-        window.open(
-            `/api/reports/gstr3b/json?from=${startDate}&to=${endDate}`,
-            "_blank",
-        );
+        window.open(`/api/reports/gstr3b/json?from=${startDate}&to=${endDate}`, "_blank");
     }
 </script>
 
@@ -68,8 +52,8 @@
                 <ArrowLeft class="size-4" />
             </Button>
             <div>
-                <h1 class="text-xl font-semibold">GSTR-3B Purchase Data</h1>
-                <p class="text-sm text-muted-foreground">
+                <h1 class="text-xl font-semibold text-text-strong">GSTR-3B Purchase Data</h1>
+                <p class="text-sm text-text-muted">
                     Input Tax Credit (ITC) data for GST filing
                 </p>
             </div>
@@ -95,11 +79,11 @@
     <Card class="p-4">
         <div class="flex items-end gap-4 flex-wrap">
             <div class="space-y-2">
-                <Label for="from">From</Label>
+                <Label for="from" class="form-label">From</Label>
                 <Input type="date" id="from" bind:value={startDate} />
             </div>
             <div class="space-y-2">
-                <Label for="to">To</Label>
+                <Label for="to" class="form-label">To</Label>
                 <Input type="date" id="to" bind:value={endDate} />
             </div>
             <Button onclick={applyFilter}>
@@ -107,10 +91,10 @@
                 Apply
             </Button>
         </div>
-        <p class="text-xs text-muted-foreground mt-2">
+        <p class="text-xs text-text-muted mt-2">
             Period: {data.period}
             {#if data.gstin}
-                <span class="ml-4">GSTIN: {data.gstin}</span>
+                <span class="ml-4">GSTIN: <span class="font-mono">{data.gstin}</span></span>
             {/if}
         </p>
     </Card>
@@ -118,30 +102,30 @@
     <!-- Summary Cards -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground">Total Purchases</p>
-            <p class="text-2xl font-bold">{data.data.summary.totalPurchases}</p>
+            <p class="text-xs text-text-muted">Total Purchases</p>
+            <p class="text-2xl font-bold text-text-strong">{data.data.summary.totalPurchases}</p>
         </Card>
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground">Expense Value</p>
-            <p class="text-2xl font-bold font-mono">
+            <p class="text-xs text-text-muted">Expense Value</p>
+            <p class="text-2xl font-bold font-mono text-text-strong">
                 {formatCurrency(data.data.summary.totalExpenseValue)}
             </p>
         </Card>
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground">Eligible ITC</p>
-            <p class="text-2xl font-bold font-mono text-green-600">
+            <p class="text-xs text-text-muted">Eligible ITC</p>
+            <p class="text-2xl font-bold font-mono text-positive">
                 {formatCurrency(data.data.summary.totalEligibleItc)}
             </p>
         </Card>
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground">Ineligible ITC</p>
-            <p class="text-2xl font-bold font-mono text-red-600">
+            <p class="text-xs text-text-muted">Ineligible ITC</p>
+            <p class="text-2xl font-bold font-mono text-negative">
                 {formatCurrency(data.data.summary.ineligibleItc)}
             </p>
         </Card>
-        <Card class="p-4 bg-green-50 dark:bg-green-950/30">
-            <p class="text-xs text-muted-foreground">Net ITC Available</p>
-            <p class="text-2xl font-bold font-mono text-green-700 dark:text-green-400">
+        <Card class="p-4 bg-positive/5 border-positive/20">
+            <p class="text-xs text-text-muted">Net ITC Available</p>
+            <p class="text-2xl font-bold font-mono text-positive">
                 {formatCurrency(data.data.summary.totalEligibleItc)}
             </p>
         </Card>
@@ -150,20 +134,20 @@
     <!-- ITC Breakdown -->
     <div class="grid gap-4 md:grid-cols-3">
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground mb-2">CGST ITC</p>
-            <p class="text-xl font-bold font-mono">
+            <p class="text-xs text-text-muted mb-2">CGST ITC</p>
+            <p class="text-xl font-bold font-mono text-text-strong">
                 {formatCurrency(data.data.summary.eligibleItcCgst)}
             </p>
         </Card>
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground mb-2">SGST ITC</p>
-            <p class="text-xl font-bold font-mono">
+            <p class="text-xs text-text-muted mb-2">SGST ITC</p>
+            <p class="text-xl font-bold font-mono text-text-strong">
                 {formatCurrency(data.data.summary.eligibleItcSgst)}
             </p>
         </Card>
         <Card class="p-4">
-            <p class="text-xs text-muted-foreground mb-2">IGST ITC</p>
-            <p class="text-xl font-bold font-mono">
+            <p class="text-xs text-text-muted mb-2">IGST ITC</p>
+            <p class="text-xl font-bold font-mono text-text-strong">
                 {formatCurrency(data.data.summary.eligibleItcIgst)}
             </p>
         </Card>
@@ -172,117 +156,64 @@
     <!-- Vendor-wise Table -->
     <Card class="p-4">
         <div class="space-y-2">
-            <h3 class="font-medium">Vendor-wise ITC Breakdown</h3>
-            <p class="text-xs text-muted-foreground">
+            <h3 class="font-medium text-text-strong">Vendor-wise ITC Breakdown</h3>
+            <p class="text-xs text-text-muted">
                 Purchase summary by vendor with ITC eligibility
             </p>
             {#if data.data.vendorWise.length === 0}
-                <p class="text-sm text-muted-foreground py-8 text-center">
+                <p class="text-sm text-text-muted py-8 text-center">
                     No expenses in this period
                 </p>
             {:else}
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="data-table">
                         <thead>
-                            <tr class="border-b">
-                                <th class="text-left py-2 px-2">Vendor</th>
-                                <th class="text-left py-2 px-2">GSTIN</th>
-                                <th class="text-center py-2 px-2">Expenses</th>
-                                <th class="text-right py-2 px-2">Amount</th>
-                                <th class="text-right py-2 px-2">CGST</th>
-                                <th class="text-right py-2 px-2">SGST</th>
-                                <th class="text-right py-2 px-2">IGST</th>
-                                <th class="text-right py-2 px-2">Total Tax</th>
-                                <th class="text-center py-2 px-2">ITC</th>
+                            <tr>
+                                <th>Vendor</th>
+                                <th>GSTIN</th>
+                                <th class="text-center">Expenses</th>
+                                <th class="text-right">Amount</th>
+                                <th class="text-right">CGST</th>
+                                <th class="text-right">SGST</th>
+                                <th class="text-right">IGST</th>
+                                <th class="text-right">Total Tax</th>
+                                <th class="text-center">ITC</th>
                             </tr>
                         </thead>
                         <tbody>
                             {#each data.data.vendorWise as vendor}
-                                <tr class="border-b hover:bg-muted/50">
-                                    <td class="py-2 px-2 font-medium"
-                                        >{vendor.vendorName}</td
-                                    >
-                                    <td class="py-2 px-2 font-mono text-xs">
+                                <tr>
+                                    <td class="font-medium">{vendor.vendorName}</td>
+                                    <td class="font-mono text-xs data-cell--muted">
                                         {vendor.gstin || "-"}
                                     </td>
-                                    <td class="py-2 px-2 text-center"
-                                        >{vendor.expenseCount}</td
-                                    >
-                                    <td class="py-2 px-2 text-right font-mono"
-                                        >{formatCurrency(vendor.totalAmount)}</td
-                                    >
-                                    <td class="py-2 px-2 text-right font-mono"
-                                        >{formatCurrency(vendor.cgst)}</td
-                                    >
-                                    <td class="py-2 px-2 text-right font-mono"
-                                        >{formatCurrency(vendor.sgst)}</td
-                                    >
-                                    <td class="py-2 px-2 text-right font-mono"
-                                        >{formatCurrency(vendor.igst)}</td
-                                    >
-                                    <td
-                                        class="py-2 px-2 text-right font-mono font-medium"
-                                        >{formatCurrency(vendor.totalTax)}</td
-                                    >
-                                    <td class="py-2 px-2 text-center">
+                                    <td class="text-center">{vendor.expenseCount}</td>
+                                    <td class="data-cell--number">{formatCurrency(vendor.totalAmount)}</td>
+                                    <td class="data-cell--number">{formatCurrency(vendor.cgst)}</td>
+                                    <td class="data-cell--number">{formatCurrency(vendor.sgst)}</td>
+                                    <td class="data-cell--number">{formatCurrency(vendor.igst)}</td>
+                                    <td class="data-cell--number font-medium">{formatCurrency(vendor.totalTax)}</td>
+                                    <td class="text-center">
                                         {#if vendor.isRegistered}
-                                            <CheckCircle2
-                                                class="size-4 text-green-600 inline"
-                                            />
+                                            <CheckCircle2 class="size-4 text-positive inline" />
                                         {:else}
-                                            <XCircle
-                                                class="size-4 text-red-500 inline"
-                                            />
+                                            <XCircle class="size-4 text-negative inline" />
                                         {/if}
                                     </td>
                                 </tr>
                             {/each}
                         </tbody>
                         <tfoot>
-                            <tr class="border-t-2 font-semibold bg-muted/50">
-                                <td class="py-2 px-2">Total</td>
-                                <td class="py-2 px-2"></td>
-                                <td class="py-2 px-2 text-center"
-                                    >{data.data.summary.totalPurchases}</td
-                                >
-                                <td class="py-2 px-2 text-right font-mono"
-                                    >{formatCurrency(
-                                        data.data.summary.totalExpenseValue,
-                                    )}</td
-                                >
-                                <td class="py-2 px-2 text-right font-mono"
-                                    >{formatCurrency(
-                                        data.data.vendorWise.reduce(
-                                            (sum, v) => sum + v.cgst,
-                                            0,
-                                        ),
-                                    )}</td
-                                >
-                                <td class="py-2 px-2 text-right font-mono"
-                                    >{formatCurrency(
-                                        data.data.vendorWise.reduce(
-                                            (sum, v) => sum + v.sgst,
-                                            0,
-                                        ),
-                                    )}</td
-                                >
-                                <td class="py-2 px-2 text-right font-mono"
-                                    >{formatCurrency(
-                                        data.data.vendorWise.reduce(
-                                            (sum, v) => sum + v.igst,
-                                            0,
-                                        ),
-                                    )}</td
-                                >
-                                <td class="py-2 px-2 text-right font-mono"
-                                    >{formatCurrency(
-                                        data.data.vendorWise.reduce(
-                                            (sum, v) => sum + v.totalTax,
-                                            0,
-                                        ),
-                                    )}</td
-                                >
-                                <td class="py-2 px-2"></td>
+                            <tr class="border-t-2 border-border font-semibold bg-surface-1">
+                                <td class="px-4 py-3">Total</td>
+                                <td></td>
+                                <td class="text-center px-4 py-3">{data.data.summary.totalPurchases}</td>
+                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.summary.totalExpenseValue)}</td>
+                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.cgst, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.sgst, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.igst, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.totalTax, 0))}</td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -292,27 +223,14 @@
     </Card>
 
     <!-- ITC Eligibility Note -->
-    <Card class="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+    <Card class="p-4 bg-warning/5 border-warning/20">
         <div class="flex items-start gap-3">
-            <div class="text-amber-600 dark:text-amber-400 mt-0.5">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="size-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                >
-                    <path
-                        fill-rule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clip-rule="evenodd"
-                    />
-                </svg>
-            </div>
+            <TriangleAlert class="size-5 text-warning mt-0.5 shrink-0" />
             <div>
-                <h4 class="font-medium text-amber-800 dark:text-amber-200">
+                <h4 class="font-medium text-warning-foreground">
                     ITC Eligibility Note
                 </h4>
-                <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                <p class="text-sm text-text-subtle mt-1">
                     Input Tax Credit is only eligible from purchases made from
                     GST-registered vendors. Ensure vendor GSTIN is captured for
                     all eligible purchases. The ITC shown here is based on

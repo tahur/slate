@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { customers, invoices, payments, credit_notes, customer_advances, payment_allocations } from '$lib/server/db/schema';
 import { eq, and, desc, gt, sql } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { customerSchema } from '../new/schema';
 import type { Actions, PageServerLoad } from './$types';
 import { addCurrency } from '$lib/utils/currency';
@@ -204,7 +204,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         gstin: customer.gstin || '',
         gst_treatment: customer.gst_treatment as 'registered' | 'unregistered' | 'consumer' | 'overseas',
         payment_terms: customer.payment_terms || 0,
-    }, zod4(customerSchema));
+    }, zod(customerSchema));
 
     return {
         customer,
@@ -226,7 +226,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
 export const actions: Actions = {
     default: async (event) => {
-        const form = await superValidate(event, zod4(customerSchema));
+        const form = await superValidate(event, zod(customerSchema));
 
         if (!form.valid) {
             return fail(400, { form });

@@ -72,7 +72,7 @@
     }
 </script>
 
-<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
+<div class="page-full-bleed">
     <!-- Header -->
     <header class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20">
         <div class="flex items-center gap-4">

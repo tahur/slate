@@ -191,7 +191,7 @@
     let showBankPreview = $state(false);
 </script>
 
-<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5 bg-surface-1">
+<div class="page-full-bleed bg-surface-1">
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar Navigation -->
         <aside class="w-64 border-r border-border bg-surface-0 flex-none overflow-y-auto hidden md:block">

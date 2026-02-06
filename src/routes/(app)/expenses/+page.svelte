@@ -32,13 +32,6 @@
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Expenses
             </h1>
-            <div class="h-6 w-px bg-border-subtle"></div>
-            <!-- Placeholder for filters -->
-            <button
-                class="text-xs font-semibold uppercase tracking-wider text-primary hover:underline"
-            >
-                Filter
-            </button>
         </div>
         <Button
             href="/expenses/new"
@@ -89,64 +82,64 @@
                     </thead>
                     <tbody>
                         {#each data.expenses as expense}
-                            <tr
-                                class="group hover:bg-surface-2 transition-colors cursor-pointer"
-                                onclick={() =>
-                                    (window.location.href = `/expenses/${expense.id}`)}
-                            >
-                                <td class="font-mono text-xs text-text-strong">
-                                    {formatDate(expense.expense_date)}
+                            <tr class="group cursor-pointer">
+                                <td class="data-cell--muted font-medium">
+                                    <a href="/expenses/{expense.id}" class="data-row-link">
+                                        {formatDate(expense.expense_date)}
+                                    </a>
                                 </td>
                                 <td>
-                                    <span
-                                        class="font-mono text-xs font-medium text-primary hover:underline"
-                                    >
+                                    <a href="/expenses/{expense.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
                                         {expense.expense_number}
-                                    </span>
+                                    </a>
                                 </td>
                                 <td>
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="font-medium text-text-strong text-sm"
-                                        >
-                                            {expense.category_name}
-                                        </span>
-                                        {#if expense.description}
+                                    <a href="/expenses/{expense.id}" class="data-row-link">
+                                        <div class="flex flex-col">
                                             <span
-                                                class="text-[10px] text-text-muted truncate max-w-[12rem]"
+                                                class="font-medium text-text-strong text-sm"
                                             >
-                                                {expense.description}
+                                                {expense.category_name}
                                             </span>
-                                        {/if}
-                                    </div>
+                                            {#if expense.description}
+                                                <span
+                                                    class="text-[10px] text-text-muted truncate max-w-[12rem]"
+                                                >
+                                                    {expense.description}
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </a>
                                 </td>
                                 <td class="text-sm text-text-strong">
                                     {#if expense.vendor_id}
-                                        <a href="/vendors/{expense.vendor_id}" class="text-primary hover:underline">
+                                        <a href="/vendors/{expense.vendor_id}" class="text-primary hover:underline relative z-10">
                                             {expense.vendor_display_name || expense.vendor_actual_name || expense.vendor_name}
                                         </a>
                                     {:else}
-                                        {expense.vendor_name || "—"}
+                                        <a href="/expenses/{expense.id}" class="data-row-link">
+                                            {expense.vendor_name || "—"}
+                                        </a>
                                     {/if}
                                 </td>
-                                <td
-                                    class="text-right font-mono text-text-subtle"
-                                >
-                                    {formatCurrency(expense.amount)}
+                                <td class="data-cell--number text-text-subtle">
+                                    <a href="/expenses/{expense.id}" class="data-row-link justify-end">
+                                        {formatCurrency(expense.amount)}
+                                    </a>
                                 </td>
-                                <td
-                                    class="text-right font-mono text-text-subtle"
-                                >
-                                    {formatCurrency(
-                                        (expense.cgst || 0) +
-                                            (expense.sgst || 0) +
-                                            (expense.igst || 0),
-                                    )}
+                                <td class="data-cell--number text-text-subtle">
+                                    <a href="/expenses/{expense.id}" class="data-row-link justify-end">
+                                        {formatCurrency(
+                                            (expense.cgst || 0) +
+                                                (expense.sgst || 0) +
+                                                (expense.igst || 0),
+                                        )}
+                                    </a>
                                 </td>
-                                <td
-                                    class="text-right font-mono font-medium text-text-strong"
-                                >
-                                    {formatCurrency(expense.total)}
+                                <td class="data-cell--number font-medium text-text-strong">
+                                    <a href="/expenses/{expense.id}" class="data-row-link justify-end">
+                                        {formatCurrency(expense.total)}
+                                    </a>
                                 </td>
                             </tr>
                         {/each}

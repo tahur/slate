@@ -4,12 +4,12 @@ import { users, password_reset_tokens, organizations } from '$lib/server/db/sche
 import { eq } from 'drizzle-orm';
 import { sendPasswordResetEmail, isEmailConfigured } from '$lib/server/email';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 
 const forgotPasswordSchema = z.object({
-    email: z.email('Please enter a valid email address')
+    email: z.string().email('Please enter a valid email address')
 });
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -19,14 +19,14 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     const emailConfigured = await isEmailConfigured();
-    const form = await superValidate(zod4(forgotPasswordSchema));
+    const form = await superValidate(zod(forgotPasswordSchema));
 
     return { form, emailConfigured };
 };
 
 export const actions: Actions = {
     default: async ({ request, url }) => {
-        const form = await superValidate(request, zod4(forgotPasswordSchema));
+        const form = await superValidate(request, zod(forgotPasswordSchema));
 
         if (!form.valid) {
             return fail(400, { form });

@@ -5,7 +5,7 @@ import { users } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyPassword } from '$lib/server/password';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from './schema';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -14,13 +14,13 @@ export const load: PageServerLoad = async (event) => {
         redirect(302, '/dashboard');
     }
 
-    const form = await superValidate(zod4(loginSchema));
+    const form = await superValidate(zod(loginSchema));
     return { form };
 };
 
 export const actions: Actions = {
     default: async (event) => {
-        const form = await superValidate(event, zod4(loginSchema));
+        const form = await superValidate(event, zod(loginSchema));
 
         if (!form.valid) {
             return fail(400, { form });

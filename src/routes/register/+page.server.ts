@@ -8,11 +8,11 @@ import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { eq } from 'drizzle-orm';
 
 const schema = z.object({
-    email: z.email(),
+    email: z.string().email(),
     password: z.string().min(8),
     name: z.string().min(2)
 });
@@ -21,13 +21,13 @@ export const load: PageServerLoad = async (event) => {
     if (event.locals.user) {
         redirect(302, '/dashboard');
     }
-    const form = await superValidate(zod4(schema));
+    const form = await superValidate(zod(schema));
     return { form };
 };
 
 export const actions: Actions = {
     default: async (event) => {
-        const form = await superValidate(event, zod4(schema));
+        const form = await superValidate(event, zod(schema));
         if (!form.valid) {
             return fail(400, { form });
         }

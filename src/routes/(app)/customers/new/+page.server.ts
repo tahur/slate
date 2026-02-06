@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { customers } from '$lib/server/db/schema';
 import { superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { customerSchema } from './schema';
 import { setFlash } from '$lib/server/flash';
 import type { Actions, PageServerLoad } from './$types';
@@ -12,13 +12,13 @@ export const load: PageServerLoad = async ({ locals }) => {
         redirect(302, '/login');
     }
 
-    const form = await superValidate(zod4(customerSchema));
+    const form = await superValidate(zod(customerSchema));
     return { form };
 };
 
 export const actions: Actions = {
     default: async (event) => {
-        const form = await superValidate(event, zod4(customerSchema));
+        const form = await superValidate(event, zod(customerSchema));
 
         if (!form.valid) {
             return fail(400, { form });

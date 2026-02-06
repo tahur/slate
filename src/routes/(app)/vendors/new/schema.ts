@@ -38,7 +38,7 @@ export const vendorSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     company_name: z.string().optional().or(z.literal('')),
     display_name: z.string().optional().or(z.literal('')),
-    email: z.email('Invalid email').optional().or(z.literal('')),
+    email: z.string().email('Invalid email').optional().or(z.literal('')),
     phone: z.string().min(10, 'Phone must be at least 10 digits').optional().or(z.literal('')),
     website: z.string().url('Invalid URL').optional().or(z.literal('')),
 

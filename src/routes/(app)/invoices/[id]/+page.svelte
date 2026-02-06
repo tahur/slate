@@ -138,10 +138,10 @@
     }
 </script>
 
-<div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
+<div class="page-full-bleed">
     <!-- Header -->
     <header
-        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-20"
+        class="print-hide flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <div class="flex items-center gap-4">
             <Button
@@ -242,11 +242,11 @@
     {/if}
 
     <!-- Content: Paper View -->
-    <main class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30">
+    <main class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30 print-bg-white">
         <div class="mx-auto max-w-4xl">
             <!-- Main Paper Sheet -->
             <div
-                class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8"
+                class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet"
             >
                 <!-- Top Meta Band -->
                 <div class="flex flex-col gap-6">
