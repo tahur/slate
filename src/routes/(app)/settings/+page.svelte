@@ -191,49 +191,34 @@
     let showBankPreview = $state(false);
 </script>
 
-<div class="page-full-bleed bg-surface-1">
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Sidebar Navigation -->
-        <aside class="w-64 border-r border-border bg-surface-0 flex-none overflow-y-auto hidden md:block">
-            <div class="p-6">
-                <h1 class="text-xl font-bold tracking-tight text-text-strong mb-2">
-                    Settings
-                </h1>
-                <p class="text-xs text-text-secondary">
-                    Configure your business and invoice preferences.
-                </p>
-            </div>
-            <nav class="px-3 space-y-1 pb-6">
-                {#each tabs as tab}
-                    <button
-                        onclick={() => (activeTab = tab.id)}
-                        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {activeTab === tab.id
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-text-subtle hover:bg-surface-2 hover:text-text-strong'}"
-                    >
-                        <tab.icon class="size-4" />
-                        {tab.label}
-                    </button>
-                {/each}
-            </nav>
-        </aside>
+<div class="flex flex-col gap-6">
+    <!-- Header -->
+    <div>
+        <h2 class="text-2xl font-bold tracking-tight text-text-strong">
+            Settings
+        </h2>
+        <p class="text-sm text-text-muted">
+            Configure your business and invoice preferences.
+        </p>
+    </div>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto p-6 md:p-8">
-            <div class="max-w-3xl mx-auto">
-                <!-- Mobile Tabs -->
-                <div class="md:hidden mb-6 flex overflow-x-auto gap-2 pb-2 border-b border-border">
-                    {#each tabs as tab}
-                        <button
-                            onclick={() => (activeTab = tab.id)}
-                            class="whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full border {activeTab === tab.id
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-surface-0 border-border text-text-muted'}"
-                        >
-                            {tab.label}
-                        </button>
-                    {/each}
-                </div>
+    <!-- Tab Navigation -->
+    <div class="flex overflow-x-auto border-b border-border">
+        {#each tabs as tab}
+            <button
+                onclick={() => (activeTab = tab.id)}
+                class="whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors {activeTab === tab.id
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-text-muted hover:text-text-strong'}"
+            >
+                <tab.icon class="size-3.5" />
+                {tab.label}
+            </button>
+        {/each}
+    </div>
+
+    <!-- Content -->
+    <div class="max-w-3xl">
 
                 <!-- Business Info Tab -->
                 {#if activeTab === "business"}
@@ -298,7 +283,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Business Details</h2>
-                                <p class="text-sm text-text-secondary">Your legal business information.</p>
+                                <p class="text-sm text-text-subtle">Your legal business information.</p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -351,7 +336,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">GST Registration</h2>
-                                <p class="text-sm text-text-secondary">Your GST details for tax invoices.</p>
+                                <p class="text-sm text-text-subtle">Your GST details for tax invoices.</p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -378,7 +363,7 @@
                                     {#if $orgErrors.gstin}
                                         <p class="text-xs text-destructive">{$orgErrors.gstin}</p>
                                     {:else}
-                                        <p class="text-xs text-text-secondary">15-character GST number</p>
+                                        <p class="text-xs text-text-subtle">15-character GST number</p>
                                     {/if}
                                 </div>
                                 <div class="space-y-2">
@@ -393,7 +378,7 @@
                                             {/each}
                                         </Select.Content>
                                     </Select.Root>
-                                    <p class="text-xs text-text-secondary">Place of supply for GST</p>
+                                    <p class="text-xs text-text-subtle">Place of supply for GST</p>
                                 </div>
                             </div>
                         </Card>
@@ -402,7 +387,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Business Address</h2>
-                                <p class="text-sm text-text-secondary">This appears on your invoices.</p>
+                                <p class="text-sm text-text-subtle">This appears on your invoices.</p>
                             </div>
 
                             <div class="grid gap-4 md:grid-cols-2">
@@ -459,7 +444,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">Bank Account</h2>
-                                    <p class="text-sm text-text-secondary">Bank details shown on invoices for payments.</p>
+                                    <p class="text-sm text-text-subtle">Bank details shown on invoices for payments.</p>
                                 </div>
                                 <Button
                                     variant="outline"
@@ -546,7 +531,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">UPI Payment</h2>
-                                    <p class="text-sm text-text-secondary">Accept payments via UPI.</p>
+                                    <p class="text-sm text-text-subtle">Accept payments via UPI.</p>
                                 </div>
                             </div>
 
@@ -559,7 +544,7 @@
                                     class="font-mono"
                                     placeholder="business@upi"
                                 />
-                                <p class="text-xs text-text-secondary">Your UPI ID for receiving payments (e.g., yourname@paytm)</p>
+                                <p class="text-xs text-text-subtle">Your UPI ID for receiving payments (e.g., yourname@paytm)</p>
                             </div>
                         </Card>
 
@@ -587,7 +572,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">Digital Signature</h2>
-                                    <p class="text-sm text-text-secondary">Appears on invoices for authorization.</p>
+                                    <p class="text-sm text-text-subtle">Appears on invoices for authorization.</p>
                                 </div>
                             </div>
 
@@ -648,7 +633,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Default Content</h2>
-                                <p class="text-sm text-text-secondary">Pre-fill these on new invoices.</p>
+                                <p class="text-sm text-text-subtle">Pre-fill these on new invoices.</p>
                             </div>
 
                             <div class="space-y-4">
@@ -691,7 +676,7 @@
                         <Card class="p-6 space-y-6">
                             <div>
                                 <h2 class="text-base font-semibold text-text-strong">Number Series</h2>
-                                <p class="text-sm text-text-secondary">
+                                <p class="text-sm text-text-subtle">
                                     Customize document prefixes for FY {data.fyYear}.
                                     Format: PREFIX-YYYY-YY-NNNN
                                 </p>
@@ -801,7 +786,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">Email Configuration</h2>
-                                    <p class="text-sm text-text-secondary">
+                                    <p class="text-sm text-text-subtle">
                                         Configure SMTP to send invoices and password reset emails.
                                     </p>
                                 </div>
@@ -903,7 +888,7 @@
                                                 bind:checked={$smtpForm.smtp_secure}
                                                 class="rounded border-border"
                                             />
-                                            <label for="smtp_secure" class="text-sm text-text-secondary">
+                                            <label for="smtp_secure" class="text-sm text-text-subtle">
                                                 Use SSL/TLS (port 465)
                                             </label>
                                         </div>
@@ -951,7 +936,7 @@
                         <!-- Help Section -->
                         <Card class="p-6">
                             <h3 class="text-sm font-semibold text-text-strong mb-4">Gmail Setup Guide</h3>
-                            <ol class="text-sm text-text-secondary space-y-3 list-decimal list-inside">
+                            <ol class="text-sm text-text-subtle space-y-3 list-decimal list-inside">
                                 <li>Enable 2-Factor Authentication on your Google account</li>
                                 <li>
                                     Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" class="text-primary hover:underline">Google App Passwords</a>
@@ -978,7 +963,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold text-text-strong">My Profile</h2>
-                                    <p class="text-sm text-text-secondary">Your personal account details.</p>
+                                    <p class="text-sm text-text-subtle">Your personal account details.</p>
                                 </div>
                             </div>
 
@@ -1012,7 +997,5 @@
                         </div>
                     </form>
                 {/if}
-            </div>
-        </main>
     </div>
 </div>

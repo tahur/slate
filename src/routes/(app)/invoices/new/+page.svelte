@@ -8,6 +8,7 @@
     import { GST_RATES, calculateInvoiceTotals, type LineItem } from "./schema";
     import { addToast } from "$lib/stores/toast";
     import { ArrowLeft, Save, Plus, Trash2, GripVertical } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
 
@@ -89,14 +90,6 @@
     // Calculate totals reactively
     let totals = $derived(calculateInvoiceTotals(formData.items, isInterState));
 
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
     function addItem() {
         formData.items = [
             ...formData.items,
@@ -152,7 +145,7 @@
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 New Invoice
             </h1>
-            <p class="text-sm text-text-secondary">
+            <p class="text-sm text-text-subtle">
                 Create a new sales invoice
             </p>
         </div>
@@ -203,7 +196,7 @@
                     <!-- Section: Customer & Invoice Details -->
                     <section class="space-y-6">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                            class="text-xs font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Customer & Invoice Details
                         </h3>
@@ -256,7 +249,7 @@
                                         class="bg-surface-1 border-border shadow-lg min-w-[22rem]"
                                     >
                                         <div
-                                            class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border-subtle space-y-2"
+                                            class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border space-y-2"
                                         >
                                             <Input
                                                 bind:value={customerSearch}
@@ -267,7 +260,7 @@
                                                 class="flex items-center justify-between"
                                             >
                                                 <span
-                                                    class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold"
+                                                    class="text-[10px] uppercase tracking-wider text-text-subtle font-semibold"
                                                 >
                                                     Customers
                                                 </span>
@@ -389,7 +382,7 @@
                                         id="invoice_number"
                                         value={autoInvoiceNumber}
                                         readonly
-                                        class="bg-surface-2/50 text-text-secondary border-border font-mono text-sm"
+                                        class="bg-surface-2/50 text-text-subtle border-border font-mono text-sm"
                                     />
                                 {:else}
                                     <Input
@@ -432,7 +425,7 @@
                     <!-- Section: Dates -->
                     <section class="space-y-6">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                            class="text-xs font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Dates
                         </h3>
@@ -507,7 +500,7 @@
                     <section class="space-y-4">
                         <div class="flex justify-between items-center">
                             <h3
-                                class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                                class="text-xs font-bold uppercase tracking-wide text-text-subtle"
                             >
                                 Line Items
                             </h3>
@@ -520,7 +513,7 @@
                                 <table class="w-full text-sm">
                                     <thead>
                                         <tr
-                                            class="border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-secondary bg-surface-2/50"
+                                            class="border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-subtle bg-surface-2/50"
                                         >
                                             <th
                                                 class="px-2 py-3 w-8 text-center"
@@ -566,11 +559,13 @@
                                                 ondrop={() => handleDrop(index)}
                                             >
                                                 <td
-                                                    class="px-2 py-3 align-middle text-center cursor-move text-text-muted/50 hover:text-text-strong touch-none"
+                                                    class="px-2 py-3 align-top"
                                                 >
-                                                    <GripVertical
-                                                        class="size-4 mx-auto"
-                                                    />
+                                                    <div class="h-9 flex items-center justify-center cursor-move text-text-muted/50 hover:text-text-strong touch-none">
+                                                        <GripVertical
+                                                            class="size-4"
+                                                        />
+                                                    </div>
                                                 </td>
                                                 <td class="px-4 py-3 align-top">
                                                     <Input
@@ -589,7 +584,7 @@
                                                             item.hsn_code
                                                         }
                                                         placeholder="HSN"
-                                                        class="h-9 w-full border-transparent hover:border-border bg-transparent text-xs font-mono text-text-secondary"
+                                                        class="h-9 w-full border-transparent hover:border-border bg-transparent text-xs font-mono text-text-subtle"
                                                     />
                                                 </td>
                                                 <td class="px-3 py-3 align-top">
@@ -601,7 +596,7 @@
                                                         }
                                                         min="0.01"
                                                         step="0.01"
-                                                        class="h-9 border-border-subtle text-right bg-surface-1 focus:border-primary font-mono"
+                                                        class="h-9 border-border text-right bg-surface-1 focus:border-primary font-mono"
                                                     />
                                                 </td>
                                                 <td class="px-3 py-3 align-top">
@@ -611,7 +606,7 @@
                                                         bind:value={item.rate}
                                                         min="0"
                                                         step="0.01"
-                                                        class="h-9 border-border-subtle text-right bg-surface-1 focus:border-primary font-mono"
+                                                        class="h-9 border-border text-right bg-surface-1 focus:border-primary font-mono"
                                                     />
                                                 </td>
                                                 <td class="px-3 py-3 align-top">
@@ -620,7 +615,7 @@
                                                         bind:value={
                                                             item.gst_rate
                                                         }
-                                                        class="h-9 w-full border border-border-subtle rounded-md bg-surface-1 text-right text-xs font-mono focus:border-primary focus:outline-none px-2"
+                                                        class="h-9 w-full border border-border rounded-md bg-surface-1 text-right text-xs font-mono focus:border-primary focus:outline-none px-2"
                                                     >
                                                         {#each GST_RATES as rate}
                                                             <option value={rate}
@@ -630,27 +625,31 @@
                                                     </select>
                                                 </td>
                                                 <td
-                                                    class="px-4 py-3 align-top text-right font-mono font-medium text-text-strong pt-2.5"
+                                                    class="px-4 py-3 align-top"
                                                 >
-                                                    {formatCurrency(
-                                                        getLineAmount(item),
-                                                    )}
+                                                    <div class="h-9 flex items-center justify-end font-mono font-medium text-text-strong">
+                                                        {formatINR(
+                                                            getLineAmount(item),
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td
-                                                    class="px-2 py-3 align-top pt-2"
+                                                    class="px-2 py-3 align-top"
                                                 >
-                                                    <button
-                                                        type="button"
-                                                        class="text-text-muted hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                                                        onclick={() =>
-                                                            removeItem(index)}
-                                                        disabled={formData.items
-                                                            .length === 1}
-                                                    >
-                                                        <Trash2
-                                                            class="size-4"
-                                                        />
-                                                    </button>
+                                                    <div class="h-9 flex items-center justify-center">
+                                                        <button
+                                                            type="button"
+                                                            class="text-text-muted hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                                                            onclick={() =>
+                                                                removeItem(index)}
+                                                            disabled={formData.items
+                                                                .length === 1}
+                                                        >
+                                                            <Trash2
+                                                                class="size-4"
+                                                            />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         {/each}
@@ -676,7 +675,7 @@
                     <!-- Section: Notes -->
                     <section class="space-y-4">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                            class="text-xs font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Notes
                         </h3>
@@ -698,46 +697,46 @@
             >
                 <div class="space-y-6">
                     <h3
-                        class="text-sm font-bold uppercase tracking-wide text-text-secondary"
+                        class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                     >
                         Summary
                     </h3>
 
                     <!-- Totals Breakdown -->
                     <div class="space-y-3 text-sm">
-                        <div class="flex justify-between text-text-secondary">
+                        <div class="flex justify-between text-text-subtle">
                             <span>Subtotal</span>
                             <span class="font-mono font-medium text-text-strong"
-                                >{formatCurrency(totals.subtotal)}</span
+                                >{formatINR(totals.subtotal)}</span
                             >
                         </div>
                         {#if isInterState}
                             <div
-                                class="flex justify-between text-text-secondary"
+                                class="flex justify-between text-text-subtle"
                             >
                                 <span>IGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
-                                    >{formatCurrency(totals.igst)}</span
+                                    >{formatINR(totals.igst)}</span
                                 >
                             </div>
                         {:else}
                             <div
-                                class="flex justify-between text-text-secondary"
+                                class="flex justify-between text-text-subtle"
                             >
                                 <span>CGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
-                                    >{formatCurrency(totals.cgst)}</span
+                                    >{formatINR(totals.cgst)}</span
                                 >
                             </div>
                             <div
-                                class="flex justify-between text-text-secondary"
+                                class="flex justify-between text-text-subtle"
                             >
                                 <span>SGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
-                                    >{formatCurrency(totals.sgst)}</span
+                                    >{formatINR(totals.sgst)}</span
                                 >
                             </div>
                         {/if}
@@ -751,7 +750,7 @@
                             <span
                                 class="font-mono text-2xl font-bold text-primary"
                             >
-                                {formatCurrency(totals.total)}
+                                {formatINR(totals.total)}
                             </span>
                         </div>
                     </div>

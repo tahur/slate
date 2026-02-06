@@ -8,6 +8,8 @@ export interface MoneyPosition {
     toCollect: number;
     payables: number;
     gstDue: number;
+    gstOutput: number;
+    gstInput: number;
 }
 
 export interface MonthlyStats {
@@ -131,6 +133,7 @@ async function getMoneyPosition(orgId: string): Promise<MoneyPosition> {
 
     const outputGst = outputGstResult[0]?.total || 0;
     const inputGst = inputGstResult[0]?.total || 0;
+    const absOutput = Math.abs(outputGst);
 
     // Get total payables (sum of vendor balances where balance > 0)
     const payablesResult = await db
@@ -150,7 +153,9 @@ async function getMoneyPosition(orgId: string): Promise<MoneyPosition> {
         bank: bankResult[0]?.balance || 0,
         toCollect: receivablesResult[0]?.total || 0,
         payables: payablesResult[0]?.total || 0,
-        gstDue: outputGst - inputGst
+        gstOutput: absOutput,
+        gstInput: inputGst,
+        gstDue: absOutput - inputGst
     };
 }
 
