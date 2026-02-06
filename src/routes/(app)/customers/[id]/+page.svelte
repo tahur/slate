@@ -26,6 +26,8 @@
     } from "lucide-svelte";
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
     import Badge from "$lib/components/ui/badge/badge.svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -52,24 +54,6 @@
         },
     });
 
-    function formatCurrency(amount: number | null | undefined): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
-
     function getStateName(code: string | null): string {
         if (!code) return "—";
         return INDIAN_STATES.find((s) => s.code === code)?.name || code;
@@ -95,7 +79,7 @@
                     {data.customer.name}
                 </h1>
                 {#if data.customer.company_name}
-                    <p class="text-sm text-text-secondary">
+                    <p class="text-sm text-text-subtle">
                         {data.customer.company_name}
                     </p>
                 {/if}
@@ -126,7 +110,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
                     <div
-                        class="flex items-center gap-2 text-text-secondary mb-1"
+                        class="flex items-center gap-2 text-text-subtle mb-1"
                     >
                         <TrendingUp class="size-4" />
                         <span
@@ -135,12 +119,12 @@
                         >
                     </div>
                     <p class="text-xl font-bold font-mono text-text-strong">
-                        {formatCurrency(data.summary.totalInvoiced)}
+                        {formatINR(data.summary.totalInvoiced)}
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
                     <div
-                        class="flex items-center gap-2 text-text-secondary mb-1"
+                        class="flex items-center gap-2 text-text-subtle mb-1"
                     >
                         <TrendingDown class="size-4" />
                         <span
@@ -149,12 +133,12 @@
                         >
                     </div>
                     <p class="text-xl font-bold font-mono text-green-600">
-                        {formatCurrency(data.summary.totalReceived)}
+                        {formatINR(data.summary.totalReceived)}
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
                     <div
-                        class="flex items-center gap-2 text-text-secondary mb-1"
+                        class="flex items-center gap-2 text-text-subtle mb-1"
                     >
                         <Wallet class="size-4" />
                         <span
@@ -170,7 +154,7 @@
                               ? 'text-blue-600'
                               : 'text-text-strong'}"
                     >
-                        {formatCurrency(Math.abs(data.summary.outstanding))}
+                        {formatINR(Math.abs(data.summary.outstanding))}
                         {#if data.summary.outstanding < 0}
                             <span class="text-xs font-normal">(Credit)</span>
                         {/if}
@@ -178,7 +162,7 @@
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
                     <div
-                        class="flex items-center gap-2 text-text-secondary mb-1"
+                        class="flex items-center gap-2 text-text-subtle mb-1"
                     >
                         <BadgePercent class="size-4" />
                         <span
@@ -187,7 +171,7 @@
                         >
                     </div>
                     <p class="text-xl font-bold font-mono text-blue-600">
-                        {formatCurrency(data.summary.availableCredits)}
+                        {formatINR(data.summary.availableCredits)}
                     </p>
                 </div>
             </div>
@@ -199,19 +183,19 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-semibold uppercase tracking-wide text-text-secondary"
+                        class="text-xs font-semibold uppercase tracking-wide text-text-subtle"
                     >
                         Contact
                     </h3>
                     {#if data.customer.email}
                         <div class="flex items-center gap-2 text-sm">
-                            <Mail class="size-4 text-text-secondary" />
+                            <Mail class="size-4 text-text-subtle" />
                             <span>{data.customer.email}</span>
                         </div>
                     {/if}
                     {#if data.customer.phone}
                         <div class="flex items-center gap-2 text-sm">
-                            <Phone class="size-4 text-text-secondary" />
+                            <Phone class="size-4 text-text-subtle" />
                             <span>{data.customer.phone}</span>
                         </div>
                     {/if}
@@ -236,12 +220,12 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-semibold uppercase tracking-wide text-text-secondary"
+                        class="text-xs font-semibold uppercase tracking-wide text-text-subtle"
                     >
                         GST Details
                     </h3>
                     <div class="flex items-center gap-2 text-sm">
-                        <Building2 class="size-4 text-text-secondary" />
+                        <Building2 class="size-4 text-text-subtle" />
                         <span class="capitalize"
                             >{data.customer.gst_treatment ||
                                 "Unregistered"}</span
@@ -268,7 +252,7 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-semibold uppercase tracking-wide text-text-secondary"
+                        class="text-xs font-semibold uppercase tracking-wide text-text-subtle"
                     >
                         Quick Actions
                     </h3>
@@ -371,7 +355,7 @@
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr
-                                        class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border"
+                                        class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                     >
                                         <th class="pb-3 pr-4">Date</th>
                                         <th class="pb-3 pr-4">Type</th>
@@ -432,7 +416,7 @@
                                                     : 'text-text-muted'}"
                                             >
                                                 {entry.debit > 0
-                                                    ? formatCurrency(
+                                                    ? formatINR(
                                                           entry.debit,
                                                       )
                                                     : "—"}
@@ -444,7 +428,7 @@
                                                     : 'text-text-muted'}"
                                             >
                                                 {entry.credit > 0
-                                                    ? formatCurrency(
+                                                    ? formatINR(
                                                           entry.credit,
                                                       )
                                                     : "—"}
@@ -457,7 +441,7 @@
                                                       ? 'text-blue-600'
                                                       : ''}"
                                             >
-                                                {formatCurrency(
+                                                {formatINR(
                                                     Math.abs(entry.balance),
                                                 )}
                                                 {#if entry.balance < 0}<span
@@ -492,7 +476,7 @@
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr
-                                        class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border"
+                                        class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                     >
                                         <th class="pb-3 pr-4">Date</th>
                                         <th class="pb-3 pr-4">Invoice #</th>
@@ -531,7 +515,7 @@
                                             >
                                             <td
                                                 class="py-3 pr-4 text-right font-mono"
-                                                >{formatCurrency(
+                                                >{formatINR(
                                                     invoice.total,
                                                 )}</td
                                             >
@@ -541,7 +525,7 @@
                                                     ? 'text-amber-600'
                                                     : 'text-green-600'}"
                                             >
-                                                {formatCurrency(
+                                                {formatINR(
                                                     invoice.balance_due,
                                                 )}
                                             </td>
@@ -577,7 +561,7 @@
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr
-                                        class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border"
+                                        class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                     >
                                         <th class="pb-3 pr-4">Date</th>
                                         <th class="pb-3 pr-4">Payment #</th>
@@ -615,7 +599,7 @@
                                             <td
                                                 class="py-3 text-right font-mono font-medium text-green-600"
                                             >
-                                                {formatCurrency(payment.amount)}
+                                                {formatINR(payment.amount)}
                                             </td>
                                         </tr>
                                     {/each}
@@ -640,7 +624,7 @@
                                     <table class="w-full text-sm">
                                         <thead>
                                             <tr
-                                                class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border"
+                                                class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                             >
                                                 <th class="pb-3 pr-4">Date</th>
                                                 <th class="pb-3 pr-4">Number</th
@@ -683,7 +667,7 @@
                                                     >
                                                     <td
                                                         class="py-3 pr-4 text-right font-mono"
-                                                        >{formatCurrency(
+                                                        >{formatINR(
                                                             cn.total,
                                                         )}</td
                                                     >
@@ -693,7 +677,7 @@
                                                             ? 'text-blue-600'
                                                             : 'text-text-muted'}"
                                                     >
-                                                        {formatCurrency(
+                                                        {formatINR(
                                                             cn.balance,
                                                         )}
                                                     </td>
@@ -725,7 +709,7 @@
                                     <table class="w-full text-sm">
                                         <thead>
                                             <tr
-                                                class="text-left text-xs uppercase tracking-wide text-text-secondary border-b border-border"
+                                                class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                             >
                                                 <th class="pb-3 pr-4">Date</th>
                                                 <th class="pb-3 pr-4">Source</th
@@ -758,7 +742,7 @@
                                                     >
                                                     <td
                                                         class="py-3 pr-4 text-right font-mono"
-                                                        >{formatCurrency(
+                                                        >{formatINR(
                                                             advance.amount,
                                                         )}</td
                                                     >
@@ -768,7 +752,7 @@
                                                             ? 'text-blue-600 font-medium'
                                                             : 'text-text-muted'}"
                                                     >
-                                                        {formatCurrency(
+                                                        {formatINR(
                                                             advance.balance,
                                                         )}
                                                     </td>

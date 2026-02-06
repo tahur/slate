@@ -10,6 +10,8 @@
         TrendingDown,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -18,22 +20,6 @@
 
     function applyFilter() {
         goto(`/reports/pnl?from=${startDate}&to=${endDate}`);
-    }
-
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
     }
 </script>
 
@@ -79,7 +65,7 @@
                 <h3 class="text-sm text-muted-foreground">Revenue</h3>
             </div>
             <p class="text-2xl font-bold font-mono text-green-600">
-                {formatCurrency(data.revenue.total)}
+                {formatINR(data.revenue.total)}
             </p>
             <p class="text-xs text-muted-foreground mt-1">
                 From {data.revenue.invoiceCount} invoice(s)
@@ -92,7 +78,7 @@
                 <h3 class="text-sm text-muted-foreground">Expenses</h3>
             </div>
             <p class="text-2xl font-bold font-mono text-red-600">
-                {formatCurrency(data.totalExpenses)}
+                {formatINR(data.totalExpenses)}
             </p>
             <p class="text-xs text-muted-foreground mt-1">
                 Across {data.expensesByCategory.length} categories
@@ -113,7 +99,7 @@
                     ? 'text-green-600'
                     : 'text-red-600'}"
             >
-                {formatCurrency(data.netProfit)}
+                {formatINR(data.netProfit)}
             </p>
             <p class="text-xs text-muted-foreground mt-1">
                 {data.netProfit >= 0 ? "Profit" : "Loss"}
@@ -129,13 +115,13 @@
                 <div class="flex justify-between p-3 rounded bg-green-50">
                     <span>Sales Revenue</span>
                     <span class="font-mono font-medium text-green-700">
-                        {formatCurrency(data.revenue.total)}
+                        {formatINR(data.revenue.total)}
                     </span>
                 </div>
                 <div class="border-t pt-3 flex justify-between font-semibold">
                     <span>Total Income</span>
                     <span class="font-mono text-green-600">
-                        {formatCurrency(data.revenue.total)}
+                        {formatINR(data.revenue.total)}
                     </span>
                 </div>
             </div>
@@ -156,7 +142,7 @@
                                 {expense.category || "Uncategorized"}
                             </span>
                             <span class="font-mono"
-                                >{formatCurrency(expense.amount)}</span
+                                >{formatINR(expense.amount)}</span
                             >
                         </div>
                     {/each}
@@ -165,7 +151,7 @@
                     >
                         <span>Total Expenses</span>
                         <span class="font-mono text-red-600">
-                            {formatCurrency(data.totalExpenses)}
+                            {formatINR(data.totalExpenses)}
                         </span>
                     </div>
                 </div>

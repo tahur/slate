@@ -4,6 +4,8 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { FileText, RefreshCw, Lock } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -12,24 +14,6 @@
 
     function applyFilter() {
         goto(`/journals?from=${startDate}&to=${endDate}`);
-    }
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
     }
 
     function getStatusClass(status: string | null): string {
@@ -46,7 +30,7 @@
     }
 </script>
 
-<div class="flex flex-col h-full">
+<div class="page-full-bleed">
     <!-- Header -->
     <div
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
@@ -141,10 +125,10 @@
                                     >
                                 </td>
                                 <td class="data-cell--number text-text-strong">
-                                    {formatCurrency(entry.total_debit)}
+                                    {formatINR(entry.total_debit)}
                                 </td>
                                 <td class="data-cell--number text-text-strong">
-                                    {formatCurrency(entry.total_credit)}
+                                    {formatINR(entry.total_credit)}
                                 </td>
                                 <td class="text-right">
                                     <div class="flex items-center justify-end gap-1.5">

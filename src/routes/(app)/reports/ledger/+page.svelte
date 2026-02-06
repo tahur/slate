@@ -4,6 +4,8 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft } from "lucide-svelte";
     import { goto } from "$app/navigation";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -16,22 +18,6 @@
         } else {
             goto("/reports/ledger");
         }
-    }
-
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
     }
 </script>
 
@@ -67,7 +53,7 @@
                         {#if customer.company_name}
                             ({customer.company_name})
                         {/if}
-                        — Balance: {formatCurrency(customer.balance || 0)}
+                        — Balance: {formatINR(customer.balance || 0)}
                     </option>
                 {/each}
             </select>
@@ -159,7 +145,7 @@
                                             : 'text-muted-foreground'}"
                                     >
                                         {entry.debit > 0
-                                            ? formatCurrency(entry.debit)
+                                            ? formatINR(entry.debit)
                                             : "—"}
                                     </td>
                                     <td
@@ -169,7 +155,7 @@
                                             : 'text-muted-foreground'}"
                                     >
                                         {entry.credit > 0
-                                            ? formatCurrency(entry.credit)
+                                            ? formatINR(entry.credit)
                                             : "—"}
                                     </td>
                                     <td
@@ -180,7 +166,7 @@
                                               ? 'text-green-600'
                                               : ''}"
                                     >
-                                        {formatCurrency(entry.balance)}
+                                        {formatINR(entry.balance)}
                                     </td>
                                 </tr>
                             {/each}
@@ -189,12 +175,12 @@
                             <tr class="bg-muted/50 font-semibold">
                                 <td colspan="3" class="px-4 py-3">Total</td>
                                 <td class="px-4 py-3 text-right font-mono"
-                                    >{formatCurrency(
+                                    >{formatINR(
                                         data.ledger.totalDebit,
                                     )}</td
                                 >
                                 <td class="px-4 py-3 text-right font-mono"
-                                    >{formatCurrency(
+                                    >{formatINR(
                                         data.ledger.totalCredit,
                                     )}</td
                                 >
@@ -204,7 +190,7 @@
                                         ? 'text-red-600'
                                         : 'text-green-600'}"
                                 >
-                                    {formatCurrency(data.ledger.balance)}
+                                    {formatINR(data.ledger.balance)}
                                 </td>
                             </tr>
                         </tfoot>

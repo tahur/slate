@@ -85,7 +85,7 @@
             case 'deleted': return 'text-red-600 bg-red-50';
             case 'updated': return 'text-amber-600 bg-amber-50';
             case 'applied': return 'text-purple-600 bg-purple-50';
-            default: return 'text-text-secondary bg-surface-2';
+            default: return 'text-text-subtle bg-surface-2';
         }
     }
 
@@ -94,7 +94,7 @@
     }
 </script>
 
-<div class="flex flex-col h-full">
+<div class="page-full-bleed">
     <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0">
         <div class="flex items-center gap-3">

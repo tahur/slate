@@ -25,7 +25,7 @@
         </Button>
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">New Credit Note</h1>
-            <p class="text-sm text-text-secondary">Issue a credit to a customer</p>
+            <p class="text-sm text-text-subtle">Issue a credit to a customer</p>
         </div>
     </header>
 
@@ -90,7 +90,7 @@
                                 name="number"
                                 value={data.autoNumber}
                                 readonly
-                                class="bg-surface-2/50 text-text-secondary font-mono"
+                                class="bg-surface-2/50 text-text-subtle font-mono"
                             />
                         </div>
                     </div>
@@ -128,7 +128,7 @@
             <!-- RIGHT COLUMN: Financials -->
             <div class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto">
                 <div class="space-y-6">
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-secondary">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-subtle">
                         Financials
                     </h3>
 

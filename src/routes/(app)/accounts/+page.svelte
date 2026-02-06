@@ -1,16 +1,8 @@
 <script lang="ts">
     import { BookOpen } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
 
     const typeOrder = ["asset", "liability", "equity", "income", "expense"] as const;
 
@@ -35,7 +27,7 @@
     );
 </script>
 
-<div class="flex flex-col h-full">
+<div class="page-full-bleed">
     <!-- Header -->
     <div
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
@@ -110,7 +102,7 @@
                                             <td
                                                 class="data-cell--number text-text-strong"
                                             >
-                                                {formatCurrency(account.balance)}
+                                                {formatINR(account.balance)}
                                             </td>
                                             <td class="text-right">
                                                 <span

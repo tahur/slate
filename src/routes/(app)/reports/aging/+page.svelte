@@ -2,16 +2,9 @@
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
     import { ArrowLeft } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
-
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 0,
-        }).format(amount);
-    }
 
     function getCellClass(amount: number, isOverdue: boolean = false): string {
         if (amount === 0) return "text-muted-foreground";
@@ -97,7 +90,7 @@
                                     )}"
                                 >
                                     {customer.aging.current > 0
-                                        ? formatCurrency(customer.aging.current)
+                                        ? formatINR(customer.aging.current)
                                         : "—"}
                                 </td>
                                 <td
@@ -107,7 +100,7 @@
                                     )}"
                                 >
                                     {customer.aging.days1_30 > 0
-                                        ? formatCurrency(
+                                        ? formatINR(
                                               customer.aging.days1_30,
                                           )
                                         : "—"}
@@ -119,7 +112,7 @@
                                     )}"
                                 >
                                     {customer.aging.days31_60 > 0
-                                        ? formatCurrency(
+                                        ? formatINR(
                                               customer.aging.days31_60,
                                           )
                                         : "—"}
@@ -131,7 +124,7 @@
                                     )}"
                                 >
                                     {customer.aging.days61_90 > 0
-                                        ? formatCurrency(
+                                        ? formatINR(
                                               customer.aging.days61_90,
                                           )
                                         : "—"}
@@ -143,7 +136,7 @@
                                     )}"
                                 >
                                     {customer.aging.days90plus > 0
-                                        ? formatCurrency(
+                                        ? formatINR(
                                               customer.aging.days90plus,
                                           )
                                         : "—"}
@@ -151,7 +144,7 @@
                                 <td
                                     class="px-4 py-3 text-right font-mono font-semibold"
                                 >
-                                    {formatCurrency(customer.aging.total)}
+                                    {formatINR(customer.aging.total)}
                                 </td>
                             </tr>
                         {/each}
@@ -160,26 +153,26 @@
                         <tr class="bg-muted/50 font-semibold">
                             <td class="px-4 py-3">Total</td>
                             <td class="px-4 py-3 text-right font-mono"
-                                >{formatCurrency(data.totals.current)}</td
+                                >{formatINR(data.totals.current)}</td
                             >
                             <td
                                 class="px-4 py-3 text-right font-mono text-red-600"
-                                >{formatCurrency(data.totals.days1_30)}</td
+                                >{formatINR(data.totals.days1_30)}</td
                             >
                             <td
                                 class="px-4 py-3 text-right font-mono text-red-600"
-                                >{formatCurrency(data.totals.days31_60)}</td
+                                >{formatINR(data.totals.days31_60)}</td
                             >
                             <td
                                 class="px-4 py-3 text-right font-mono text-red-600"
-                                >{formatCurrency(data.totals.days61_90)}</td
+                                >{formatINR(data.totals.days61_90)}</td
                             >
                             <td
                                 class="px-4 py-3 text-right font-mono text-red-600"
-                                >{formatCurrency(data.totals.days90plus)}</td
+                                >{formatINR(data.totals.days90plus)}</td
                             >
                             <td class="px-4 py-3 text-right font-mono"
-                                >{formatCurrency(data.totals.total)}</td
+                                >{formatINR(data.totals.total)}</td
                             >
                         </tr>
                     </tfoot>

@@ -17,6 +17,8 @@
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
     import { getInvoiceWhatsAppUrl } from "$lib/utils/whatsapp";
     import { page } from "$app/stores";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data, form } = $props();
 
@@ -103,39 +105,6 @@
         }
     }
 
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
-
-    function getStatusClass(status: string): string {
-        switch (status) {
-            case "paid":
-                return "status-pill--positive";
-            case "issued":
-                return "status-pill--info";
-            case "partially_paid":
-                return "status-pill--warning";
-            case "overdue":
-            case "cancelled":
-                return "status-pill--negative";
-            default: // draft
-                return "status-pill--warning";
-        }
-    }
 </script>
 
 <div class="page-full-bleed">
@@ -232,11 +201,11 @@
             class="mx-6 mt-4 p-3 rounded-lg bg-primary/5 text-text-strong text-sm border border-primary/20"
         >
             Payment recorded: <span class="font-mono font-medium"
-                >{formatCurrency(data.invoice.amount_paid || 0)}</span
+                >{formatINR(data.invoice.amount_paid || 0)}</span
             >
             · Balance due
             <span class="font-mono font-medium"
-                >{formatCurrency(data.invoice.balance_due)}</span
+                >{formatINR(data.invoice.balance_due)}</span
             >
         </div>
     {/if}
@@ -260,7 +229,7 @@
                     <div class="flex justify-between items-start">
                         <div class="space-y-1">
                             <p
-                                class="text-xs font-semibold uppercase tracking-wide text-text-secondary"
+                                class="text-xs font-semibold uppercase tracking-wide text-text-subtle"
                             >
                                 Bill To
                             </p>
@@ -281,7 +250,7 @@
                         >
                             <div>
                                 <p
-                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
+                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
                                 >
                                     Invoice Date
                                 </p>
@@ -293,7 +262,7 @@
                             </div>
                             <div>
                                 <p
-                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
+                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
                                 >
                                     Due Date
                                 </p>
@@ -306,7 +275,7 @@
                             {#if data.invoice.order_number}
                                 <div>
                                     <p
-                                        class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
+                                        class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
                                     >
                                         Reference #
                                     </p>
@@ -326,7 +295,7 @@
                     <table class="w-full text-sm">
                         <thead>
                             <tr
-                                class="bg-surface-2/50 border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-secondary"
+                                class="bg-surface-2/50 border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-subtle"
                             >
                                 <th class="px-4 py-3 text-left">Item</th>
                                 <th class="px-4 py-3 text-right">Qty</th>
@@ -358,7 +327,7 @@
                                     >
                                     <td
                                         class="px-4 py-3 text-right font-mono text-text-subtle"
-                                        >{formatCurrency(item.rate)}</td
+                                        >{formatINR(item.rate)}</td
                                     >
                                     <td
                                         class="px-4 py-3 text-right font-mono text-text-subtle"
@@ -366,7 +335,7 @@
                                     >
                                     <td
                                         class="px-4 py-3 text-right font-mono font-medium text-text-strong"
-                                        >{formatCurrency(item.amount)}</td
+                                        >{formatINR(item.amount)}</td
                                     >
                                 </tr>
                             {/each}
@@ -376,7 +345,7 @@
 
                 <!-- Notes -->
                 {#if data.invoice.notes}
-                    <div class="border-t border-border-subtle pt-6">
+                    <div class="border-t border-border pt-6">
                         <p
                             class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2"
                         >
@@ -390,13 +359,13 @@
 
                 <!-- Bottom Section: Terms & Summary -->
                 <div
-                    class="border-t border-border-subtle pt-6 flex flex-col md:flex-row gap-8"
+                    class="border-t border-border pt-6 flex flex-col md:flex-row gap-8"
                 >
                     <!-- Left: Terms -->
                     <div class="flex-1 space-y-2">
                         {#if data.invoice.terms}
                             <p
-                                class="text-[10px] font-semibold uppercase tracking-wide text-text-secondary"
+                                class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
                             >
                                 Terms & Conditions
                             </p>
@@ -412,40 +381,40 @@
                     <div class="w-full md:w-80 space-y-3 text-sm">
                         <!-- Available Credits Widget Removed (Moved to Bottom Bar) -->
 
-                        <div class="flex justify-between text-text-secondary">
+                        <div class="flex justify-between text-text-subtle">
                             <span>Sub Total</span>
                             <span class="font-mono font-medium text-text-strong"
-                                >{formatCurrency(data.invoice.subtotal)}</span
+                                >{formatINR(data.invoice.subtotal)}</span
                             >
                         </div>
 
                         {#if data.invoice.is_inter_state}
                             <div
-                                class="flex justify-between text-text-secondary"
+                                class="flex justify-between text-text-subtle"
                             >
                                 <span>IGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
-                                    >{formatCurrency(data.invoice.igst)}</span
+                                    >{formatINR(data.invoice.igst)}</span
                                 >
                             </div>
                         {:else}
                             <div
-                                class="flex justify-between text-text-secondary"
+                                class="flex justify-between text-text-subtle"
                             >
                                 <span>CGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
-                                    >{formatCurrency(data.invoice.cgst)}</span
+                                    >{formatINR(data.invoice.cgst)}</span
                                 >
                             </div>
                             <div
-                                class="flex justify-between text-text-secondary"
+                                class="flex justify-between text-text-subtle"
                             >
                                 <span>SGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
-                                    >{formatCurrency(data.invoice.sgst)}</span
+                                    >{formatINR(data.invoice.sgst)}</span
                                 >
                             </div>
                         {/if}
@@ -458,7 +427,7 @@
                             >
                             <span
                                 class="font-mono text-xl font-bold text-text-strong"
-                                >{formatCurrency(data.invoice.total)}</span
+                                >{formatINR(data.invoice.total)}</span
                             >
                         </div>
 
@@ -494,7 +463,7 @@
                                             {/if}
                                         </span>
                                         <span class="font-mono text-green-600">
-                                            (-) {formatCurrency(txn.amount)}
+                                            (-) {formatINR(txn.amount)}
                                         </span>
                                     </div>
                                 {/each}
@@ -516,7 +485,7 @@
                                         ? 'text-green-600'
                                         : 'text-primary'}"
                                 >
-                                    {formatCurrency(data.invoice.balance_due)}
+                                    {formatINR(data.invoice.balance_due)}
                                 </span>
                             </div>
                         {/if}
@@ -530,21 +499,18 @@
     {#if data.invoice.status !== "draft" && data.invoice.status !== "cancelled" && data.invoice.balance_due > 0.01}
         <div class="action-bar">
             <div class="action-bar-group">
-                <Button
-                    onclick={openSettleModal}
-                    class="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                >
+                <Button onclick={openSettleModal}>
                     Settle & Close
                 </Button>
             </div>
             <div class="flex items-center gap-4 text-sm">
                 <div class="flex flex-col items-end">
                     <span
-                        class="text-[10px] uppercase tracking-wider text-text-secondary font-semibold"
+                        class="text-[10px] uppercase tracking-wider text-text-subtle font-semibold"
                         >Balance Due</span
                     >
                     <span class="font-mono text-xl font-bold text-primary"
-                        >{formatCurrency(data.invoice.balance_due)}</span
+                        >{formatINR(data.invoice.balance_due)}</span
                     >
                 </div>
             </div>
@@ -605,15 +571,15 @@
                 <div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto">
                     <!-- Top Summary -->
                     <div
-                        class="bg-surface-2/50 p-4 rounded-lg flex justify-between items-center border border-border-subtle"
+                        class="bg-surface-2/50 p-4 rounded-lg flex justify-between items-center border border-border"
                     >
-                        <span class="text-sm font-medium text-text-secondary"
+                        <span class="text-sm font-medium text-text-subtle"
                             >Amount Due</span
                         >
                         <span
                             class="text-2xl font-bold font-mono text-text-strong"
                         >
-                            {formatCurrency(data.invoice.balance_due)}
+                            {formatINR(data.invoice.balance_due)}
                         </span>
                     </div>
 
@@ -622,7 +588,7 @@
                         <div class="space-y-3">
                             <div class="flex items-center justify-between">
                                 <Label
-                                    class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                                    class="text-xs font-bold uppercase tracking-wide text-text-subtle"
                                 >
                                     Apply Credits
                                 </Label>
@@ -630,7 +596,7 @@
                                     <span
                                         class="text-xs font-mono font-medium text-info"
                                     >
-                                        -{formatCurrency(selectedCreditsTotal)} applied
+                                        -{formatINR(selectedCreditsTotal)} applied
                                     </span>
                                 {/if}
                             </div>
@@ -671,7 +637,7 @@
                                             <div
                                                 class="font-mono font-bold text-sm text-text-strong"
                                             >
-                                                {formatCurrency(credit.amount)}
+                                                {formatINR(credit.amount)}
                                             </div>
                                         </div>
                                     </label>
@@ -684,7 +650,7 @@
                     <div class="space-y-4 pt-4 border-t border-border-dashed">
                         <div class="flex items-center justify-between">
                             <Label
-                                class="text-xs font-bold uppercase tracking-wide text-text-secondary"
+                                class="text-xs font-bold uppercase tracking-wide text-text-subtle"
                             >
                                 Remaining Payment
                             </Label>
@@ -762,7 +728,7 @@
                             >
                         {:else}
                             Remaining Due: <span class="font-mono"
-                                >{formatCurrency(
+                                >{formatINR(
                                     Math.max(0, netPayable - paymentAmount),
                                 )}</span
                             >

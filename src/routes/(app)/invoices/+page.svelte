@@ -3,45 +3,13 @@
     import { Card } from "$lib/components/ui/card";
     import { Plus, FileText } from "lucide-svelte";
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
-
-    function getStatusClass(status: string): string {
-        switch (status) {
-            case "paid":
-                return "status-pill--positive";
-            case "issued":
-                return "status-pill--info";
-            case "partially_paid":
-                return "status-pill--warning";
-            case "overdue":
-            case "cancelled":
-                return "status-pill--negative";
-            default: // draft
-                return "status-pill--warning";
-        }
-    }
 </script>
 
-<div class="flex flex-col h-full">
+<div class="page-full-bleed">
     <!-- Header / Filter Bar -->
     <div
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
@@ -51,10 +19,7 @@
                 All Invoices
             </h1>
         </div>
-        <Button
-            href="/invoices/new"
-            class="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
+        <Button href="/invoices/new">
             <Plus class="mr-2 size-4" />
             New
         </Button>
@@ -74,10 +39,7 @@
                 <p class="text-sm text-text-muted mb-6">
                     Create your first invoice to get started
                 </p>
-                <Button
-                    href="/invoices/new"
-                    class="bg-primary text-primary-foreground"
-                >
+                <Button href="/invoices/new">
                     <Plus class="mr-2 size-4" />
                     Create Invoice
                 </Button>
@@ -140,7 +102,7 @@
                                 </td>
                                 <td class="data-cell--number text-text-strong">
                                     <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
-                                        {formatCurrency(invoice.total)}
+                                        {formatINR(invoice.total)}
                                     </a>
                                 </td>
                                 <td
@@ -150,7 +112,7 @@
                                         : 'text-text-muted'}"
                                 >
                                     <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
-                                        {formatCurrency(invoice.balance_due)}
+                                        {formatINR(invoice.balance_due)}
                                     </a>
                                 </td>
                             </tr>

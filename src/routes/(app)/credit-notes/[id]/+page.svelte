@@ -83,7 +83,7 @@
                             <h2 class="text-2xl font-bold text-text-strong">
                                 Credit Note
                             </h2>
-                            <p class="text-sm text-text-secondary font-mono">
+                            <p class="text-sm text-text-subtle font-mono">
                                 # {data.creditNote.credit_note_number}
                             </p>
                         </div>
@@ -156,11 +156,11 @@
                         <thead class="bg-surface-2/50 border-b border-border">
                             <tr>
                                 <th
-                                    class="px-4 py-3 text-left font-medium text-text-secondary text-[10px] uppercase tracking-wide"
+                                    class="px-4 py-3 text-left font-medium text-text-subtle text-[10px] uppercase tracking-wide"
                                     >Description</th
                                 >
                                 <th
-                                    class="px-4 py-3 text-right font-medium text-text-secondary text-[10px] uppercase tracking-wide"
+                                    class="px-4 py-3 text-right font-medium text-text-subtle text-[10px] uppercase tracking-wide"
                                     >Amount</th
                                 >
                             </tr>
@@ -203,7 +203,7 @@
                             </span>
                         </div>
                         <div
-                            class="flex justify-between items-center text-sm text-text-secondary"
+                            class="flex justify-between items-center text-sm text-text-subtle"
                         >
                             <span>Credits Remaining</span>
                             <span class="font-mono"

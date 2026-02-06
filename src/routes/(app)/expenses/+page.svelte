@@ -1,29 +1,13 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Plus, Receipt } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
 </script>
 
-<div class="flex flex-col h-full">
+<div class="page-full-bleed">
     <!-- Header / Filter Bar -->
     <div
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
@@ -33,10 +17,7 @@
                 Expenses
             </h1>
         </div>
-        <Button
-            href="/expenses/new"
-            class="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
+        <Button href="/expenses/new">
             <Plus class="mr-2 size-4" />
             Add Expense
         </Button>
@@ -56,10 +37,7 @@
                 <p class="text-sm text-text-muted mb-6">
                     Record your business expenses here to track spending
                 </p>
-                <Button
-                    href="/expenses/new"
-                    class="bg-primary text-primary-foreground"
-                >
+                <Button href="/expenses/new">
                     <Plus class="mr-2 size-4" />
                     Add Expense
                 </Button>
@@ -124,12 +102,12 @@
                                 </td>
                                 <td class="data-cell--number text-text-subtle">
                                     <a href="/expenses/{expense.id}" class="data-row-link justify-end">
-                                        {formatCurrency(expense.amount)}
+                                        {formatINR(expense.amount)}
                                     </a>
                                 </td>
                                 <td class="data-cell--number text-text-subtle">
                                     <a href="/expenses/{expense.id}" class="data-row-link justify-end">
-                                        {formatCurrency(
+                                        {formatINR(
                                             (expense.cgst || 0) +
                                                 (expense.sgst || 0) +
                                                 (expense.igst || 0),
@@ -138,7 +116,7 @@
                                 </td>
                                 <td class="data-cell--number font-medium text-text-strong">
                                     <a href="/expenses/{expense.id}" class="data-row-link justify-end">
-                                        {formatCurrency(expense.total)}
+                                        {formatINR(expense.total)}
                                     </a>
                                 </td>
                             </tr>

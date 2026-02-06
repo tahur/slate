@@ -5,6 +5,8 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, RefreshCw } from "lucide-svelte";
     import { goto } from "$app/navigation";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -13,22 +15,6 @@
 
     function applyFilter() {
         goto(`/reports/gst?from=${startDate}&to=${endDate}`);
-    }
-
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
     }
 </script>
 
@@ -74,7 +60,7 @@
                 Output GST (Collected)
             </h3>
             <p class="text-xs text-muted-foreground mb-4">
-                From {data.output.invoiceCount} invoice(s) · Taxable Value: {formatCurrency(
+                From {data.output.invoiceCount} invoice(s) · Taxable Value: {formatINR(
                     data.output.taxableValue,
                 )}
             </p>
@@ -83,25 +69,25 @@
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">CGST Collected</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.output.cgst)}</span
+                        >{formatINR(data.output.cgst)}</span
                     >
                 </div>
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">SGST Collected</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.output.sgst)}</span
+                        >{formatINR(data.output.sgst)}</span
                     >
                 </div>
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">IGST Collected</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.output.igst)}</span
+                        >{formatINR(data.output.igst)}</span
                     >
                 </div>
                 <div class="border-t pt-3 flex justify-between font-semibold">
                     <span>Total Output GST</span>
                     <span class="font-mono text-red-600"
-                        >{formatCurrency(data.output.total)}</span
+                        >{formatINR(data.output.total)}</span
                     >
                 </div>
             </div>
@@ -114,7 +100,7 @@
                 Input GST (Credit)
             </h3>
             <p class="text-xs text-muted-foreground mb-4">
-                From {data.input.expenseCount} expense(s) · Expense Value: {formatCurrency(
+                From {data.input.expenseCount} expense(s) · Expense Value: {formatINR(
                     data.input.expenseValue,
                 )}
             </p>
@@ -123,25 +109,25 @@
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">CGST Credit</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.input.cgst)}</span
+                        >{formatINR(data.input.cgst)}</span
                     >
                 </div>
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">SGST Credit</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.input.sgst)}</span
+                        >{formatINR(data.input.sgst)}</span
                     >
                 </div>
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">IGST Credit</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.input.igst)}</span
+                        >{formatINR(data.input.igst)}</span
                     >
                 </div>
                 <div class="border-t pt-3 flex justify-between font-semibold">
                     <span>Total Input GST</span>
                     <span class="font-mono text-green-600"
-                        >{formatCurrency(data.input.total)}</span
+                        >{formatINR(data.input.total)}</span
                     >
                 </div>
             </div>
@@ -163,7 +149,7 @@
                         ? 'text-red-600'
                         : 'text-green-600'}"
                 >
-                    {formatCurrency(data.netLiability)}
+                    {formatINR(data.netLiability)}
                 </p>
                 <p class="text-xs text-muted-foreground">
                     {data.netLiability >= 0

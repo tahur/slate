@@ -2,26 +2,10 @@
     import { Button } from "$lib/components/ui/button";
     import { Plus, FileText } from "lucide-svelte";
     import Badge from "$lib/components/ui/badge/badge.svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
 
     function getModeLabel(mode: string): string {
         const labels: Record<string, string> = {
@@ -34,7 +18,7 @@
     }
 </script>
 
-<div class="flex flex-col h-full">
+<div class="page-full-bleed">
     <!-- Header / Filter Bar -->
     <div
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
@@ -44,10 +28,7 @@
                 Payments Received
             </h1>
         </div>
-        <Button
-            href="/payments/new"
-            class="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
+        <Button href="/payments/new">
             <Plus class="mr-2 size-4" />
             Record Payment
         </Button>
@@ -67,10 +48,7 @@
                 <p class="text-sm text-text-muted mb-6">
                     Record your first customer payment to get started
                 </p>
-                <Button
-                    href="/payments/new"
-                    class="bg-primary text-primary-foreground"
-                >
+                <Button href="/payments/new">
                     <Plus class="mr-2 size-4" />
                     Record Payment
                 </Button>
@@ -134,7 +112,7 @@
                                 </td>
                                 <td class="data-cell--number text-text-strong">
                                     <a href="/payments/{payment.id}" class="data-row-link justify-end">
-                                        {formatCurrency(payment.amount)}
+                                        {formatINR(payment.amount)}
                                     </a>
                                 </td>
                             </tr>

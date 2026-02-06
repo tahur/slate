@@ -22,7 +22,7 @@
     };
 
     const labelClasses = {
-        default: "text-text-secondary",
+        default: "text-text-subtle",
         positive: "text-positive",
         warning: "text-warning",
         negative: "text-negative",
@@ -52,7 +52,7 @@
                 {/if}
                 {#if tooltip}
                     <span
-                        class="cursor-help text-text-muted hover:text-text-secondary transition-colors"
+                        class="cursor-help text-text-muted hover:text-text-subtle transition-colors"
                         title={tooltip}
                     >
                         <svg
@@ -100,7 +100,7 @@
                 {/if}
                 {#if tooltip}
                     <span
-                        class="cursor-help text-text-muted hover:text-text-secondary transition-colors"
+                        class="cursor-help text-text-muted hover:text-text-subtle transition-colors"
                         title={tooltip}
                     >
                         <svg

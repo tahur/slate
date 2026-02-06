@@ -22,7 +22,7 @@
 </script>
 
 <header
-    class="flex h-14 items-center gap-4 border-b border-border-subtle bg-surface-1 px-5"
+    class="flex h-14 items-center gap-4 border-b border-border bg-surface-1 px-5"
 >
     <!-- Mobile Menu -->
     <div class="md:hidden">

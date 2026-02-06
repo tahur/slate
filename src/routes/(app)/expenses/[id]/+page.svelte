@@ -2,26 +2,10 @@
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
     import { ArrowLeft, Receipt, Lock } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
 </script>
 
 <div class="max-w-2xl mx-auto space-y-4">
@@ -100,7 +84,7 @@
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">Base Amount</span>
                     <span class="font-mono"
-                        >{formatCurrency(data.expense.amount)}</span
+                        >{formatINR(data.expense.amount)}</span
                     >
                 </div>
 
@@ -111,7 +95,7 @@
                                 >IGST ({data.expense.gst_rate}%)</span
                             >
                             <span class="font-mono"
-                                >{formatCurrency(data.expense.igst)}</span
+                                >{formatINR(data.expense.igst)}</span
                             >
                         </div>
                     {:else}
@@ -121,7 +105,7 @@
                                     2}%)</span
                             >
                             <span class="font-mono"
-                                >{formatCurrency(data.expense.cgst)}</span
+                                >{formatINR(data.expense.cgst)}</span
                             >
                         </div>
                         <div class="flex justify-between">
@@ -130,7 +114,7 @@
                                     2}%)</span
                             >
                             <span class="font-mono"
-                                >{formatCurrency(data.expense.sgst)}</span
+                                >{formatINR(data.expense.sgst)}</span
                             >
                         </div>
                     {/if}
@@ -141,7 +125,7 @@
                 >
                     <span>Total</span>
                     <span class="font-mono text-red-600"
-                        >{formatCurrency(data.expense.total)}</span
+                        >{formatINR(data.expense.total)}</span
                     >
                 </div>
             </div>

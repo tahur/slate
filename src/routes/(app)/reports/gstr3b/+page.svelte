@@ -14,6 +14,7 @@
         TriangleAlert,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
 
@@ -22,14 +23,6 @@
 
     function applyFilter() {
         goto(`/reports/gstr3b?from=${startDate}&to=${endDate}`);
-    }
-
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
     }
 
     function downloadCSV() {
@@ -108,25 +101,25 @@
         <Card class="p-4">
             <p class="text-xs text-text-muted">Expense Value</p>
             <p class="text-2xl font-bold font-mono text-text-strong">
-                {formatCurrency(data.data.summary.totalExpenseValue)}
+                {formatINR(data.data.summary.totalExpenseValue)}
             </p>
         </Card>
         <Card class="p-4">
             <p class="text-xs text-text-muted">Eligible ITC</p>
             <p class="text-2xl font-bold font-mono text-positive">
-                {formatCurrency(data.data.summary.totalEligibleItc)}
+                {formatINR(data.data.summary.totalEligibleItc)}
             </p>
         </Card>
         <Card class="p-4">
             <p class="text-xs text-text-muted">Ineligible ITC</p>
             <p class="text-2xl font-bold font-mono text-negative">
-                {formatCurrency(data.data.summary.ineligibleItc)}
+                {formatINR(data.data.summary.ineligibleItc)}
             </p>
         </Card>
         <Card class="p-4 bg-positive/5 border-positive/20">
             <p class="text-xs text-text-muted">Net ITC Available</p>
             <p class="text-2xl font-bold font-mono text-positive">
-                {formatCurrency(data.data.summary.totalEligibleItc)}
+                {formatINR(data.data.summary.totalEligibleItc)}
             </p>
         </Card>
     </div>
@@ -136,19 +129,19 @@
         <Card class="p-4">
             <p class="text-xs text-text-muted mb-2">CGST ITC</p>
             <p class="text-xl font-bold font-mono text-text-strong">
-                {formatCurrency(data.data.summary.eligibleItcCgst)}
+                {formatINR(data.data.summary.eligibleItcCgst)}
             </p>
         </Card>
         <Card class="p-4">
             <p class="text-xs text-text-muted mb-2">SGST ITC</p>
             <p class="text-xl font-bold font-mono text-text-strong">
-                {formatCurrency(data.data.summary.eligibleItcSgst)}
+                {formatINR(data.data.summary.eligibleItcSgst)}
             </p>
         </Card>
         <Card class="p-4">
             <p class="text-xs text-text-muted mb-2">IGST ITC</p>
             <p class="text-xl font-bold font-mono text-text-strong">
-                {formatCurrency(data.data.summary.eligibleItcIgst)}
+                {formatINR(data.data.summary.eligibleItcIgst)}
             </p>
         </Card>
     </div>
@@ -188,11 +181,11 @@
                                         {vendor.gstin || "-"}
                                     </td>
                                     <td class="text-center">{vendor.expenseCount}</td>
-                                    <td class="data-cell--number">{formatCurrency(vendor.totalAmount)}</td>
-                                    <td class="data-cell--number">{formatCurrency(vendor.cgst)}</td>
-                                    <td class="data-cell--number">{formatCurrency(vendor.sgst)}</td>
-                                    <td class="data-cell--number">{formatCurrency(vendor.igst)}</td>
-                                    <td class="data-cell--number font-medium">{formatCurrency(vendor.totalTax)}</td>
+                                    <td class="data-cell--number">{formatINR(vendor.totalAmount)}</td>
+                                    <td class="data-cell--number">{formatINR(vendor.cgst)}</td>
+                                    <td class="data-cell--number">{formatINR(vendor.sgst)}</td>
+                                    <td class="data-cell--number">{formatINR(vendor.igst)}</td>
+                                    <td class="data-cell--number font-medium">{formatINR(vendor.totalTax)}</td>
                                     <td class="text-center">
                                         {#if vendor.isRegistered}
                                             <CheckCircle2 class="size-4 text-positive inline" />
@@ -208,11 +201,11 @@
                                 <td class="px-4 py-3">Total</td>
                                 <td></td>
                                 <td class="text-center px-4 py-3">{data.data.summary.totalPurchases}</td>
-                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.summary.totalExpenseValue)}</td>
-                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.cgst, 0))}</td>
-                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.sgst, 0))}</td>
-                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.igst, 0))}</td>
-                                <td class="data-cell--number px-4 py-3">{formatCurrency(data.data.vendorWise.reduce((sum, v) => sum + v.totalTax, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.summary.totalExpenseValue)}</td>
+                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.cgst, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.sgst, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.igst, 0))}</td>
+                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.totalTax, 0))}</td>
                                 <td></td>
                             </tr>
                         </tfoot>

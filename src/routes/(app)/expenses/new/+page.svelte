@@ -5,6 +5,7 @@
     import { ArrowLeft, Check, Plus } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data, form } = $props();
     let isSubmitting = $state(false);
@@ -35,13 +36,6 @@
     let igst = $derived(isInterState ? gstAmount : 0);
     let total = $derived(amount + gstAmount);
 
-    function formatCurrency(amt: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amt);
-    }
 </script>
 
 <div class="page-full-bleed">
@@ -57,7 +51,7 @@
         </Button>
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">Add Expense</h1>
-            <p class="text-sm text-text-secondary">Record a business expense</p>
+            <p class="text-sm text-text-subtle">Record a business expense</p>
         </div>
     </header>
 
@@ -201,7 +195,7 @@
             <!-- RIGHT COLUMN: Financials -->
             <div class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto">
                 <div class="space-y-6">
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-secondary">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-subtle">
                         Financials
                     </h3>
 
@@ -257,18 +251,18 @@
                     <!-- Summary Table -->
                     <div class="space-y-3 pt-4 border-t border-dashed border-border">
                         <div class="flex justify-between text-sm">
-                            <span class="text-text-secondary">Subtotal</span>
-                            <span class="font-mono text-text-strong">{formatCurrency(amount)}</span>
+                            <span class="text-text-subtle">Subtotal</span>
+                            <span class="font-mono text-text-strong">{formatINR(amount)}</span>
                         </div>
                         {#if gstRate > 0}
                             <div class="flex justify-between text-sm">
-                                <span class="text-text-secondary">Tax Amount ({gstRate}%)</span>
-                                <span class="font-mono text-text-strong">{formatCurrency(gstAmount)}</span>
+                                <span class="text-text-subtle">Tax Amount ({gstRate}%)</span>
+                                <span class="font-mono text-text-strong">{formatINR(gstAmount)}</span>
                             </div>
                         {/if}
                         <div class="flex justify-between items-baseline pt-3 border-t border-border">
                             <span class="font-semibold text-text-strong">Total Payable</span>
-                            <span class="font-mono text-2xl font-bold text-primary">{formatCurrency(total)}</span>
+                            <span class="font-mono text-2xl font-bold text-primary">{formatINR(total)}</span>
                         </div>
                     </div>
                 </div>

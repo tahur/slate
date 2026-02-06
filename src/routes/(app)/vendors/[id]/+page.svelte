@@ -24,6 +24,8 @@
         Building2,
         Globe,
     } from "lucide-svelte";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -47,24 +49,6 @@
             }
         },
     });
-
-    function formatCurrency(amount: number | null | undefined): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
 
     function getStateName(code: string | null): string {
         if (!code) return "—";
@@ -125,7 +109,7 @@
                         <span class="text-xs font-medium uppercase tracking-wider">Total Spent</span>
                     </div>
                     <p class="text-xl font-bold font-mono text-text-strong">
-                        {formatCurrency(data.summary.totalExpenses)}
+                        {formatINR(data.summary.totalExpenses)}
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
@@ -134,7 +118,7 @@
                         <span class="text-xs font-medium uppercase tracking-wider">Input GST</span>
                     </div>
                     <p class="text-xl font-bold font-mono text-green-600">
-                        {formatCurrency(data.summary.totalInputGst)}
+                        {formatINR(data.summary.totalInputGst)}
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
@@ -143,7 +127,7 @@
                         <span class="text-xs font-medium uppercase tracking-wider">Payable</span>
                     </div>
                     <p class="text-xl font-bold font-mono {data.summary.balance > 0 ? 'text-amber-600' : 'text-text-strong'}">
-                        {formatCurrency(data.summary.balance)}
+                        {formatINR(data.summary.balance)}
                     </p>
                 </div>
             </div>
@@ -277,11 +261,11 @@
                                             <span class="font-mono text-primary">{expense.expense_number}</span>
                                         </td>
                                         <td class="py-3 pr-4 text-text-subtle">{expense.description || '—'}</td>
-                                        <td class="py-3 pr-4 text-right font-mono">{formatCurrency(expense.amount)}</td>
+                                        <td class="py-3 pr-4 text-right font-mono">{formatINR(expense.amount)}</td>
                                         <td class="py-3 pr-4 text-right font-mono text-green-600">
-                                            {formatCurrency((expense.cgst || 0) + (expense.sgst || 0) + (expense.igst || 0))}
+                                            {formatINR((expense.cgst || 0) + (expense.sgst || 0) + (expense.igst || 0))}
                                         </td>
-                                        <td class="py-3 text-right font-mono font-medium">{formatCurrency(expense.total)}</td>
+                                        <td class="py-3 text-right font-mono font-medium">{formatINR(expense.total)}</td>
                                     </tr>
                                 {/each}
                             </tbody>

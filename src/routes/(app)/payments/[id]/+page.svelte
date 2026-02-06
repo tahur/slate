@@ -3,6 +3,8 @@
     import { ArrowLeft, Printer, Lock } from "lucide-svelte";
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
     import { getPaymentWhatsAppUrl } from "$lib/utils/whatsapp";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -15,24 +17,6 @@
         orgName: data.org?.name || "Our Company",
         mode: data.payment.payment_mode,
     });
-
-    function formatCurrency(amount: number | null): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
 
     function getModeLabel(mode: string): string {
         const labels: Record<string, string> = {
@@ -112,7 +96,7 @@
                             <h2 class="text-2xl font-bold text-text-strong">
                                 Payment Receipt
                             </h2>
-                            <p class="text-sm text-text-secondary font-mono">
+                            <p class="text-sm text-text-subtle font-mono">
                                 # {data.payment.payment_number}
                             </p>
                         </div>
@@ -213,7 +197,7 @@
                         Amount Received
                     </p>
                     <p class="text-3xl font-bold font-mono text-text-strong">
-                        {formatCurrency(data.payment.amount)}
+                        {formatINR(data.payment.amount)}
                     </p>
                 </div>
 
@@ -232,19 +216,19 @@
                                 >
                                     <tr>
                                         <th
-                                            class="px-4 py-3 text-left font-medium text-text-secondary text-[10px] uppercase tracking-wide"
+                                            class="px-4 py-3 text-left font-medium text-text-subtle text-[10px] uppercase tracking-wide"
                                             >Invoice #</th
                                         >
                                         <th
-                                            class="px-4 py-3 text-left font-medium text-text-secondary text-[10px] uppercase tracking-wide"
+                                            class="px-4 py-3 text-left font-medium text-text-subtle text-[10px] uppercase tracking-wide"
                                             >Invoice Date</th
                                         >
                                         <th
-                                            class="px-4 py-3 text-right font-medium text-text-secondary text-[10px] uppercase tracking-wide"
+                                            class="px-4 py-3 text-right font-medium text-text-subtle text-[10px] uppercase tracking-wide"
                                             >Invoice Total</th
                                         >
                                         <th
-                                            class="px-4 py-3 text-right font-medium text-text-secondary text-[10px] uppercase tracking-wide"
+                                            class="px-4 py-3 text-right font-medium text-text-subtle text-[10px] uppercase tracking-wide"
                                             >Amount Applied</th
                                         >
                                     </tr>
@@ -268,14 +252,14 @@
                                             <td
                                                 class="px-4 py-3 text-right font-mono text-text-subtle"
                                             >
-                                                {formatCurrency(
+                                                {formatINR(
                                                     alloc.invoice_total,
                                                 )}
                                             </td>
                                             <td
                                                 class="px-4 py-3 text-right font-mono font-medium text-positive"
                                             >
-                                                {formatCurrency(alloc.amount)}
+                                                {formatINR(alloc.amount)}
                                             </td>
                                         </tr>
                                     {/each}
@@ -288,11 +272,11 @@
                     <div class="flex justify-end">
                         <div class="w-64 space-y-3">
                             <div
-                                class="flex justify-between items-center text-sm text-text-secondary"
+                                class="flex justify-between items-center text-sm text-text-subtle"
                             >
                                 <span>Total Applied</span>
                                 <span class="font-mono font-medium text-text-strong">
-                                    {formatCurrency(totalAllocated)}
+                                    {formatINR(totalAllocated)}
                                 </span>
                             </div>
                             {#if excess > 0.01}
@@ -305,7 +289,7 @@
                                     <span
                                         class="font-mono font-bold text-warning"
                                     >
-                                        {formatCurrency(excess)}
+                                        {formatINR(excess)}
                                     </span>
                                 </div>
                             {/if}
@@ -315,7 +299,7 @@
 
                 <!-- Notes -->
                 {#if data.payment.notes}
-                    <div class="border-t border-border-subtle pt-6">
+                    <div class="border-t border-border pt-6">
                         <p
                             class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2"
                         >

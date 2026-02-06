@@ -6,9 +6,9 @@
 		variants: {
 			variant: {
 				default:
-					"bg-surface-2 text-text-strong border-border-subtle [a&]:hover:bg-surface-3",
+					"bg-surface-2 text-text-strong border-border [a&]:hover:bg-surface-3",
 				secondary:
-					"bg-surface-1 text-text-subtle border-border-subtle [a&]:hover:bg-surface-2",
+					"bg-surface-1 text-text-subtle border-border [a&]:hover:bg-surface-2",
 				destructive:
 					"bg-negative/15 [a&]:hover:bg-negative/25 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-negative/30 border-negative/35 text-negative",
 				outline: "text-text-subtle border-border-strong [a&]:hover:bg-surface-2",

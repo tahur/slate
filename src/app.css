@@ -29,12 +29,9 @@
     --color-text-subtle: hsl(220 10% 45%);
     --color-text-muted: hsl(220 10% 65%);
     --color-text-placeholder: hsl(220 10% 72%);
-    --color-text-secondary: hsl(220 10% 55%);
 
     /* Borders */
     --color-border-strong: hsl(220 15% 85%);
-    --color-border-subtle: hsl(220 15% 92%);
-    --color-border-dashed: hsl(220 15% 88%);
 
     /* Sidebar (Light) */
     --color-sidebar-bg: hsl(0 0% 100%);
@@ -183,7 +180,7 @@
 .data-table td {
     padding: 0.75rem 1rem;
     color: var(--color-text-strong);
-    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
 }
 
@@ -265,7 +262,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--color-text-secondary);
+    color: var(--color-text-subtle);
 }
 
 /* ── Action Bar (sticky bottom bar for forms) ───────── */

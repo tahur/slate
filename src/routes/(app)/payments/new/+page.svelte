@@ -6,6 +6,8 @@
     import { ArrowLeft, Check, Search } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data, form } = $props();
     let isSubmitting = $state(false);
@@ -103,23 +105,6 @@
         allocations = newAllocations;
     }
 
-    function formatCurrency(amt: number | null): string {
-        if (amt === null || amt === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amt);
-    }
-
-    function formatDate(dateStr: string | null): string {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    }
 </script>
 
 <div class="page-full-bleed">
@@ -194,7 +179,7 @@
                                         ({customer.company_name})
                                     {/if}
                                     {#if customer.balance && customer.balance > 0}
-                                        — Outstanding: {formatCurrency(
+                                        — Outstanding: {formatINR(
                                             customer.balance,
                                         )}
                                     {/if}
@@ -344,14 +329,14 @@
 
                     {#if !selectedCustomer}
                         <div
-                            class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border-subtle rounded-lg text-text-muted text-sm text-center p-4"
+                            class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg text-text-muted text-sm text-center p-4"
                         >
                             <Search class="size-8 mb-2 opacity-50" />
                             Select a customer to view invoices
                         </div>
                     {:else if unpaidInvoices.length === 0}
                         <div
-                            class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border-subtle rounded-lg text-text-muted text-sm text-center p-4"
+                            class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg text-text-muted text-sm text-center p-4"
                         >
                             <Check
                                 class="size-8 mb-2 opacity-50 text-green-500"
@@ -386,7 +371,7 @@
                                             >
                                             <span
                                                 class="text-sm font-medium text-destructive"
-                                                >{formatCurrency(
+                                                >{formatINR(
                                                     invoice.balance_due,
                                                 )}</span
                                             >
@@ -444,7 +429,6 @@
                 type="submit"
                 form="payment-form"
                 disabled={isSubmitting || !selectedCustomer || amount <= 0}
-                class="bg-primary text-primary-foreground font-semibold tracking-wide shadow-sm hover:bg-primary/90"
             >
                 <Check class="mr-2 size-4" />
                 {isSubmitting ? "Recording..." : "Record Payment"}
@@ -466,7 +450,7 @@
                     >Received</span
                 >
                 <span class="font-mono text-xl font-bold text-text-strong"
-                    >{formatCurrency(amount)}</span
+                    >{formatINR(amount)}</span
                 >
             </div>
 
@@ -479,7 +463,7 @@
                     class="font-mono font-medium text-text-strong {totalAllocated >
                     amount
                         ? 'text-destructive'
-                        : ''}">{formatCurrency(totalAllocated)}</span
+                        : ''}">{formatINR(totalAllocated)}</span
                 >
             </div>
 
@@ -490,7 +474,7 @@
                         >Full Advance</span
                     >
                     <span class="font-mono font-bold"
-                        >{formatCurrency(amount)}</span
+                        >{formatINR(amount)}</span
                     >
                     <span class="text-[10px] text-text-muted">
                         No invoice allocated - saved as advance
@@ -503,7 +487,7 @@
                         >Customer Advance</span
                     >
                     <span class="font-mono font-bold"
-                        >{formatCurrency(remainingAmount)}</span
+                        >{formatINR(remainingAmount)}</span
                     >
                     <span class="text-[10px] text-text-muted">
                         Excess saved for future invoices

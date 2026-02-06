@@ -17,6 +17,8 @@
         Package,
     } from "lucide-svelte";
     import { goto } from "$app/navigation";
+    import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
 
@@ -25,22 +27,6 @@
 
     function applyFilter() {
         goto(`/reports/gstr1?from=${startDate}&to=${endDate}`);
-    }
-
-    function formatCurrency(amount: number): string {
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
-
-    function formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
     }
 
     function downloadCSV() {
@@ -119,13 +105,13 @@
         <Card class="p-4">
             <p class="text-xs text-text-muted">Taxable Value</p>
             <p class="text-2xl font-bold font-mono text-text-strong">
-                {formatCurrency(data.data.summary.totalTaxableValue)}
+                {formatINR(data.data.summary.totalTaxableValue)}
             </p>
         </Card>
         <Card class="p-4">
             <p class="text-xs text-text-muted">Total GST</p>
             <p class="text-2xl font-bold font-mono text-negative">
-                {formatCurrency(
+                {formatINR(
                     data.data.summary.totalCgst +
                         data.data.summary.totalSgst +
                         data.data.summary.totalIgst,
@@ -135,7 +121,7 @@
         <Card class="p-4">
             <p class="text-xs text-text-muted">Total Value</p>
             <p class="text-2xl font-bold font-mono text-text-strong">
-                {formatCurrency(data.data.summary.totalValue)}
+                {formatINR(data.data.summary.totalValue)}
             </p>
         </Card>
     </div>
@@ -208,11 +194,11 @@
                                         <td class="font-mono text-xs">{entry.gstin}</td>
                                         <td>{entry.invoiceNumber}</td>
                                         <td class="data-cell--muted">{formatDate(entry.invoiceDate)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatCurrency(entry.invoiceValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
+                                        <td class="data-cell--number font-medium">{formatINR(entry.invoiceValue)}</td>
                                     </tr>
                                 {/each}
                             </tbody>
@@ -248,9 +234,9 @@
                                         <td>{entry.invoiceNumber}</td>
                                         <td class="data-cell--muted">{formatDate(entry.invoiceDate)}</td>
                                         <td>{entry.placeOfSupply}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatCurrency(entry.invoiceValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
+                                        <td class="data-cell--number font-medium">{formatINR(entry.invoiceValue)}</td>
                                     </tr>
                                 {/each}
                             </tbody>
@@ -287,10 +273,10 @@
                                         <td>{entry.placeOfSupply}</td>
                                         <td>{entry.type}</td>
                                         <td class="data-cell--number">{entry.rate}%</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.igst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
                                     </tr>
                                 {/each}
                             </tbody>
@@ -330,11 +316,11 @@
                                         <td>{entry.noteNumber}</td>
                                         <td class="data-cell--muted">{formatDate(entry.noteDate)}</td>
                                         <td>{entry.noteType === 'C' ? 'Credit' : 'Debit'}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatCurrency(entry.noteValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
+                                        <td class="data-cell--number font-medium">{formatINR(entry.noteValue)}</td>
                                     </tr>
                                 {/each}
                             </tbody>
@@ -374,11 +360,11 @@
                                         <td class="max-w-[200px] truncate">{entry.description}</td>
                                         <td>{entry.uqc}</td>
                                         <td class="data-cell--number">{entry.totalQuantity}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatCurrency(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatCurrency(entry.totalValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
+                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
+                                        <td class="data-cell--number font-medium">{formatINR(entry.totalValue)}</td>
                                     </tr>
                                 {/each}
                             </tbody>

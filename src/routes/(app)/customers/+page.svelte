@@ -12,6 +12,7 @@
         MapPin,
     } from "lucide-svelte";
     import { INDIAN_STATES } from "./new/schema";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
 
@@ -28,15 +29,6 @@
             );
         })
     );
-
-    function formatCurrency(amount: number | null | undefined): string {
-        if (amount === null || amount === undefined) return "₹0.00";
-        return new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            minimumFractionDigits: 2,
-        }).format(amount);
-    }
 
     function getStateName(code: string | null): string {
         if (!code) return "";
@@ -80,7 +72,7 @@
                     <span class="text-xs font-medium uppercase tracking-wider">Total Receivable</span>
                 </div>
                 <p class="text-2xl font-bold font-mono {data.summary.totalReceivable > 0 ? 'text-amber-600' : 'text-text-strong'}">
-                    {formatCurrency(data.summary.totalReceivable)}
+                    {formatINR(data.summary.totalReceivable)}
                 </p>
             </div>
         </div>
@@ -176,7 +168,7 @@
                         <div class="text-right shrink-0">
                             <p class="text-xs text-text-muted uppercase tracking-wider">Receivable</p>
                             <p class="font-mono font-semibold {(customer.balance || 0) > 0 ? 'text-amber-600' : 'text-text-muted'}">
-                                {formatCurrency(customer.balance)}
+                                {formatINR(customer.balance)}
                             </p>
                         </div>
                     </a>
