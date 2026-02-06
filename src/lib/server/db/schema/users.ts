@@ -23,5 +23,16 @@ export const sessions = sqliteTable('sessions', {
     expiresAt: integer('expires_at').notNull()
 });
 
+export const password_reset_tokens = sqliteTable('password_reset_tokens', {
+    id: text('id').primaryKey(),
+    user_id: text('user_id')
+        .notNull()
+        .references(() => users.id),
+    token_hash: text('token_hash').notNull(),
+    expires_at: integer('expires_at').notNull(),
+    created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+});
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type PasswordResetToken = typeof password_reset_tokens.$inferSelect;

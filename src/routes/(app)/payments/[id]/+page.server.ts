@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { payments, payment_allocations, customers, invoices } from '$lib/server/db/schema';
+import { payments, payment_allocations, customers, invoices, organizations } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -56,5 +56,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         .leftJoin(invoices, eq(payment_allocations.invoice_id, invoices.id))
         .where(eq(payment_allocations.payment_id, params.id));
 
-    return { payment, customer, allocations };
+    // Get organization
+    const org = await db.query.organizations.findFirst({
+        where: eq(organizations.id, orgId)
+    });
+
+    return { payment, customer, allocations, org };
 };

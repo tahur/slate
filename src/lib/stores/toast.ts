@@ -16,10 +16,9 @@ function createId() {
 }
 
 export const toasts = writable<Toast[]>([]);
-
 export function addToast(
     toast: Omit<Toast, 'id'>,
-    duration: number = 4000
+    duration: number = 5000
 ) {
     const id = createId();
     const nextToast: Toast = { id, ...toast };

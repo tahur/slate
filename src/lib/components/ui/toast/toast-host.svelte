@@ -2,6 +2,7 @@
     import { fly } from "svelte/transition";
     import { addToast, removeToast, toasts } from "$lib/stores/toast";
     import type { FlashMessage } from "$lib/server/flash";
+    import { CheckCircle2, XCircle, Info, X } from "lucide-svelte";
 
     export let flash: FlashMessage | null = null;
 
@@ -12,33 +13,64 @@
         appliedFlash = true;
     }
 
-    function getToastClasses(type: string) {
+    function getToastStyles(type: string) {
         switch (type) {
             case "success":
-                return "border-green-200 bg-green-50 text-green-900";
+                return {
+                    container:
+                        "bg-white dark:bg-zinc-900 border-l-4 border-l-emerald-500 border-y border-r border-zinc-200 dark:border-zinc-800",
+                    icon: "text-emerald-500",
+                    text: "text-zinc-900 dark:text-zinc-100",
+                    iconComponent: CheckCircle2,
+                };
             case "error":
-                return "border-red-200 bg-red-50 text-red-900";
+                return {
+                    container:
+                        "bg-white dark:bg-zinc-900 border-l-4 border-l-red-500 border-y border-r border-zinc-200 dark:border-zinc-800",
+                    icon: "text-red-500",
+                    text: "text-zinc-900 dark:text-zinc-100",
+                    iconComponent: XCircle,
+                };
             default:
-                return "border-slate-200 bg-white text-slate-900";
+                return {
+                    container:
+                        "bg-white dark:bg-zinc-900 border-l-4 border-l-blue-500 border-y border-r border-zinc-200 dark:border-zinc-800",
+                    icon: "text-blue-500",
+                    text: "text-zinc-900 dark:text-zinc-100",
+                    iconComponent: Info,
+                };
         }
     }
 </script>
 
-<div class="pointer-events-none fixed right-4 top-4 z-50 space-y-2">
+<div
+    class="pointer-events-none fixed right-4 top-4 z-50 flex flex-col gap-2 min-w-[320px]"
+>
     {#each $toasts as toast (toast.id)}
+        {@const styles = getToastStyles(toast.type)}
         <div
-            class="pointer-events-auto flex items-start gap-3 rounded-md border px-3 py-2 shadow-sm {getToastClasses(
-                toast.type,
-            )}"
-            transition:fly={{ y: -8, duration: 200 }}
+            class="pointer-events-auto flex items-start gap-3 rounded-lg border p-4 shadow-lg shadow-black/5 {styles.container}"
+            transition:fly={{ y: -8, duration: 300 }}
+            role="alert"
         >
-            <div class="text-sm font-medium">{toast.message}</div>
+            <svelte:component
+                this={styles.iconComponent}
+                class="h-5 w-5 shrink-0 mt-0.5 {styles.icon}"
+            />
+
+            <div class="flex-1 pt-0.5">
+                <p class="text-sm font-medium leading-tight {styles.text}">
+                    {toast.message}
+                </p>
+            </div>
+
             <button
                 type="button"
-                class="ml-auto text-xs text-muted-foreground hover:text-foreground"
-                onclick={() => removeToast(toast.id)}
+                class="shrink-0 -mr-1 -mt-1 p-1 rounded-md opacity-60 hover:opacity-100 transition-opacity {styles.text}"
+                on:click={() => removeToast(toast.id)}
+                aria-label="Close notification"
             >
-                Close
+                <X class="h-4 w-4" />
             </button>
         </div>
     {/each}

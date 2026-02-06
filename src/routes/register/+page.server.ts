@@ -9,6 +9,7 @@ import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
+import { eq } from 'drizzle-orm';
 
 const schema = z.object({
     email: z.email(),
@@ -32,13 +33,26 @@ export const actions: Actions = {
         }
 
         const { email, password, name } = form.data;
+
+        // Check if email already exists
+        const existingUser = await db.query.users.findFirst({
+            where: eq(users.email, email.toLowerCase())
+        });
+
+        if (existingUser) {
+            return fail(400, {
+                form,
+                error: 'An account with this email already exists. Please login instead.'
+            });
+        }
+
         const userId = generateId(15);
         const hashedPassword = await new Argon2id().hash(password);
 
         try {
             await db.insert(users).values({
                 id: userId,
-                email,
+                email: email.toLowerCase(),
                 password_hash: hashedPassword,
                 name,
                 role: 'admin',
@@ -56,7 +70,7 @@ export const actions: Actions = {
             console.error(e);
             return fail(500, {
                 form,
-                error: 'An unknown error occurred'
+                error: 'Failed to create account. Please try again.'
             });
         }
 

@@ -2,9 +2,22 @@
     import { Button } from "$lib/components/ui/button";
     import { formatINR } from "$lib/utils/currency";
     import { ArrowLeft, Printer, Download, Lock } from "lucide-svelte";
-    import { formatDate } from "../../../../lib/utils/date";
+    import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
+    import { formatDate } from "$lib/utils/date";
+    import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
+    import { getCreditNoteWhatsAppUrl } from "$lib/utils/whatsapp";
 
     let { data } = $props();
+
+    const whatsappUrl = getCreditNoteWhatsAppUrl({
+        creditNoteNumber: data.creditNote.credit_note_number,
+        customerName: data.customer?.name || "Customer",
+        customerPhone: data.customer?.phone,
+        total: data.creditNote.total,
+        date: data.creditNote.credit_note_date,
+        orgName: data.org?.name || "Our Company",
+        reason: data.creditNote.reason,
+    });
 </script>
 
 <div class="flex flex-col h-[calc(100vh-3.5rem)] -mx-4 md:-mx-5 -my-4 md:-my-5">
@@ -28,12 +41,11 @@
                     >
                         {data.creditNote.credit_note_number}
                     </h1>
+                    <StatusBadge status={data.creditNote.status} />
                     <span
-                        class="px-2 py-0.5 rounded-full text-xs font-medium uppercase tracking-wide bg-surface-2 text-text-secondary"
+                        class="text-text-muted"
+                        title="This credit note is posted and cannot be modified"
                     >
-                        {data.creditNote.status}
-                    </span>
-                    <span class="text-text-muted" title="This credit note is posted and cannot be modified">
                         <Lock class="size-4" />
                     </span>
                 </div>
@@ -47,6 +59,7 @@
                 <Printer class="size-4 mr-2" />
                 Print
             </Button>
+            <WhatsAppShareButton url={whatsappUrl} />
         </div>
     </header>
 

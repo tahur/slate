@@ -2,8 +2,20 @@
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
     import { ArrowLeft, Printer, Lock } from "lucide-svelte";
+    import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
+    import { getPaymentWhatsAppUrl } from "$lib/utils/whatsapp";
 
     let { data } = $props();
+
+    const whatsappUrl = getPaymentWhatsAppUrl({
+        paymentNumber: data.payment.payment_number,
+        customerName: data.customer?.name || "Customer",
+        customerPhone: data.customer?.phone,
+        amount: data.payment.amount,
+        date: data.payment.payment_date,
+        orgName: data.org?.name || "Our Company",
+        mode: data.payment.payment_mode,
+    });
 
     function formatCurrency(amount: number | null): string {
         if (amount === null || amount === undefined) return "₹0.00";
@@ -59,10 +71,11 @@
                 </p>
             </div>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onclick={() => window.print()}>
             <Printer class="mr-2 size-4" />
             Print Receipt
         </Button>
+        <WhatsAppShareButton url={whatsappUrl} />
     </div>
 
     <div class="grid gap-4 md:grid-cols-3">

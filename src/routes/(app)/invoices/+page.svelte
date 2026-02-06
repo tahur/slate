@@ -2,6 +2,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
     import { Plus, FileText } from "lucide-svelte";
+    import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
 
     let { data } = $props();
 
@@ -138,13 +139,13 @@
                                     </div>
                                 </td>
                                 <td class="text-right">
-                                    <span
-                                        class="status-pill {getStatusClass(
-                                            invoice.status,
-                                        )}"
-                                    >
-                                        {invoice.status.replace("_", " ")}
-                                    </span>
+                                    <StatusBadge
+                                        status={invoice.status.replace(
+                                            "_",
+                                            " ",
+                                        )}
+                                        className="justify-end"
+                                    />
                                 </td>
                                 <td class="data-cell--number text-text-strong">
                                     {formatCurrency(invoice.total)}

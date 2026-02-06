@@ -8,7 +8,7 @@
     } from "lucide-svelte";
     import type { ComponentType } from "svelte";
 
-    export let status: string;
+    export let status: string | null | undefined = undefined;
     export let className: string = "";
 
     const normalizedStatus = status?.toLowerCase() || "unknown";
@@ -29,9 +29,14 @@
                 variant = "success";
                 Icon = CheckCircle2;
                 break;
+            case "partially_paid":
+                variant = "warning";
+                Icon = Clock; // Or a specific icon like PieChart
+                break;
             case "pending":
             case "sent":
-                variant = "warning";
+            case "issued":
+                variant = "info";
                 Icon = Clock;
                 break;
             case "overdue":
@@ -40,7 +45,12 @@
                 break;
             case "draft":
                 variant = "secondary";
-                Icon = AlertTriangle; // Using Triangle as a placeholder for draft/work in progress
+                Icon = AlertTriangle;
+                break;
+            case "cancelled":
+            case "void":
+                variant = "outline";
+                Icon = AlertCircle;
                 break;
             default:
                 variant = "outline";

@@ -20,6 +20,9 @@
         Eye,
         CheckCircle,
         AlertCircle,
+        Mail,
+        Send,
+        Loader2,
     } from "lucide-svelte";
 
     let { data } = $props();
@@ -30,6 +33,7 @@
         { id: "bank", label: "Bank & UPI", icon: CreditCard },
         { id: "invoice", label: "Invoice Settings", icon: FileText },
         { id: "series", label: "Number Series", icon: Hash },
+        { id: "email", label: "Email (SMTP)", icon: Mail },
         { id: "profile", label: "My Profile", icon: User },
     ];
 
@@ -80,6 +84,52 @@
                 addToast({
                     type: "success",
                     message: "Number series updated.",
+                });
+            }
+        },
+    });
+
+    let smtpTestResult = $state<{ success: boolean; error?: string } | null>(
+        null,
+    );
+    let smtpTesting = $state(false);
+
+    const {
+        form: smtpForm,
+        errors: smtpErrors,
+        enhance: smtpEnhance,
+        submitting: smtpSubmitting,
+    } = superForm(data.smtpForm, {
+        id: "smtp-settings",
+        onResult: ({ result }) => {
+            if (result.type === "success") {
+                const data = result.data as any;
+                if (data?.testResult) {
+                    smtpTestResult = data.testResult;
+                    smtpTesting = false;
+                    if (data.testResult.success) {
+                        addToast({
+                            type: "success",
+                            message: "SMTP connection successful!",
+                        });
+                    } else {
+                        addToast({
+                            type: "error",
+                            message:
+                                data.testResult.error || "Connection failed",
+                        });
+                    }
+                } else {
+                    addToast({
+                        type: "success",
+                        message: "Email settings saved.",
+                    });
+                }
+            }
+            if (result.type === "failure" && (result.data as any)?.error) {
+                addToast({
+                    type: "error",
+                    message: (result.data as any).error as string,
                 });
             }
         },
@@ -739,6 +789,183 @@
                             </Button>
                         </div>
                     </form>
+                {/if}
+
+                <!-- Email Tab -->
+                {#if activeTab === "email"}
+                    <div class="space-y-6">
+                        <Card class="p-6 space-y-6">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-blue-100 rounded-lg">
+                                    <Mail class="size-5 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h2 class="text-base font-semibold text-text-strong">Email Configuration</h2>
+                                    <p class="text-sm text-text-secondary">
+                                        Configure SMTP to send invoices and password reset emails.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {#if data.smtpEnabled}
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <CheckCircle class="size-5 text-green-600" />
+                                        <span class="text-sm font-medium text-green-800">Email is configured and enabled</span>
+                                    </div>
+                                    <form method="POST" action="?/disableSmtp">
+                                        <Button variant="outline" size="sm" type="submit">
+                                            Disable
+                                        </Button>
+                                    </form>
+                                </div>
+                            {/if}
+                        </Card>
+
+                        <form method="POST" action="?/updateSmtp" use:smtpEnhance>
+                            <Card class="p-6 space-y-6">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-text-strong">SMTP Settings</h3>
+                                    <p class="text-xs text-text-muted mt-1">
+                                        For Gmail: use smtp.gmail.com, port 587, and an App Password.
+                                    </p>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label for="smtp_host">SMTP Host</Label>
+                                        <Input
+                                            id="smtp_host"
+                                            name="smtp_host"
+                                            bind:value={$smtpForm.smtp_host}
+                                            placeholder="smtp.gmail.com"
+                                            class={$smtpErrors.smtp_host ? "border-destructive" : ""}
+                                        />
+                                        {#if $smtpErrors.smtp_host}
+                                            <p class="text-xs text-destructive">{$smtpErrors.smtp_host}</p>
+                                        {/if}
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label for="smtp_port">Port</Label>
+                                        <Input
+                                            id="smtp_port"
+                                            name="smtp_port"
+                                            type="number"
+                                            bind:value={$smtpForm.smtp_port}
+                                            placeholder="587"
+                                            class="font-mono"
+                                        />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label for="smtp_user">Username / Email</Label>
+                                        <Input
+                                            id="smtp_user"
+                                            name="smtp_user"
+                                            bind:value={$smtpForm.smtp_user}
+                                            placeholder="you@gmail.com"
+                                            class={$smtpErrors.smtp_user ? "border-destructive" : ""}
+                                        />
+                                        {#if $smtpErrors.smtp_user}
+                                            <p class="text-xs text-destructive">{$smtpErrors.smtp_user}</p>
+                                        {/if}
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label for="smtp_pass">Password / App Password</Label>
+                                        <Input
+                                            id="smtp_pass"
+                                            name="smtp_pass"
+                                            type="password"
+                                            bind:value={$smtpForm.smtp_pass}
+                                            placeholder="••••••••••••••••"
+                                            class={$smtpErrors.smtp_pass ? "border-destructive" : ""}
+                                        />
+                                        {#if $smtpErrors.smtp_pass}
+                                            <p class="text-xs text-destructive">{$smtpErrors.smtp_pass}</p>
+                                        {/if}
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label for="smtp_from">From Address (optional)</Label>
+                                        <Input
+                                            id="smtp_from"
+                                            name="smtp_from"
+                                            bind:value={$smtpForm.smtp_from}
+                                            placeholder="invoices@yourcompany.com"
+                                        />
+                                        <p class="text-xs text-text-muted">Defaults to username if empty</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>Security</Label>
+                                        <div class="flex items-center gap-2 h-9">
+                                            <input
+                                                type="checkbox"
+                                                id="smtp_secure"
+                                                name="smtp_secure"
+                                                bind:checked={$smtpForm.smtp_secure}
+                                                class="rounded border-border"
+                                            />
+                                            <label for="smtp_secure" class="text-sm text-text-secondary">
+                                                Use SSL/TLS (port 465)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {#if smtpTestResult}
+                                    <div class={`rounded-lg p-4 flex items-center gap-3 ${smtpTestResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                        {#if smtpTestResult.success}
+                                            <CheckCircle class="size-5 text-green-600" />
+                                            <span class="text-sm font-medium text-green-800">Connection successful!</span>
+                                        {:else}
+                                            <AlertCircle class="size-5 text-red-600" />
+                                            <span class="text-sm text-red-800">{smtpTestResult.error}</span>
+                                        {/if}
+                                    </div>
+                                {/if}
+
+                                <div class="flex items-center justify-between pt-4 border-t border-border">
+                                    <Button
+                                        type="submit"
+                                        formaction="?/testSmtp"
+                                        variant="outline"
+                                        disabled={smtpTesting || $smtpSubmitting}
+                                        onclick={() => {
+                                            smtpTesting = true;
+                                            smtpTestResult = null;
+                                        }}
+                                    >
+                                        {#if smtpTesting}
+                                            <Loader2 class="mr-2 size-4 animate-spin" />
+                                            Testing...
+                                        {:else}
+                                            <Send class="mr-2 size-4" />
+                                            Test Connection
+                                        {/if}
+                                    </Button>
+                                    <Button type="submit" disabled={$smtpSubmitting}>
+                                        {$smtpSubmitting ? "Saving..." : "Save Email Settings"}
+                                    </Button>
+                                </div>
+                            </Card>
+                        </form>
+
+                        <!-- Help Section -->
+                        <Card class="p-6">
+                            <h3 class="text-sm font-semibold text-text-strong mb-4">Gmail Setup Guide</h3>
+                            <ol class="text-sm text-text-secondary space-y-3 list-decimal list-inside">
+                                <li>Enable 2-Factor Authentication on your Google account</li>
+                                <li>
+                                    Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" class="text-primary hover:underline">Google App Passwords</a>
+                                </li>
+                                <li>Create a new App Password for "Mail"</li>
+                                <li>Use the 16-character password above (not your Gmail password)</li>
+                            </ol>
+                            <div class="mt-4 p-3 bg-surface-2 rounded-lg">
+                                <p class="text-xs font-mono text-text-muted">
+                                    Host: smtp.gmail.com | Port: 587 | SSL: Off
+                                </p>
+                            </div>
+                        </Card>
+                    </div>
                 {/if}
 
                 <!-- Profile Tab -->

@@ -29,7 +29,7 @@ export const actions: Actions = {
         const { email, password } = form.data;
 
         const existingUser = await db.query.users.findFirst({
-            where: eq(users.email, email)
+            where: eq(users.email, email.toLowerCase())
         });
 
         if (!existingUser) {

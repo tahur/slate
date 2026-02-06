@@ -3,11 +3,36 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Badge } from "$lib/components/ui/badge";
-    import { ArrowLeft, Printer, Send, Download, XCircle, Lock } from "lucide-svelte";
+    import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
+    import {
+        ArrowLeft,
+        Printer,
+        Send,
+        Download,
+        XCircle,
+        Lock,
+    } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
+    import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
+    import { getInvoiceWhatsAppUrl } from "$lib/utils/whatsapp";
+    import { page } from "$app/stores";
 
     let { data, form } = $props();
+
+    // Generate WhatsApp share URL
+    const whatsappUrl = $derived(
+        getInvoiceWhatsAppUrl({
+            invoiceNumber: data.invoice.invoice_number,
+            customerName: data.customer?.name || "Customer",
+            customerPhone: data.customer?.phone,
+            total: data.invoice.total,
+            balanceDue: data.invoice.balance_due,
+            dueDate: data.invoice.due_date,
+            orgName: data.org?.name || "Our Company",
+            pdfUrl: `${$page.url.origin}/api/invoices/${data.invoice.id}/pdf`,
+        }),
+    );
     let isSubmitting = $state(false);
     let isDownloading = $state(false);
     let showSettleModal = $state(false);
@@ -134,11 +159,12 @@
                     >
                         {data.invoice.invoice_number}
                     </h1>
-                    <span class="status-pill {getStatusClass(data.invoice.status)}">
-                        {data.invoice.status}
-                    </span>
+                    <StatusBadge status={data.invoice.status} />
                     {#if data.invoice.status !== "draft"}
-                        <span class="text-text-muted" title="This invoice is posted and cannot be modified">
+                        <span
+                            class="text-text-muted"
+                            title="This invoice is posted and cannot be modified"
+                        >
                             <Lock class="size-4" />
                         </span>
                     {/if}
@@ -171,6 +197,9 @@
             <Button variant="outline" size="sm" onclick={() => window.print()}>
                 <Printer class="mr-2 size-3" /> Print
             </Button>
+            {#if data.invoice.status !== "draft"}
+                <WhatsAppShareButton url={whatsappUrl} />
+            {/if}
         </div>
     </header>
 

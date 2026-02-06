@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Plus, FileText } from "lucide-svelte";
+    import Badge from "$lib/components/ui/badge/badge.svelte";
 
     let { data } = $props();
 
@@ -117,7 +118,9 @@
                                         <span
                                             class="font-medium text-text-strong text-sm"
                                         >
-                                            {payment.customer_name || payment.customer_company || "—"}
+                                            {payment.customer_name ||
+                                                payment.customer_company ||
+                                                "—"}
                                         </span>
                                         {#if payment.reference}
                                             <span
@@ -129,11 +132,12 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span
-                                        class="capitalize text-xs text-text-subtle font-medium border border-border-subtle px-2 py-0.5 rounded-full bg-surface-1"
+                                    <Badge
+                                        variant="outline"
+                                        class="capitalize bg-surface-1"
                                     >
                                         {getModeLabel(payment.payment_mode)}
-                                    </span>
+                                    </Badge>
                                 </td>
                                 <td
                                     class="text-right font-mono font-medium text-text-strong"

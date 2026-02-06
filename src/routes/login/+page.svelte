@@ -34,13 +34,13 @@
 
     <div class="w-full max-w-sm z-10">
         <div class="flex flex-col items-center mb-8">
-            <div class="bg-brand/10 p-3 rounded-xl mb-4">
-                <span class="material-icons-round text-brand text-3xl"
-                    >pie_chart</span
-                >
+            <div class="bg-brand/10 p-4 rounded-xl mb-4">
+                <img src="/logo.svg" alt="Slate Logo" class="w-12 h-12" />
             </div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
-                Poly
+            <h1
+                class="font-display text-3xl font-bold text-slate-900 dark:text-white"
+            >
+                Slate
             </h1>
         </div>
 
@@ -86,11 +86,19 @@
                             >{/if}
                     </div>
                     <div class="grid gap-2">
-                        <Label
-                            for="password"
-                            class="text-slate-700 dark:text-slate-300"
-                            >Password</Label
-                        >
+                        <div class="flex items-center justify-between">
+                            <Label
+                                for="password"
+                                class="text-slate-700 dark:text-slate-300"
+                                >Password</Label
+                            >
+                            <a
+                                href="/forgot-password"
+                                class="text-xs text-slate-500 dark:text-slate-400 hover:text-brand underline-offset-4 hover:underline"
+                            >
+                                Forgot password?
+                            </a>
+                        </div>
                         <Input
                             id="password"
                             name="password"

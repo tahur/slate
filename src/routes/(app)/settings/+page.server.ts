@@ -1,12 +1,13 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { organizations, users, number_series } from '$lib/server/db/schema';
+import { organizations, users, number_series, app_settings } from '$lib/server/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import { orgSettingsSchema, profileSchema, numberSeriesSchema } from './schema';
+import { orgSettingsSchema, profileSchema, numberSeriesSchema, smtpSettingsSchema } from './schema';
 import { getCurrentFiscalYear, getDefaultPrefix } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
+import { testSmtpConnection } from '$lib/server/email';
 import type { Actions, PageServerLoad } from './$types';
 
 const MODULES = ['invoice', 'payment', 'expense', 'credit_note', 'journal'] as const;
@@ -93,10 +94,30 @@ export const load: PageServerLoad = async ({ locals }) => {
             { id: 'series-settings' }
         );
 
+        // Get SMTP settings
+        const smtpSettings = await db.query.app_settings.findFirst({
+            where: eq(app_settings.org_id, orgId)
+        });
+
+        const smtpForm = await superValidate(
+            {
+                smtp_host: smtpSettings?.smtp_host || '',
+                smtp_port: smtpSettings?.smtp_port || 587,
+                smtp_user: smtpSettings?.smtp_user || '',
+                smtp_pass: smtpSettings?.smtp_pass || '',
+                smtp_from: smtpSettings?.smtp_from || '',
+                smtp_secure: smtpSettings?.smtp_secure || false
+            },
+            zod4(smtpSettingsSchema),
+            { id: 'smtp-settings' }
+        );
+
         return {
             orgForm,
             profileForm,
             seriesForm,
+            smtpForm,
+            smtpEnabled: smtpSettings?.smtp_enabled || false,
             fyYear: fy
         };
     } catch (e) {
@@ -245,5 +266,117 @@ export const actions: Actions = {
         });
 
         return { form };
+    },
+
+    updateSmtp: async ({ locals, request, cookies }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const form = await superValidate(request, zod4(smtpSettingsSchema), {
+            id: 'smtp-settings'
+        });
+
+        if (!form.valid) {
+            return fail(400, { form });
+        }
+
+        const orgId = locals.user.orgId;
+
+        try {
+            // Check if settings exist
+            const existing = await db.query.app_settings.findFirst({
+                where: eq(app_settings.org_id, orgId)
+            });
+
+            if (existing) {
+                await db
+                    .update(app_settings)
+                    .set({
+                        smtp_host: form.data.smtp_host,
+                        smtp_port: form.data.smtp_port,
+                        smtp_user: form.data.smtp_user,
+                        smtp_pass: form.data.smtp_pass,
+                        smtp_from: form.data.smtp_from || form.data.smtp_user,
+                        smtp_secure: form.data.smtp_secure,
+                        smtp_enabled: true,
+                        updated_at: new Date().toISOString()
+                    })
+                    .where(eq(app_settings.id, existing.id));
+            } else {
+                await db.insert(app_settings).values({
+                    id: crypto.randomUUID(),
+                    org_id: orgId,
+                    smtp_host: form.data.smtp_host,
+                    smtp_port: form.data.smtp_port,
+                    smtp_user: form.data.smtp_user,
+                    smtp_pass: form.data.smtp_pass,
+                    smtp_from: form.data.smtp_from || form.data.smtp_user,
+                    smtp_secure: form.data.smtp_secure,
+                    smtp_enabled: true
+                });
+            }
+
+            setFlash(cookies, {
+                type: 'success',
+                message: 'Email settings saved successfully.'
+            });
+
+            return { form };
+        } catch (error) {
+            console.error('Failed to save SMTP settings:', error);
+            return fail(500, {
+                form,
+                error: 'Failed to save email settings'
+            });
+        }
+    },
+
+    testSmtp: async ({ locals, request }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const form = await superValidate(request, zod4(smtpSettingsSchema), {
+            id: 'smtp-settings'
+        });
+
+        if (!form.valid) {
+            return fail(400, { form, testResult: { success: false, error: 'Invalid form data' } });
+        }
+
+        const result = await testSmtpConnection({
+            host: form.data.smtp_host,
+            port: form.data.smtp_port,
+            user: form.data.smtp_user,
+            pass: form.data.smtp_pass,
+            from: form.data.smtp_from || form.data.smtp_user,
+            secure: form.data.smtp_secure
+        });
+
+        return { form, testResult: result };
+    },
+
+    disableSmtp: async ({ locals, cookies }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+
+        await db
+            .update(app_settings)
+            .set({
+                smtp_enabled: false,
+                updated_at: new Date().toISOString()
+            })
+            .where(eq(app_settings.org_id, orgId));
+
+        setFlash(cookies, {
+            type: 'success',
+            message: 'Email disabled.'
+        });
+
+        return { success: true };
     }
 };

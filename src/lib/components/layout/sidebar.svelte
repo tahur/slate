@@ -10,7 +10,6 @@
         BarChart3,
         Settings,
         LogOut,
-        Building2,
         Briefcase,
         CreditCard,
         BookOpen,
@@ -75,10 +74,13 @@
     <!-- Header -->
     <div class="flex h-14 items-center px-4 border-b border-sidebar-border/40">
         <div
-            class="flex items-center gap-2.5 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
+            class="hidden lg:flex items-center gap-3 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
         >
-            <Building2 class="size-5" />
-            <span class="text-sidebar-fg">OpenBill</span>
+            <img src="/logo.svg" alt="Logo" class="h-9 w-auto" />
+            <span
+                class="font-display text-xl text-sidebar-fg normal-case tracking-normal mt-1"
+                >Slate</span
+            >
         </div>
     </div>
 

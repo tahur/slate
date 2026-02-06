@@ -61,6 +61,16 @@ export const numberSeriesSchema = z.object({
     journal_prefix: z.string().min(2).max(6)
 });
 
+export const smtpSettingsSchema = z.object({
+    smtp_host: z.string().min(1, 'SMTP host is required'),
+    smtp_port: z.coerce.number().min(1).max(65535).default(587),
+    smtp_user: z.string().min(1, 'SMTP username is required'),
+    smtp_pass: z.string().min(1, 'SMTP password is required'),
+    smtp_from: z.string().email('Invalid from address').optional().or(z.literal('')),
+    smtp_secure: z.boolean().default(false)
+});
+
 export type OrgSettingsSchema = typeof orgSettingsSchema;
 export type ProfileSchema = typeof profileSchema;
 export type NumberSeriesSchema = typeof numberSeriesSchema;
+export type SmtpSettingsSchema = typeof smtpSettingsSchema;

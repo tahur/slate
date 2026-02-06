@@ -3,13 +3,13 @@
     import Header from "$lib/components/layout/header.svelte";
     import type { Snippet } from "svelte";
 
-    let { children }: { children: Snippet } = $props();
+    let { children, data }: { children: Snippet; data: any } = $props();
 </script>
 
 <div class="flex h-screen w-full flex-col md:flex-row bg-background">
     <Sidebar />
     <div class="flex flex-1 flex-col overflow-hidden app-surface">
-        <Header />
+        <Header {data} />
         <main class="flex-1 overflow-auto p-4 md:p-5 space-y-5">
             {@render children()}
         </main>

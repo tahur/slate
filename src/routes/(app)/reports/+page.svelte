@@ -7,6 +7,8 @@
         BookOpen,
         Briefcase,
         ArrowRight,
+        FileSpreadsheet,
+        Receipt,
     } from "lucide-svelte";
     import { Button } from "$lib/components/ui/button";
 
@@ -46,6 +48,29 @@
                     icon: Users,
                     color: "text-green-500",
                     bg: "bg-green-500/10",
+                },
+            ],
+        },
+        {
+            title: "GST Filing Data",
+            items: [
+                {
+                    title: "GSTR-1 Sales Register",
+                    description:
+                        "Outward supplies data (B2B, B2C, credit notes, HSN)",
+                    href: "/reports/gstr1",
+                    icon: FileSpreadsheet,
+                    color: "text-emerald-500",
+                    bg: "bg-emerald-500/10",
+                },
+                {
+                    title: "GSTR-3B Purchase Data",
+                    description:
+                        "Input Tax Credit data from purchases by vendor",
+                    href: "/reports/gstr3b",
+                    icon: Receipt,
+                    color: "text-cyan-500",
+                    bg: "bg-cyan-500/10",
                 },
             ],
         },

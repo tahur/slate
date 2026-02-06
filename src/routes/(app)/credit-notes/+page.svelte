@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Plus, FileText } from "lucide-svelte";
+    import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
 
     let { data } = $props();
 
@@ -112,16 +113,16 @@
                                     >
                                 </td>
                                 <td>
-                                    <span class="text-sm text-text-subtle capitalize"
+                                    <span
+                                        class="text-sm text-text-subtle capitalize"
                                         >{cn.reason}</span
                                     >
                                 </td>
                                 <td class="text-right">
-                                    <span
-                                        class="status-pill {getStatusClass(cn.status)}"
-                                    >
-                                        {cn.status}
-                                    </span>
+                                    <StatusBadge
+                                        status={cn.status}
+                                        className="justify-end"
+                                    />
                                 </td>
                                 <td class="data-cell--number text-text-strong">
                                     {formatCurrency(cn.total)}
