@@ -153,51 +153,56 @@ export const actions: Actions = {
 
 
 
+
         let createdInvoiceId = '';
+        let invoiceNumber = providedInvoiceNumber;
+
+        // Pre-fetch customer and org for inter-state calculation (read-only, can be outside transaction)
+        const customer = await db.query.customers.findFirst({
+            where: eq(customers.id, customer_id),
+            columns: { state_code: true },
+        });
+
+        const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId),
+            columns: { state_code: true },
+        });
+
+        const isInterState = customer?.state_code !== org?.state_code;
+        const totals = calculateInvoiceTotals(lineItems, isInterState);
+
+        // Handle manual invoice number mode (outside transaction - user explicitly chose the number)
+        if (invoiceNumberMode === 'manual') {
+            if (!invoiceNumber) {
+                return fail(400, { error: 'Invoice number is required' });
+            }
+            const duplicate = await db
+                .select({ id: invoices.id })
+                .from(invoices)
+                .where(
+                    and(
+                        eq(invoices.org_id, orgId),
+                        eq(invoices.invoice_number, invoiceNumber)
+                    )
+                )
+                .get();
+
+            if (duplicate) {
+                return fail(400, { error: 'Invoice number already exists' });
+            }
+
+            await bumpNumberSeriesIfHigher(orgId, 'invoice', invoiceNumber);
+        }
 
         try {
             const invoiceId = crypto.randomUUID();
-            let invoiceNumber = providedInvoiceNumber;
             createdInvoiceId = invoiceId;
 
-            // Get customer to determine inter-state
-            const customer = await db.query.customers.findFirst({
-                where: eq(customers.id, customer_id),
-                columns: { state_code: true },
-            });
-
-            const org = await db.query.organizations.findFirst({
-                where: eq(organizations.id, orgId),
-                columns: { state_code: true },
-            });
-
-            const isInterState = customer?.state_code !== org?.state_code;
-
-            // Calculate totals
-            const totals = calculateInvoiceTotals(lineItems, isInterState);
-
-            if (invoiceNumberMode === 'manual') {
-                if (!invoiceNumber) {
-                    return fail(400, { error: 'Invoice number is required' });
-                }
-                const duplicate = await db
-                    .select({ id: invoices.id })
-                    .from(invoices)
-                    .where(
-                        and(
-                            eq(invoices.org_id, orgId),
-                            eq(invoices.invoice_number, invoiceNumber)
-                        )
-                    )
-                    .get();
-
-                if (duplicate) {
-                    return fail(400, { error: 'Invoice number already exists' });
-                }
-
-                await bumpNumberSeriesIfHigher(orgId, 'invoice', invoiceNumber);
-            } else {
+            // Auto-generate invoice number (only after all validation passes)
+            if (invoiceNumberMode !== 'manual') {
                 invoiceNumber = await getNextNumber(orgId, 'invoice');
+
+                // Check for duplicate (shouldn't happen but safety check)
                 const duplicate = await db
                     .select({ id: invoices.id })
                     .from(invoices)
@@ -214,25 +219,7 @@ export const actions: Actions = {
                 }
             }
 
-
-
-            let postingResult: { journalEntryId: string } | null = null;
-            if (isIssue) {
-                postingResult = await postInvoiceIssuance(orgId, {
-                    invoiceId,
-                    invoiceNumber,
-                    date: invoice_date,
-                    customerId: customer_id,
-                    subtotal: totals.subtotal,
-                    cgst: totals.cgst,
-                    sgst: totals.sgst,
-                    igst: totals.igst,
-                    total: totals.total,
-                    userId: event.locals.user.id
-                });
-            }
-
-            // Insert invoice with idempotency key
+            // Insert invoice
             await db.insert(invoices).values({
                 id: invoiceId,
                 org_id: orgId,
@@ -252,7 +239,7 @@ export const actions: Actions = {
                 is_inter_state: isInterState,
                 notes: notes || null,
                 terms: terms || null,
-                journal_entry_id: postingResult?.journalEntryId || null,
+                journal_entry_id: null,
                 idempotency_key: idempotencyKey || null,
                 issued_at: isIssue ? new Date().toISOString() : null,
                 created_by: event.locals.user.id,
@@ -283,7 +270,31 @@ export const actions: Actions = {
                 });
             }
 
+
+            // Post-transaction operations (only if invoice was saved successfully)
             if (isIssue) {
+                const postingResult = await postInvoiceIssuance(orgId, {
+                    invoiceId: createdInvoiceId,
+                    invoiceNumber,
+                    date: invoice_date,
+                    customerId: customer_id,
+                    subtotal: totals.subtotal,
+                    cgst: totals.cgst,
+                    sgst: totals.sgst,
+                    igst: totals.igst,
+                    total: totals.total,
+                    userId: event.locals.user.id
+                });
+
+                // Update invoice with journal entry ID
+                if (postingResult?.journalEntryId) {
+                    await db
+                        .update(invoices)
+                        .set({ journal_entry_id: postingResult.journalEntryId })
+                        .where(eq(invoices.id, createdInvoiceId));
+                }
+
+                // Update customer balance
                 await db
                     .update(customers)
                     .set({
@@ -298,7 +309,7 @@ export const actions: Actions = {
                 orgId,
                 userId: event.locals.user.id,
                 entityType: 'invoice',
-                entityId: invoiceId,
+                entityId: createdInvoiceId,
                 action: isIssue ? 'issued' : 'created',
                 changedFields: {
                     invoice_number: { new: invoiceNumber },
@@ -311,6 +322,7 @@ export const actions: Actions = {
             console.error('Invoice creation error:', e);
             return fail(500, { error: 'Failed to create invoice' });
         }
+
 
         const message = isIssue
             ? 'Invoice issued successfully.'

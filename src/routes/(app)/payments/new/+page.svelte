@@ -4,7 +4,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check, Search } from "lucide-svelte";
-    import { enhance } from "$app/forms";
+    import { enhance, deserialize } from "$app/forms";
     import { addToast } from "$lib/stores/toast";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
@@ -74,16 +74,12 @@
             const res = await fetch("/payments/new?/getInvoices", {
                 method: "POST",
                 body: formData,
-                headers: {
-                    Accept: "application/json",
-                },
             });
-            const result = await res.json();
+            const text = await res.text();
+            const result = deserialize(text);
+
             if (result.type === "success" && result.data?.invoices) {
-                unpaidInvoices = result.data.invoices;
-                allocations = {};
-            } else if (result.data?.invoices) {
-                unpaidInvoices = result.data.invoices;
+                unpaidInvoices = result.data.invoices as typeof unpaidInvoices;
                 allocations = {};
             }
         } catch (e) {
@@ -104,7 +100,6 @@
 
         allocations = newAllocations;
     }
-
 </script>
 
 <div class="page-full-bleed">
@@ -473,9 +468,7 @@
                         class="text-[10px] uppercase tracking-wider font-semibold"
                         >Full Advance</span
                     >
-                    <span class="font-mono font-bold"
-                        >{formatINR(amount)}</span
-                    >
+                    <span class="font-mono font-bold">{formatINR(amount)}</span>
                     <span class="text-[10px] text-text-muted">
                         No invoice allocated - saved as advance
                     </span>

@@ -104,7 +104,6 @@
             isDownloading = false;
         }
     }
-
 </script>
 
 <div class="page-full-bleed">
@@ -211,7 +210,9 @@
     {/if}
 
     <!-- Content: Paper View -->
-    <main class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30 print-bg-white">
+    <main
+        class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30 print-bg-white"
+    >
         <div class="mx-auto max-w-4xl">
             <!-- Main Paper Sheet -->
             <div
@@ -389,9 +390,7 @@
                         </div>
 
                         {#if data.invoice.is_inter_state}
-                            <div
-                                class="flex justify-between text-text-subtle"
-                            >
+                            <div class="flex justify-between text-text-subtle">
                                 <span>IGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
@@ -399,18 +398,14 @@
                                 >
                             </div>
                         {:else}
-                            <div
-                                class="flex justify-between text-text-subtle"
-                            >
+                            <div class="flex justify-between text-text-subtle">
                                 <span>CGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
                                     >{formatINR(data.invoice.cgst)}</span
                                 >
                             </div>
-                            <div
-                                class="flex justify-between text-text-subtle"
-                            >
+                            <div class="flex justify-between text-text-subtle">
                                 <span>SGST</span>
                                 <span
                                     class="font-mono font-medium text-text-strong"
@@ -498,21 +493,31 @@
     <!-- Bottom Action Bar -->
     {#if data.invoice.status !== "draft" && data.invoice.status !== "cancelled" && data.invoice.balance_due > 0.01}
         <div class="action-bar">
-            <div class="action-bar-group">
-                <Button onclick={openSettleModal}>
-                    Settle & Close
-                </Button>
-            </div>
-            <div class="flex items-center gap-4 text-sm">
-                <div class="flex flex-col items-end">
-                    <span
-                        class="text-[10px] uppercase tracking-wider text-text-subtle font-semibold"
-                        >Balance Due</span
-                    >
-                    <span class="font-mono text-xl font-bold text-primary"
-                        >{formatINR(data.invoice.balance_due)}</span
-                    >
+            <!-- Amount + Button grouped on right for better UX -->
+            <div class="flex items-center gap-4 ml-auto">
+                <div class="flex items-center gap-3">
+                    {#if data.invoice.amount_paid && data.invoice.amount_paid > 0}
+                        <span
+                            class="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded"
+                            >Partially Paid</span
+                        >
+                    {/if}
+                    <div class="flex flex-col items-end">
+                        <span
+                            class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                            >Balance Due</span
+                        >
+                        <span
+                            class="font-mono text-lg font-bold text-text-strong"
+                            >{formatINR(data.invoice.balance_due)}</span
+                        >
+                    </div>
                 </div>
+                <Button onclick={openSettleModal}>
+                    {data.invoice.amount_paid && data.invoice.amount_paid > 0
+                        ? "Record Payment"
+                        : "Settle & Close"}
+                </Button>
             </div>
         </div>
     {/if}

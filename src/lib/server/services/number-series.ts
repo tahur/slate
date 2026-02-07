@@ -1,8 +1,12 @@
 import { db } from '../db';
 import { number_series } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 export type NumberSeriesModule = 'invoice' | 'payment' | 'expense' | 'journal' | 'credit_note';
+
+// Transaction type for Drizzle
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const MODULE_PREFIXES: Record<NumberSeriesModule, string> = {
     invoice: 'INV',
@@ -42,8 +46,68 @@ function padNumber(num: number, length: number = 4): string {
 }
 
 /**
+ * Get the next number in a series with atomic increment (transaction-aware).
+ * Use this version when you need the increment to roll back with a transaction.
+ * 
+ * @param tx - Drizzle transaction context
+ * @param orgId - Organization ID
+ * @param module - Type of document (invoice, payment, etc.)
+ * @param fyYear - Fiscal year (optional, defaults to current)
+ * @returns Formatted number like "INV-2025-26-0001"
+ */
+export async function getNextNumberTx(
+    tx: DbTransaction,
+    orgId: string,
+    module: NumberSeriesModule,
+    fyYear?: string
+): Promise<string> {
+    const fy = fyYear || getCurrentFiscalYear();
+    const prefix = MODULE_PREFIXES[module];
+
+    // Try to get existing series
+    const existing = await tx
+        .select()
+        .from(number_series)
+        .where(
+            and(
+                eq(number_series.org_id, orgId),
+                eq(number_series.module, module),
+                eq(number_series.fy_year, fy)
+            )
+        )
+        .get();
+
+    let nextNumber: number;
+
+    if (existing) {
+        // Increment atomically
+        nextNumber = (existing.current_number || 0) + 1;
+        await tx
+            .update(number_series)
+            .set({ current_number: nextNumber })
+            .where(eq(number_series.id, existing.id));
+    } else {
+        // Create new series
+        nextNumber = 1;
+        await tx.insert(number_series).values({
+            id: crypto.randomUUID(),
+            org_id: orgId,
+            module,
+            prefix,
+            fy_year: fy,
+            current_number: nextNumber,
+            reset_on_fy: true
+        });
+    }
+
+    const finalPrefix = existing?.prefix || prefix;
+    return `${finalPrefix}-${fy}-${padNumber(nextNumber)}`;
+}
+
+/**
  * Get the next number in a series with atomic increment.
  * Creates the series record if it doesn't exist.
+ * NOTE: Use getNextNumberTx if you need rollback on failure.
  * 
  * @param orgId - Organization ID
  * @param module - Type of document (invoice, payment, etc.)
@@ -97,6 +161,7 @@ export async function getNextNumber(
     const finalPrefix = existing?.prefix || prefix;
     return `${finalPrefix}-${fy}-${padNumber(nextNumber)}`;
 }
+
 
 /**
  * Generate a draft number (not part of official series)
