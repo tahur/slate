@@ -4,6 +4,7 @@ import { organizations } from './organizations';
 import { customers } from './customers';
 import { users } from './users';
 import { journal_entries } from './journals';
+import { items } from './items';
 
 export const invoices = sqliteTable(
     'invoices',
@@ -91,6 +92,9 @@ export const invoice_items = sqliteTable('invoice_items', {
     invoice_id: text('invoice_id')
         .notNull()
         .references(() => invoices.id, { onDelete: 'cascade' }),
+
+    // Catalog reference (null for ad-hoc items)
+    item_id: text('item_id').references(() => items.id),
 
     // Item details
     description: text('description').notNull(),

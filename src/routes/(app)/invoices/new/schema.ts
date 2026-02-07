@@ -9,6 +9,7 @@ export const lineItemSchema = z.object({
     unit: z.string().default('nos'),
     rate: z.coerce.number().min(0, 'Rate must be positive').default(0),
     gst_rate: z.coerce.number().default(18),
+    item_id: z.string().optional(),
 });
 
 export const invoiceSchema = z.object({

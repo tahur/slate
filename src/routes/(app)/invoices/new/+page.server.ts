@@ -4,6 +4,7 @@ import {
     customers,
     invoices,
     invoice_items,
+    items,
     organizations
 } from '$lib/server/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -45,6 +46,21 @@ export const load: PageServerLoad = async ({ locals }) => {
         columns: { state_code: true },
     });
 
+    // Fetch active catalog items
+    const catalogItems = await db
+        .select({
+            id: items.id,
+            type: items.type,
+            name: items.name,
+            description: items.description,
+            hsn_code: items.hsn_code,
+            gst_rate: items.gst_rate,
+            rate: items.rate,
+            unit: items.unit,
+        })
+        .from(items)
+        .where(and(eq(items.org_id, orgId), eq(items.is_active, true)));
+
     // Default dates
     const today = new Date().toISOString().split('T')[0];
     const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -55,6 +71,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
     return {
         customers: customerList,
+        catalogItems,
         orgStateCode: org?.state_code || '',
         autoInvoiceNumber,
         idempotencyKey,
@@ -111,7 +128,7 @@ export const actions: Actions = {
         }
 
         // Parse line items from form data
-        const items: LineItem[] = [];
+        const lineItems: LineItem[] = [];
         let i = 0;
         while (formData.has(`items[${i}].description`)) {
             const description = formData.get(`items[${i}].description`) as string;
@@ -120,14 +137,15 @@ export const actions: Actions = {
             const unit = formData.get(`items[${i}].unit`) as string || 'nos';
             const rate = parseFloat(formData.get(`items[${i}].rate`) as string) || 0;
             const gst_rate = parseFloat(formData.get(`items[${i}].gst_rate`) as string) || 18;
+            const item_id = formData.get(`items[${i}].item_id`) as string || '';
 
             if (description && description.trim()) {
-                items.push({ description, hsn_code, quantity, unit, rate, gst_rate });
+                lineItems.push({ description, hsn_code, quantity, unit, rate, gst_rate, item_id: item_id || undefined });
             }
             i++;
         }
 
-        if (items.length === 0) {
+        if (lineItems.length === 0) {
             return fail(400, { error: 'At least one item with a description is required' });
         }
 
@@ -156,7 +174,7 @@ export const actions: Actions = {
             const isInterState = customer?.state_code !== org?.state_code;
 
             // Calculate totals
-            const totals = calculateInvoiceTotals(items, isInterState);
+            const totals = calculateInvoiceTotals(lineItems, isInterState);
 
             if (invoiceNumberMode === 'manual') {
                 if (!invoiceNumber) {
@@ -242,13 +260,14 @@ export const actions: Actions = {
             });
 
             // Insert line items
-            for (let idx = 0; idx < items.length; idx++) {
-                const item = items[idx];
+            for (let idx = 0; idx < lineItems.length; idx++) {
+                const item = lineItems[idx];
                 const calc = calculateLineItem(item, isInterState);
 
                 await db.insert(invoice_items).values({
                     id: crypto.randomUUID(),
                     invoice_id: invoiceId,
+                    item_id: item.item_id || null,
                     description: item.description,
                     hsn_code: item.hsn_code || null,
                     quantity: item.quantity,

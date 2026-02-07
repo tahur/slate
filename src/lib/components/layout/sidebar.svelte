@@ -11,6 +11,7 @@
         Settings,
         LogOut,
         Briefcase,
+        Package,
     } from "lucide-svelte";
 
     const navSections = [
@@ -31,6 +32,7 @@
             items: [
                 { href: "/customers", label: "Customers", icon: Users },
                 { href: "/vendors", label: "Vendors", icon: Briefcase },
+                { href: "/items", label: "Items", icon: Package },
                 { href: "/payments", label: "Payments", icon: Banknote },
             ],
         },

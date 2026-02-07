@@ -7,8 +7,10 @@
     import * as Select from "$lib/components/ui/select";
     import { GST_RATES, calculateInvoiceTotals, type LineItem } from "./schema";
     import { addToast } from "$lib/stores/toast";
-    import { ArrowLeft, Save, Plus, Trash2, GripVertical } from "lucide-svelte";
+    import { ArrowLeft, Save, Plus, Trash2, GripVertical, Package } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
+
+    type CatalogItem = typeof data.catalogItems[number];
 
     let { data } = $props();
 
@@ -28,8 +30,9 @@
                 unit: "nos",
                 rate: 0,
                 gst_rate: 18,
+                item_id: "",
             },
-        ] as LineItem[],
+        ] as (LineItem & { item_id?: string })[],
     });
 
     let submitting = $state(false);
@@ -39,6 +42,43 @@
     let manualInvoiceNumber = $state(autoInvoiceNumber);
 
     let customerSearch = $state("");
+
+    // Item picker state
+    let itemPickerOpen = $state<number | null>(null);
+    let itemPickerSearch = $state("");
+
+    let filteredCatalogItems = $derived.by(() => {
+        const query = itemPickerSearch.trim().toLowerCase();
+        if (!query) return data.catalogItems;
+        return data.catalogItems.filter((item) => {
+            const haystack = [item.name, item.description, item.hsn_code]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+            return haystack.includes(query);
+        });
+    });
+
+    function selectCatalogItem(index: number, catalogItem: CatalogItem) {
+        formData.items[index] = {
+            ...formData.items[index],
+            description: catalogItem.name,
+            hsn_code: catalogItem.hsn_code || "",
+            rate: catalogItem.rate,
+            unit: catalogItem.unit || "nos",
+            gst_rate: catalogItem.gst_rate,
+            item_id: catalogItem.id,
+        };
+        itemPickerOpen = null;
+        itemPickerSearch = "";
+    }
+
+    function handleItemPickerKeydown(e: KeyboardEvent) {
+        if (e.key === "Escape") {
+            itemPickerOpen = null;
+            itemPickerSearch = "";
+        }
+    }
 
     // Drag and Drop State
     let dragItemIndex = $state<number | null>(null);
@@ -100,6 +140,7 @@
                 unit: "nos",
                 rate: 0,
                 gst_rate: 18,
+                item_id: "",
             },
         ];
     }
@@ -568,14 +609,89 @@
                                                     </div>
                                                 </td>
                                                 <td class="px-4 py-3 align-top">
-                                                    <Input
-                                                        name="items[{index}].description"
-                                                        bind:value={
-                                                            item.description
-                                                        }
-                                                        placeholder="Item description"
-                                                        class="h-9 w-full border-transparent hover:border-border focus:border-primary bg-transparent text-sm font-medium placeholder:text-text-placeholder"
-                                                    />
+                                                    <div class="relative flex items-center gap-1">
+                                                        {#if data.catalogItems.length > 0}
+                                                            <button
+                                                                type="button"
+                                                                class="shrink-0 h-9 w-8 flex items-center justify-center rounded-md text-text-muted hover:text-primary hover:bg-primary/5 transition-colors"
+                                                                title="Pick from catalog"
+                                                                onclick={() => {
+                                                                    if (itemPickerOpen === index) {
+                                                                        itemPickerOpen = null;
+                                                                        itemPickerSearch = "";
+                                                                    } else {
+                                                                        itemPickerOpen = index;
+                                                                        itemPickerSearch = "";
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <Package class="size-4" />
+                                                            </button>
+                                                        {/if}
+                                                        <Input
+                                                            name="items[{index}].description"
+                                                            bind:value={
+                                                                item.description
+                                                            }
+                                                            placeholder="Item description"
+                                                            class="h-9 w-full border-transparent hover:border-border focus:border-primary bg-transparent text-sm font-medium placeholder:text-text-placeholder"
+                                                            oninput={() => {
+                                                                if (item.item_id) {
+                                                                    formData.items[index].item_id = "";
+                                                                }
+                                                            }}
+                                                        />
+                                                        <input type="hidden" name="items[{index}].item_id" value={item.item_id || ""} />
+                                                        <input type="hidden" name="items[{index}].unit" value={item.unit || "nos"} />
+
+                                                        <!-- Item Picker Dropdown -->
+                                                        {#if itemPickerOpen === index}
+                                                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                                            <div
+                                                                class="absolute top-full left-0 z-50 mt-1 w-80 bg-surface-0 rounded-lg border border-border shadow-lg overflow-hidden"
+                                                                onkeydown={handleItemPickerKeydown}
+                                                            >
+                                                                <div class="p-2 border-b border-border">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Search catalog..."
+                                                                        bind:value={itemPickerSearch}
+                                                                        class="w-full h-8 px-3 text-sm border border-border rounded-md bg-surface-1 focus:border-primary focus:outline-none"
+                                                                    />
+                                                                </div>
+                                                                <div class="max-h-48 overflow-y-auto">
+                                                                    {#if filteredCatalogItems.length === 0}
+                                                                        <div class="px-3 py-4 text-xs text-text-muted text-center">
+                                                                            No items found
+                                                                        </div>
+                                                                    {:else}
+                                                                        {#each filteredCatalogItems as catalogItem}
+                                                                            <button
+                                                                                type="button"
+                                                                                class="w-full text-left px-3 py-2 hover:bg-surface-2 transition-colors flex items-center gap-3"
+                                                                                onclick={() => selectCatalogItem(index, catalogItem)}
+                                                                            >
+                                                                                <div class="flex-1 min-w-0">
+                                                                                    <div class="text-sm font-medium text-text-strong truncate">{catalogItem.name}</div>
+                                                                                    <div class="flex items-center gap-2 text-[10px] text-text-muted">
+                                                                                        <span class="capitalize">{catalogItem.type}</span>
+                                                                                        {#if catalogItem.hsn_code}
+                                                                                            <span class="font-mono">HSN: {catalogItem.hsn_code}</span>
+                                                                                        {/if}
+                                                                                        <span>{catalogItem.gst_rate}%</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="text-right shrink-0">
+                                                                                    <div class="text-sm font-mono font-medium">{formatINR(catalogItem.rate)}</div>
+                                                                                    <div class="text-[10px] text-text-muted">/{catalogItem.unit}</div>
+                                                                                </div>
+                                                                            </button>
+                                                                        {/each}
+                                                                    {/if}
+                                                                </div>
+                                                            </div>
+                                                        {/if}
+                                                    </div>
                                                 </td>
                                                 <td class="px-3 py-3 align-top">
                                                     <Input

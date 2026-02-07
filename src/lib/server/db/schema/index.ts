@@ -6,6 +6,7 @@ export * from './audit_log';
 export * from './accounts';
 export * from './journals';
 export * from './customers';
+export * from './items';
 export * from './invoices';
 export * from './payments';
 export * from './expenses';

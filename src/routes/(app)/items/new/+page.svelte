@@ -1,0 +1,270 @@
+<script lang="ts">
+    import { Button } from "$lib/components/ui/button";
+    import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
+    import { superForm } from "sveltekit-superforms";
+    import { addToast } from "$lib/stores/toast";
+    import { UNITS, GST_RATES } from "./schema";
+    import { ArrowLeft, Save } from "lucide-svelte";
+
+    let { data } = $props();
+
+    let gstRateStr = $state("18");
+    let unitStr = $state("nos");
+
+    const { form, errors, enhance, submitting } = superForm(data.form, {
+        onResult: ({ result }) => {
+            if (result.type === "failure" && result.data?.error) {
+                addToast({
+                    type: "error",
+                    message: result.data.error as string,
+                });
+            }
+        },
+    });
+</script>
+
+<div class="page-full-bleed">
+    <!-- Header -->
+    <header
+        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+    >
+        <Button variant="ghost" href="/items" size="icon" class="h-8 w-8">
+            <ArrowLeft class="size-4" />
+        </Button>
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                New Item
+            </h1>
+            <p class="text-sm text-text-muted">
+                Add a product or service to your catalog
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-surface-1">
+        <form
+            id="item-form"
+            method="POST"
+            class="flex flex-col md:flex-row md:min-h-full"
+            use:enhance
+        >
+            <!-- LEFT COLUMN: Main Details -->
+            <div
+                class="flex-1 p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
+            >
+                <div class="max-w-3xl space-y-8">
+                    <!-- Section: Type -->
+                    <section class="space-y-6">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                        >
+                            Item Type
+                        </h3>
+
+                        <div class="flex gap-3">
+                            <button
+                                type="button"
+                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type === 'product'
+                                    ? 'border-primary bg-primary/5 text-primary'
+                                    : 'border-border bg-surface-0 text-text-muted hover:border-border-strong'}"
+                                onclick={() => ($form.type = "product")}
+                            >
+                                Product
+                            </button>
+                            <button
+                                type="button"
+                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type === 'service'
+                                    ? 'border-primary bg-primary/5 text-primary'
+                                    : 'border-border bg-surface-0 text-text-muted hover:border-border-strong'}"
+                                onclick={() => ($form.type = "service")}
+                            >
+                                Service
+                            </button>
+                        </div>
+                        <input type="hidden" name="type" value={$form.type} />
+                    </section>
+
+                    <!-- Section: Basic Information -->
+                    <section class="space-y-6">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                        >
+                            Details
+                        </h3>
+
+                        <div class="grid gap-6 md:grid-cols-2">
+                            <div class="space-y-2">
+                                <Label for="name" class="form-label">
+                                    Name <span class="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="name"
+                                    name="name"
+                                    bind:value={$form.name}
+                                    placeholder="e.g. Web Development Service"
+                                    class="border-border-strong bg-surface-0 {$errors.name
+                                        ? 'border-destructive'
+                                        : ''}"
+                                />
+                                {#if $errors.name}
+                                    <p class="text-xs text-destructive">
+                                        {$errors.name}
+                                    </p>
+                                {/if}
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="sku" class="form-label"
+                                    >SKU / Barcode</Label
+                                >
+                                <Input
+                                    id="sku"
+                                    name="sku"
+                                    bind:value={$form.sku}
+                                    placeholder="e.g. PRD-001"
+                                    class="border-border-strong bg-surface-0 font-mono"
+                                />
+                            </div>
+
+                            <div class="space-y-2 md:col-span-2">
+                                <Label for="description" class="form-label"
+                                    >Description</Label
+                                >
+                                <Input
+                                    id="description"
+                                    name="description"
+                                    bind:value={$form.description}
+                                    placeholder="Optional description"
+                                    class="border-border-strong bg-surface-0"
+                                />
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Pricing & Tax -->
+            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8">
+                <div class="space-y-8">
+                    <!-- Section: Tax -->
+                    <section class="space-y-6">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                        >
+                            Tax
+                        </h3>
+
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <Label for="hsn_code" class="form-label"
+                                    >HSN/SAC Code</Label
+                                >
+                                <Input
+                                    id="hsn_code"
+                                    name="hsn_code"
+                                    bind:value={$form.hsn_code}
+                                    placeholder="e.g. 8471 or 9983"
+                                    class="border-border-strong bg-surface-0 font-mono"
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="gst_rate" class="form-label"
+                                    >GST Rate</Label
+                                >
+                                <Select.Root
+                                    type="single"
+                                    name="gst_rate"
+                                    bind:value={gstRateStr}
+                                    onValueChange={(v) => {
+                                        gstRateStr = v;
+                                        $form.gst_rate = Number(v);
+                                    }}
+                                >
+                                    <Select.Trigger
+                                        id="gst_rate"
+                                        class="border-border-strong bg-surface-0"
+                                    >
+                                        {$form.gst_rate}%
+                                    </Select.Trigger>
+                                    <Select.Content>
+                                        {#each GST_RATES as rate}
+                                            <Select.Item value={String(rate)}
+                                                >{rate}%</Select.Item
+                                            >
+                                        {/each}
+                                    </Select.Content>
+                                </Select.Root>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section: Pricing -->
+                    <section class="space-y-6">
+                        <h3
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                        >
+                            Pricing
+                        </h3>
+
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <Label for="rate" class="form-label"
+                                    >Default Rate</Label
+                                >
+                                <Input
+                                    id="rate"
+                                    name="rate"
+                                    type="number"
+                                    bind:value={$form.rate}
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    class="border-border-strong bg-surface-0 font-mono"
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="unit" class="form-label">Unit</Label
+                                >
+                                <Select.Root
+                                    type="single"
+                                    name="unit"
+                                    bind:value={$form.unit}
+                                >
+                                    <Select.Trigger
+                                        id="unit"
+                                        class="border-border-strong bg-surface-0"
+                                    >
+                                        {$form.unit || "nos"}
+                                    </Select.Trigger>
+                                    <Select.Content>
+                                        {#each UNITS as unit}
+                                            <Select.Item value={unit}
+                                                >{unit}</Select.Item
+                                            >
+                                        {/each}
+                                    </Select.Content>
+                                </Select.Root>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <div class="action-bar">
+        <div class="action-bar-group">
+            <Button type="submit" form="item-form" disabled={$submitting}>
+                <Save class="mr-2 size-4" />
+                {$submitting ? "Saving..." : "Save Item"}
+            </Button>
+            <Button variant="ghost" href="/items">Cancel</Button>
+        </div>
+    </div>
+</div>
