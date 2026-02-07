@@ -4,7 +4,7 @@
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import { INDIAN_STATES, GST_TREATMENTS } from "../new/schema";
     import {
         ArrowLeft,
@@ -40,16 +40,10 @@
         onResult: ({ result }) => {
             if (result.type === "success") {
                 isEditing = false;
-                addToast({
-                    type: "success",
-                    message: "Customer updated successfully.",
-                });
+                toast.success("Customer updated successfully.");
             }
             if (result.type === "failure" && result.data?.error) {
-                addToast({
-                    type: "error",
-                    message: result.data.error as string,
-                });
+                toast.error(result.data.error as string);
             }
         },
     });
@@ -109,9 +103,7 @@
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <TrendingUp class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wider"
@@ -123,9 +115,7 @@
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <TrendingDown class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wider"
@@ -137,9 +127,7 @@
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <Wallet class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wider"
@@ -161,9 +149,7 @@
                     </p>
                 </div>
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <BadgePercent class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wider"
@@ -416,9 +402,7 @@
                                                     : 'text-text-muted'}"
                                             >
                                                 {entry.debit > 0
-                                                    ? formatINR(
-                                                          entry.debit,
-                                                      )
+                                                    ? formatINR(entry.debit)
                                                     : "—"}
                                             </td>
                                             <td
@@ -428,9 +412,7 @@
                                                     : 'text-text-muted'}"
                                             >
                                                 {entry.credit > 0
-                                                    ? formatINR(
-                                                          entry.credit,
-                                                      )
+                                                    ? formatINR(entry.credit)
                                                     : "—"}
                                             </td>
                                             <td
@@ -515,9 +497,7 @@
                                             >
                                             <td
                                                 class="py-3 pr-4 text-right font-mono"
-                                                >{formatINR(
-                                                    invoice.total,
-                                                )}</td
+                                                >{formatINR(invoice.total)}</td
                                             >
                                             <td
                                                 class="py-3 pr-4 text-right font-mono {invoice.balance_due >
@@ -525,9 +505,7 @@
                                                     ? 'text-amber-600'
                                                     : 'text-green-600'}"
                                             >
-                                                {formatINR(
-                                                    invoice.balance_due,
-                                                )}
+                                                {formatINR(invoice.balance_due)}
                                             </td>
                                             <td class="py-3 text-right">
                                                 <StatusBadge
@@ -677,9 +655,7 @@
                                                             ? 'text-blue-600'
                                                             : 'text-text-muted'}"
                                                     >
-                                                        {formatINR(
-                                                            cn.balance,
-                                                        )}
+                                                        {formatINR(cn.balance)}
                                                     </td>
                                                     <td class="py-3 text-right">
                                                         <StatusBadge

@@ -5,7 +5,7 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check, Search } from "lucide-svelte";
     import { enhance, deserialize } from "$app/forms";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
@@ -136,10 +136,7 @@
                     await update();
                     isSubmitting = false;
                     if (result.type === "failure" && result.data?.error) {
-                        addToast({
-                            type: "error",
-                            message: result.data.error as string,
-                        });
+                        toast.error(result.data.error as string);
                     }
                 };
             }}

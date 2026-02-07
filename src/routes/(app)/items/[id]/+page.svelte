@@ -4,7 +4,7 @@
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import { UNITS, GST_RATES } from "../new/schema";
     import { formatINR } from "$lib/utils/currency";
     import {
@@ -26,16 +26,10 @@
         onResult: ({ result }) => {
             if (result.type === "success") {
                 isEditing = false;
-                addToast({
-                    type: "success",
-                    message: "Item updated successfully.",
-                });
+                toast.success("Item updated successfully.");
             }
             if (result.type === "failure" && result.data?.error) {
-                addToast({
-                    type: "error",
-                    message: result.data.error as string,
-                });
+                toast.error(result.data.error as string);
             }
         },
     });
@@ -47,12 +41,7 @@
         class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <div class="flex items-center gap-4">
-            <Button
-                variant="ghost"
-                href="/items"
-                size="icon"
-                class="h-8 w-8"
-            >
+            <Button variant="ghost" href="/items" size="icon" class="h-8 w-8">
                 <ArrowLeft class="size-4" />
             </Button>
             <div>
@@ -108,9 +97,7 @@
                     {#if data.item.sku}
                         <div class="text-sm">
                             <span class="text-text-muted">SKU:</span>
-                            <span class="font-mono ml-2"
-                                >{data.item.sku}</span
-                            >
+                            <span class="font-mono ml-2">{data.item.sku}</span>
                         </div>
                     {/if}
                     {#if data.item.description}
@@ -142,9 +129,7 @@
                         <span class="font-mono font-semibold ml-2"
                             >{formatINR(data.item.rate)}</span
                         >
-                        <span class="text-text-muted">
-                            / {data.item.unit}</span
-                        >
+                        <span class="text-text-muted"> / {data.item.unit}</span>
                     </div>
                     <div class="text-sm">
                         <span class="text-text-muted">GST Rate:</span>

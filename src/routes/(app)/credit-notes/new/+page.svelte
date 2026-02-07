@@ -4,7 +4,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check } from "lucide-svelte";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
 
     let { data } = $props();
     let isSubmitting = $state(false);
@@ -14,7 +14,9 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20">
+    <header
+        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+    >
         <Button
             variant="ghost"
             href="/credit-notes"
@@ -24,7 +26,9 @@
             <ArrowLeft class="size-4" />
         </Button>
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">New Credit Note</h1>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                New Credit Note
+            </h1>
             <p class="text-sm text-text-subtle">Issue a credit to a customer</p>
         </div>
     </header>
@@ -40,24 +44,30 @@
                     await update();
                     isSubmitting = false;
                     if (result.type === "failure" && result.data?.error) {
-                        addToast({
-                            type: "error",
-                            message: result.data.error as string,
-                        });
+                        toast.error(result.data.error as string);
                     }
                 };
             }}
             class="h-full flex flex-col md:flex-row"
         >
             <!-- Idempotency key to prevent duplicate submissions -->
-            <input type="hidden" name="idempotency_key" value={data.idempotencyKey} />
+            <input
+                type="hidden"
+                name="idempotency_key"
+                value={data.idempotencyKey}
+            />
 
             <!-- LEFT COLUMN: Main Details -->
-            <div class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1">
+            <div
+                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
+            >
                 <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Customer -->
                     <div class="space-y-2">
-                        <Label for="customer_id" class="form-label">Customer <span class="text-destructive">*</span></Label>
+                        <Label for="customer_id" class="form-label"
+                            >Customer <span class="text-destructive">*</span
+                            ></Label
+                        >
                         <select
                             name="customer_id"
                             id="customer_id"
@@ -66,7 +76,9 @@
                         >
                             <option value="">Select Customer</option>
                             {#each data.customers as customer}
-                                <option value={customer.id}>{customer.name}</option>
+                                <option value={customer.id}
+                                    >{customer.name}</option
+                                >
                             {/each}
                         </select>
                     </div>
@@ -74,7 +86,10 @@
                     <div class="grid gap-4 grid-cols-2">
                         <!-- Date -->
                         <div class="space-y-2">
-                            <Label for="date" class="form-label">Date <span class="text-destructive">*</span></Label>
+                            <Label for="date" class="form-label"
+                                >Date <span class="text-destructive">*</span
+                                ></Label
+                            >
                             <Input
                                 type="date"
                                 name="date"
@@ -85,7 +100,9 @@
 
                         <!-- Number -->
                         <div class="space-y-2">
-                            <Label for="number" class="form-label">Credit Note #</Label>
+                            <Label for="number" class="form-label"
+                                >Credit Note #</Label
+                            >
                             <Input
                                 name="number"
                                 value={data.autoNumber}
@@ -97,7 +114,10 @@
 
                     <!-- Reason -->
                     <div class="space-y-2">
-                        <Label for="reason" class="form-label">Reason <span class="text-destructive">*</span></Label>
+                        <Label for="reason" class="form-label"
+                            >Reason <span class="text-destructive">*</span
+                            ></Label
+                        >
                         <select
                             name="reason"
                             id="reason"
@@ -126,15 +146,23 @@
             </div>
 
             <!-- RIGHT COLUMN: Financials -->
-            <div class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto">
+            <div
+                class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
+            >
                 <div class="space-y-6">
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-subtle">
+                    <h3
+                        class="text-sm font-bold uppercase tracking-wide text-text-subtle"
+                    >
                         Financials
                     </h3>
 
                     <!-- Amount -->
                     <div class="space-y-2">
-                        <Label for="amount" class="form-label">Credit Amount <span class="text-destructive">*</span></Label>
+                        <Label for="amount" class="form-label"
+                            >Credit Amount <span class="text-destructive"
+                                >*</span
+                            ></Label
+                        >
                         <Input
                             type="number"
                             name="amount"
@@ -148,10 +176,16 @@
                     </div>
 
                     <!-- Summary -->
-                    <div class="space-y-3 pt-4 border-t border-dashed border-border">
+                    <div
+                        class="space-y-3 pt-4 border-t border-dashed border-border"
+                    >
                         <div class="flex justify-between items-baseline pt-3">
-                            <span class="font-semibold text-text-strong">Total Credit</span>
-                            <span class="font-mono text-2xl font-bold text-primary">
+                            <span class="font-semibold text-text-strong"
+                                >Total Credit</span
+                            >
+                            <span
+                                class="font-mono text-2xl font-bold text-primary"
+                            >
                                 {new Intl.NumberFormat("en-IN", {
                                     style: "currency",
                                     currency: "INR",
@@ -175,9 +209,7 @@
                 <Check class="mr-2 size-4" />
                 {isSubmitting ? "Saving..." : "Save Credit Note"}
             </Button>
-            <Button variant="ghost" href="/credit-notes">
-                Cancel
-            </Button>
+            <Button variant="ghost" href="/credit-notes">Cancel</Button>
         </div>
     </div>
 </div>

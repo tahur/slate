@@ -4,7 +4,7 @@
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import { UNITS, GST_RATES } from "./schema";
     import { ArrowLeft, Save } from "lucide-svelte";
 
@@ -16,10 +16,7 @@
     const { form, errors, enhance, submitting } = superForm(data.form, {
         onResult: ({ result }) => {
             if (result.type === "failure" && result.data?.error) {
-                addToast({
-                    type: "error",
-                    message: result.data.error as string,
-                });
+                toast.error(result.data.error as string);
             }
         },
     });
@@ -67,7 +64,8 @@
                         <div class="flex gap-3">
                             <button
                                 type="button"
-                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type === 'product'
+                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type ===
+                                'product'
                                     ? 'border-primary bg-primary/5 text-primary'
                                     : 'border-border bg-surface-0 text-text-muted hover:border-border-strong'}"
                                 onclick={() => ($form.type = "product")}
@@ -76,7 +74,8 @@
                             </button>
                             <button
                                 type="button"
-                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type === 'service'
+                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type ===
+                                'service'
                                     ? 'border-primary bg-primary/5 text-primary'
                                     : 'border-border bg-surface-0 text-text-muted hover:border-border-strong'}"
                                 onclick={() => ($form.type = "service")}

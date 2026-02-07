@@ -6,7 +6,7 @@
 
     import * as Select from "$lib/components/ui/select";
     import { GST_RATES, calculateInvoiceTotals, type LineItem } from "./schema";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import { ArrowLeft, Save, Plus, Trash2, GripVertical } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
     import ItemCombobox from "$lib/components/ItemCombobox.svelte";
@@ -196,10 +196,7 @@
                     submitting = false;
                     if (result.type === "failure" && result.data?.error) {
                         error = result.data.error as string;
-                        addToast({
-                            type: "error",
-                            message: error,
-                        });
+                        toast.error(error);
                     } else {
                         await update();
                     }

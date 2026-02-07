@@ -13,7 +13,7 @@
         Lock,
     } from "lucide-svelte";
     import { enhance } from "$app/forms";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
     import { getInvoiceWhatsAppUrl } from "$lib/utils/whatsapp";
     import { page } from "$app/stores";
@@ -64,10 +64,7 @@
 
     function openSettleModal() {
         if (data.invoice.balance_due <= 0.01) {
-            addToast({
-                type: "info",
-                message: "invoice is already fully paid",
-            });
+            toast.info("Invoice is already fully paid");
             return;
         }
         selectedCredits = [];
@@ -99,7 +96,7 @@
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         } catch (e) {
             console.error("PDF download failed:", e);
-            addToast({ type: "error", message: "Failed to generate PDF" });
+            toast.error("Failed to generate PDF");
         } finally {
             isDownloading = false;
         }
@@ -559,16 +556,13 @@
                         isSubmitting = false;
                         if (result.type === "success") {
                             showSettleModal = false;
-                            addToast({
-                                type: "success",
-                                message: "Invoice settled successfully",
-                            });
+                            toast.success("Invoice settled successfully");
                             await update();
                         } else if (result.type === "failure") {
                             const errorMsg =
                                 (result.data as { error?: string })?.error ||
                                 "Settlement failed";
-                            addToast({ type: "error", message: errorMsg });
+                            toast.error(errorMsg);
                         }
                     };
                 }}

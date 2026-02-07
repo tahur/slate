@@ -4,7 +4,7 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check, Plus } from "lucide-svelte";
     import { enhance } from "$app/forms";
-    import { addToast } from "$lib/stores/toast";
+    import { toast } from "svelte-sonner";
     import { formatINR } from "$lib/utils/currency";
 
     let { data, form } = $props();
@@ -19,7 +19,7 @@
 
     // When vendor is selected, update the display name
     const selectedVendor = $derived(
-        data.vendors.find(v => v.id === selectedVendorId)
+        data.vendors.find((v) => v.id === selectedVendorId),
     );
 
     // Auto-set inter-state based on vendor's state vs org state
@@ -35,22 +35,20 @@
     let sgst = $derived(isInterState ? 0 : gstAmount / 2);
     let igst = $derived(isInterState ? gstAmount : 0);
     let total = $derived(amount + gstAmount);
-
 </script>
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20">
-        <Button
-            variant="ghost"
-            href="/expenses"
-            size="icon"
-            class="h-8 w-8"
-        >
+    <header
+        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+    >
+        <Button variant="ghost" href="/expenses" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
         </Button>
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">Add Expense</h1>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                Add Expense
+            </h1>
             <p class="text-sm text-text-subtle">Record a business expense</p>
         </div>
     </header>
@@ -66,25 +64,31 @@
                     await update();
                     isSubmitting = false;
                     if (result.type === "failure" && result.data?.error) {
-                        addToast({
-                            type: "error",
-                            message: result.data.error as string,
-                        });
+                        toast.error(result.data.error as string);
                     }
                 };
             }}
             class="h-full flex flex-col md:flex-row"
         >
             <!-- Idempotency key to prevent duplicate submissions -->
-            <input type="hidden" name="idempotency_key" value={data.idempotencyKey} />
+            <input
+                type="hidden"
+                name="idempotency_key"
+                value={data.idempotencyKey}
+            />
 
             <!-- LEFT COLUMN: Main Details -->
-            <div class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1">
+            <div
+                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
+            >
                 <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Date & Category Row -->
                     <div class="grid gap-4 grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="expense_date" class="form-label">Date <span class="text-destructive">*</span></Label>
+                            <Label for="expense_date" class="form-label"
+                                >Date <span class="text-destructive">*</span
+                                ></Label
+                            >
                             <Input
                                 type="date"
                                 id="expense_date"
@@ -95,7 +99,10 @@
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="category" class="form-label">Category <span class="text-destructive">*</span></Label>
+                            <Label for="category" class="form-label"
+                                >Category <span class="text-destructive">*</span
+                                ></Label
+                            >
                             <select
                                 id="category"
                                 name="category"
@@ -115,8 +122,13 @@
                     <!-- Vendor -->
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                            <Label for="vendor_id" class="form-label">Vendor</Label>
-                            <a href="/vendors/new" class="text-xs text-primary hover:underline flex items-center gap-1">
+                            <Label for="vendor_id" class="form-label"
+                                >Vendor</Label
+                            >
+                            <a
+                                href="/vendors/new"
+                                class="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
                                 <Plus class="size-3" />
                                 New Vendor
                             </a>
@@ -127,7 +139,9 @@
                             bind:value={selectedVendorId}
                             class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                         >
-                            <option value="">Select vendor or type below...</option>
+                            <option value=""
+                                >Select vendor or type below...</option
+                            >
                             {#each data.vendors as vendor}
                                 <option value={vendor.id}>
                                     {vendor.display_name || vendor.name}
@@ -146,13 +160,19 @@
                                 placeholder="Or type vendor name for quick entry"
                             />
                         {:else}
-                            <input type="hidden" name="vendor_name" value={vendorName} />
+                            <input
+                                type="hidden"
+                                name="vendor_name"
+                                value={vendorName}
+                            />
                         {/if}
                     </div>
 
                     <!-- Description -->
                     <div class="space-y-2">
-                        <Label for="description" class="form-label">Description</Label>
+                        <Label for="description" class="form-label"
+                            >Description</Label
+                        >
                         <textarea
                             id="description"
                             name="description"
@@ -165,7 +185,11 @@
                     <div class="grid gap-4 grid-cols-2">
                         <!-- Paid Through -->
                         <div class="space-y-2">
-                            <Label for="paid_through" class="form-label">Paid Through <span class="text-destructive">*</span></Label>
+                            <Label for="paid_through" class="form-label"
+                                >Paid Through <span class="text-destructive"
+                                    >*</span
+                                ></Label
+                            >
                             <select
                                 id="paid_through"
                                 name="paid_through"
@@ -173,14 +197,18 @@
                                 required
                             >
                                 {#each data.paymentAccounts as account}
-                                    <option value={account.id}>{account.name}</option>
+                                    <option value={account.id}
+                                        >{account.name}</option
+                                    >
                                 {/each}
                             </select>
                         </div>
 
                         <!-- Reference -->
                         <div class="space-y-2">
-                            <Label for="reference" class="form-label">Reference</Label>
+                            <Label for="reference" class="form-label"
+                                >Reference</Label
+                            >
                             <Input
                                 type="text"
                                 id="reference"
@@ -193,15 +221,23 @@
             </div>
 
             <!-- RIGHT COLUMN: Financials -->
-            <div class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto">
+            <div
+                class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
+            >
                 <div class="space-y-6">
-                    <h3 class="text-sm font-bold uppercase tracking-wide text-text-subtle">
+                    <h3
+                        class="text-sm font-bold uppercase tracking-wide text-text-subtle"
+                    >
                         Financials
                     </h3>
 
                     <!-- Amount -->
                     <div class="space-y-2">
-                        <Label for="amount" class="form-label">Amount (excl. Tax) <span class="text-destructive">*</span></Label>
+                        <Label for="amount" class="form-label"
+                            >Amount (excl. Tax) <span class="text-destructive"
+                                >*</span
+                            ></Label
+                        >
                         <Input
                             type="number"
                             id="amount"
@@ -215,9 +251,13 @@
                     </div>
 
                     <!-- GST Settings -->
-                    <div class="p-4 rounded-lg bg-surface-1 border border-border space-y-4">
+                    <div
+                        class="p-4 rounded-lg bg-surface-1 border border-border space-y-4"
+                    >
                         <div class="space-y-2">
-                            <Label for="gst_rate" class="form-label">Tax Rate</Label>
+                            <Label for="gst_rate" class="form-label"
+                                >Tax Rate</Label
+                            >
                             <select
                                 id="gst_rate"
                                 name="gst_rate"
@@ -241,7 +281,10 @@
                                     bind:checked={isInterState}
                                     class="h-4 w-4 rounded border-border-strong text-primary"
                                 />
-                                <Label for="is_inter_state" class="font-normal text-sm text-text-strong cursor-pointer">
+                                <Label
+                                    for="is_inter_state"
+                                    class="font-normal text-sm text-text-strong cursor-pointer"
+                                >
                                     Inter-state (IGST)
                                 </Label>
                             </div>
@@ -249,20 +292,35 @@
                     </div>
 
                     <!-- Summary Table -->
-                    <div class="space-y-3 pt-4 border-t border-dashed border-border">
+                    <div
+                        class="space-y-3 pt-4 border-t border-dashed border-border"
+                    >
                         <div class="flex justify-between text-sm">
                             <span class="text-text-subtle">Subtotal</span>
-                            <span class="font-mono text-text-strong">{formatINR(amount)}</span>
+                            <span class="font-mono text-text-strong"
+                                >{formatINR(amount)}</span
+                            >
                         </div>
                         {#if gstRate > 0}
                             <div class="flex justify-between text-sm">
-                                <span class="text-text-subtle">Tax Amount ({gstRate}%)</span>
-                                <span class="font-mono text-text-strong">{formatINR(gstAmount)}</span>
+                                <span class="text-text-subtle"
+                                    >Tax Amount ({gstRate}%)</span
+                                >
+                                <span class="font-mono text-text-strong"
+                                    >{formatINR(gstAmount)}</span
+                                >
                             </div>
                         {/if}
-                        <div class="flex justify-between items-baseline pt-3 border-t border-border">
-                            <span class="font-semibold text-text-strong">Total Payable</span>
-                            <span class="font-mono text-2xl font-bold text-primary">{formatINR(total)}</span>
+                        <div
+                            class="flex justify-between items-baseline pt-3 border-t border-border"
+                        >
+                            <span class="font-semibold text-text-strong"
+                                >Total Payable</span
+                            >
+                            <span
+                                class="font-mono text-2xl font-bold text-primary"
+                                >{formatINR(total)}</span
+                            >
                         </div>
                     </div>
                 </div>
@@ -281,9 +339,7 @@
                 <Check class="mr-2 size-4" />
                 {isSubmitting ? "Saving..." : "Save Expense"}
             </Button>
-            <Button variant="ghost" href="/expenses">
-                Cancel
-            </Button>
+            <Button variant="ghost" href="/expenses">Cancel</Button>
         </div>
     </div>
 </div>

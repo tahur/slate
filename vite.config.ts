@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	ssr: {
-		external: ['pdfmake', 'nodemailer']
+		external: ['pdfmake', 'nodemailer'],
+		noExternal: ['svelte-sonner', 'mode-watcher']
 	}
 });
