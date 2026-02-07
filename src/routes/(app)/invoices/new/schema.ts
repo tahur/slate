@@ -27,8 +27,12 @@ export type LineItem = z.infer<typeof lineItemSchema>;
 
 // Calculate line item totals
 export function calculateLineItem(item: LineItem, isInterState: boolean) {
-    const amount = item.quantity * item.rate;
-    const taxAmount = amount * (item.gst_rate / 100);
+    const quantity = Number(item.quantity) || 0;
+    const rate = Number(item.rate) || 0;
+    const gstRate = Number(item.gst_rate) || 0;
+
+    const amount = quantity * rate;
+    const taxAmount = amount * (gstRate / 100);
 
     let cgst = 0, sgst = 0, igst = 0;
     if (isInterState) {
