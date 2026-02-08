@@ -54,7 +54,7 @@
                         type="email"
                         placeholder="you@example.com"
                         bind:value={$formData.email}
-                        {...$constraints.email}
+                        required={$constraints.email?.required}
                         class="bg-surface-0 border-border focus-visible:ring-primary"
                     />
                     {#if $errors.email}

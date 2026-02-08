@@ -19,7 +19,7 @@
 
     // Step management
     let currentStep = $state(1);
-    const totalSteps = 3;
+    const totalSteps = 2;
 
     const {
         form: formData,
@@ -27,7 +27,14 @@
         constraints,
         enhance,
         delayed,
-    } = superForm(data.form);
+    } = superForm(data.form, {
+        onUpdated: ({ form }) => {
+            // If form submission was successful, redirect to dashboard
+            if (form.valid) {
+                window.location.href = "/dashboard";
+            }
+        },
+    });
 
     // Indian States for Dropdown
     const states = [
@@ -72,7 +79,6 @@
     const steps = [
         { id: 1, title: "Business", icon: Building2 },
         { id: 2, title: "GST", icon: FileText },
-        { id: 3, title: "Bank", icon: CreditCard },
     ];
 
     function nextStep() {
@@ -294,7 +300,6 @@
                                         type="email"
                                         placeholder="business@example.com"
                                         bind:value={$formData.email}
-                                        {...$constraints.email}
                                         class="bg-surface-0 border-border"
                                     />
                                 </div>
@@ -307,7 +312,6 @@
                                         name="phone"
                                         placeholder="+91 98765 43210"
                                         bind:value={$formData.phone}
-                                        {...$constraints.phone}
                                         class="bg-surface-0 border-border"
                                     />
                                 </div>
@@ -358,99 +362,6 @@
                                     <strong>Not registered for GST?</strong> You
                                     can still create invoices without GSTIN. Add
                                     it later when you register.
-                                </p>
-                            </div>
-                        </div>
-                    {/if}
-
-                    <!-- Step 3: Bank Info -->
-                    {#if currentStep === 3}
-                        <div class="text-center mb-6">
-                            <h2
-                                class="text-2xl font-bold text-text-strong mb-2"
-                            >
-                                Bank Details
-                            </h2>
-                            <p class="text-text-muted">
-                                Optional — shows on invoices for payment
-                            </p>
-                        </div>
-
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <Label
-                                        for="bank_name"
-                                        class="text-text-subtle"
-                                        >Bank Name</Label
-                                    >
-                                    <Input
-                                        id="bank_name"
-                                        name="bank_name"
-                                        placeholder="HDFC Bank"
-                                        class="bg-surface-0 border-border"
-                                    />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label for="branch" class="text-text-subtle"
-                                        >Branch</Label
-                                    >
-                                    <Input
-                                        id="branch"
-                                        name="branch"
-                                        placeholder="Koramangala"
-                                        class="bg-surface-0 border-border"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <Label
-                                        for="account_number"
-                                        class="text-text-subtle"
-                                        >Account Number</Label
-                                    >
-                                    <Input
-                                        id="account_number"
-                                        name="account_number"
-                                        placeholder="50100123456789"
-                                        class="bg-surface-0 border-border font-mono"
-                                    />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label for="ifsc" class="text-text-subtle"
-                                        >IFSC Code</Label
-                                    >
-                                    <Input
-                                        id="ifsc"
-                                        name="ifsc"
-                                        placeholder="HDFC0001234"
-                                        class="bg-surface-0 border-border font-mono uppercase"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="space-y-2">
-                                <Label for="upi_id" class="text-text-subtle"
-                                    >UPI ID</Label
-                                >
-                                <Input
-                                    id="upi_id"
-                                    name="upi_id"
-                                    placeholder="business@upi"
-                                    class="bg-surface-0 border-border font-mono"
-                                />
-                            </div>
-
-                            <div
-                                class="bg-amber-50 border border-amber-200 rounded-lg p-4"
-                            >
-                                <p class="text-sm text-amber-800">
-                                    You can always add or edit bank details
-                                    later in <strong
-                                        >Settings → Bank & UPI</strong
-                                    >
                                 </p>
                             </div>
                         </div>

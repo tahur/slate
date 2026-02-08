@@ -316,103 +316,119 @@
                 Built with
             </h2>
         </div>
-        <div
-            class="flex flex-wrap justify-center items-center gap-12 md:gap-20"
-        >
+        <div class="flex flex-wrap justify-center items-center gap-8 md:gap-12">
             <!-- SvelteKit -->
             <div
-                class="group transition-all duration-300 hover:scale-110 cursor-default"
-                title="SvelteKit"
+                class="group flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-default"
             >
-                <svg
-                    class="h-12 w-12 text-[#FF3E00]"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
+                <div
+                    class="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center p-3"
                 >
-                    <path
-                        d="M20.286 6.073c-2.182-3.106-6.545-3.944-9.727-1.862L5.903 7.474a5.52 5.52 0 0 0-2.47 3.382 5.28 5.28 0 0 0 .566 3.825 5.1 5.1 0 0 0-.855 1.964 5.47 5.47 0 0 0 .915 4.107c2.182 3.106 6.545 3.944 9.727 1.862l4.656-3.263a5.52 5.52 0 0 0 2.47-3.382 5.28 5.28 0 0 0-.566-3.825 5.1 5.1 0 0 0 .855-1.964 5.47 5.47 0 0 0-.915-4.107zM9.953 19.538a3.29 3.29 0 0 1-3.478-1.333 3.15 3.15 0 0 1 .454-4.052l.428-.32a5.28 5.28 0 0 0 1.088 1.864l.288.298-.853.598a1.35 1.35 0 0 0-.488 1.043 1.43 1.43 0 0 0 .6.95 1.44 1.44 0 0 0 1.519.058l4.656-3.263a1.35 1.35 0 0 0 .488-1.043 1.43 1.43 0 0 0-.6-.95.76.76 0 0 1-.144-.12 5.1 5.1 0 0 0-.506-2.037l.004-.003a3.29 3.29 0 0 1 3.333 1.39 3.15 3.15 0 0 1-.454 4.052l-4.656 3.263a3.2 3.2 0 0 1-1.68.605zm7.21-8.21a5.28 5.28 0 0 0-1.088-1.864l-.288-.298.853-.598a1.35 1.35 0 0 0 .488-1.043 1.43 1.43 0 0 0-.6-.95 1.44 1.44 0 0 0-1.519-.058L10.353 9.78a1.35 1.35 0 0 0-.488 1.043 1.43 1.43 0 0 0 .6.95.76.76 0 0 1 .144.12 5.1 5.1 0 0 0 .506 2.037l-.004.003a3.29 3.29 0 0 1-3.333-1.39 3.15 3.15 0 0 1 .454-4.052l4.656-3.263a3.2 3.2 0 0 1 1.68-.605 3.29 3.29 0 0 1 3.478 1.333 3.15 3.15 0 0 1-.454 4.052l-.428.32z"
+                    <img
+                        src="/brand_logos/svelte.png"
+                        alt="SvelteKit"
+                        class="h-full w-full object-contain"
                     />
-                </svg>
+                </div>
+                <span
+                    class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors"
+                    >SvelteKit</span
+                >
             </div>
 
             <!-- TailwindCSS -->
             <div
-                class="group transition-all duration-300 hover:scale-110 cursor-default"
-                title="Tailwind CSS"
+                class="group flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-default"
             >
-                <svg
-                    class="h-12 w-12 text-[#06B6D4]"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
+                <div
+                    class="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center p-3"
                 >
-                    <path
-                        d="M12.001,4.8c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 C13.666,10.618,15.027,12,18.001,12c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C16.337,6.182,14.976,4.8,12.001,4.8z M6.001,12c-3.2,0-5.2,1.6-6,4.8c1.2-1.6,2.6-2.2,4.2-1.8c0.913,0.228,1.565,0.89,2.288,1.624 c1.177,1.194,2.538,2.576,5.512,2.576c3.2,0,5.2-1.6,6-4.8c-1.2,1.6-2.6,2.2-4.2,1.8c-0.913-0.228-1.565-0.89-2.288-1.624 C10.337,13.382,8.976,12,6.001,12z"
+                    <img
+                        src="/brand_logos/tailwind.svg"
+                        alt="Tailwind CSS"
+                        class="h-full w-full object-contain"
                     />
-                </svg>
+                </div>
+                <span
+                    class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-cyan-500 transition-colors"
+                    >Tailwind CSS</span
+                >
             </div>
 
             <!-- SQLite -->
             <div
-                class="group transition-all duration-300 hover:scale-110 cursor-default"
-                title="SQLite"
+                class="group flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-default"
             >
-                <svg
-                    class="h-12 w-12 text-[#003B57]"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
+                <div
+                    class="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center p-3"
                 >
-                    <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+                    <img
+                        src="/brand_logos/sqlite.svg"
+                        alt="SQLite"
+                        class="h-full w-full object-contain"
                     />
-                </svg>
+                </div>
+                <span
+                    class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-sky-700 transition-colors"
+                    >SQLite</span
+                >
             </div>
 
             <!-- Drizzle -->
             <div
-                class="group transition-all duration-300 hover:scale-110 cursor-default"
-                title="Drizzle ORM"
+                class="group flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-default"
             >
-                <svg
-                    class="h-12 w-12 text-[#C5F74F]"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
+                <div
+                    class="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center p-3"
                 >
-                    <path
-                        d="M5.5 8.5L12 2l6.5 6.5L12 15 5.5 8.5zM12 15l6.5 6.5L12 22l-6.5-.5L12 15z"
+                    <img
+                        src="/brand_logos/drizzle.svg"
+                        alt="Drizzle ORM"
+                        class="h-full w-full object-contain"
                     />
-                </svg>
+                </div>
+                <span
+                    class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-lime-500 transition-colors"
+                    >Drizzle ORM</span
+                >
             </div>
 
             <!-- Antigravity -->
             <div
-                class="group transition-all duration-300 hover:scale-110 cursor-default"
-                title="Antigravity"
+                class="group flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-default"
             >
                 <div
-                    class="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-purple-500/20"
+                    class="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center p-3"
                 >
-                    A
+                    <img
+                        src="/brand_logos/antigravity.png"
+                        alt="Antigravity"
+                        class="h-full w-full object-contain"
+                    />
                 </div>
+                <span
+                    class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-purple-500 transition-colors"
+                    >Antigravity</span
+                >
             </div>
 
             <!-- Claude -->
             <div
-                class="group transition-all duration-300 hover:scale-110 cursor-default"
-                title="Claude"
+                class="group flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-default"
             >
                 <div
-                    class="h-12 w-12 rounded-xl bg-[#D97757] flex items-center justify-center shadow-lg shadow-orange-500/20"
+                    class="h-16 w-16 md:h-20 md:w-20 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center p-3"
                 >
-                    <svg
-                        class="h-8 w-8 text-white"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                    >
-                        <path
-                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
-                        />
-                    </svg>
+                    <img
+                        src="/brand_logos/claude.svg"
+                        alt="Claude"
+                        class="h-full w-full object-contain"
+                    />
                 </div>
+                <span
+                    class="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-orange-600 transition-colors"
+                    >Claude</span
+                >
             </div>
         </div>
     </div>

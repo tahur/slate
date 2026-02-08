@@ -15,4 +15,20 @@ if (!fs.existsSync(dbDir)) {
 }
 
 const sqlite = new Database(dbPath);
+
+// ⚠️ ACID COMPLIANCE: Enable WAL mode for better concurrency and crash recovery
+// WAL (Write-Ahead Logging) provides:
+// - Atomicity: Transactions are all-or-nothing
+// - Consistency: Database constraints are enforced
+// - Isolation: Readers don't block writers
+// - Durability: Data is safely written to disk
+sqlite.pragma('journal_mode = WAL');
+
+// Enable foreign key constraints (part of Consistency)
+sqlite.pragma('foreign_keys = ON');
+
+// Ensure synchronous mode for durability (FULL = safest)
+// FULL: Wait for data to be written to disk before continuing
+sqlite.pragma('synchronous = FULL');
+
 export const db = drizzle(sqlite, { schema });

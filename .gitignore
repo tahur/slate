@@ -21,3 +21,28 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Data & Database
+/data
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+check_errors*.txt
+debug_log.txt
+
+# Temporary scripts
+add-columns.js
+test-*.js
+verify_*.js
+fix_*.ts
+
+# IDE
+.vscode
+.idea
+
+# Research notes
+research.md
+itemline.md
