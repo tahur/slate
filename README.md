@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Slate Logo](https://img.shields.io/badge/Slate-Accounting-4F46E5?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkwySCAxMy41VjIwLjVIMTJWMnoiIGZpbGw9IndoaXRlIi8+PC9zdmc+)
+![Slate Logo](static/logo.svg)
 
 **Modern, Self-Hosted Accounting for Indian Small Businesses**
 
@@ -302,7 +302,7 @@ Slate takes security seriously:
 - **Multi-tenancy isolation** - Every query filters by `org_id`
 - **Audit logging** - Complete trail of financial transactions
 
-**Found a security issue?** Please email security@yourproject.com instead of opening a public issue.
+
 
 ---
 
