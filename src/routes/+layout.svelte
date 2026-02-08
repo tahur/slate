@@ -2,6 +2,7 @@
     import "../app.css";
     import { Toaster } from "$lib/components/ui/sonner";
     import { toast } from "svelte-sonner";
+    import { TooltipProvider } from "$lib/components/ui/tooltip";
 
     let { children, data } = $props();
 
@@ -23,4 +24,6 @@
 
 <Toaster position="top-right" richColors closeButton />
 
-{@render children()}
+<TooltipProvider>
+    {@render children()}
+</TooltipProvider>

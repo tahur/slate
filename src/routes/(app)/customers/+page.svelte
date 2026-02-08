@@ -11,7 +11,9 @@
         Mail,
         MapPin,
         FileText,
+        Info,
     } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
     import { INDIAN_STATES } from "./new/schema";
     import { formatINR } from "$lib/utils/currency";
 
@@ -51,10 +53,24 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <Button href="/credit-notes" variant="secondary">
-                <FileText class="mr-2 size-4" />
-                Credit Notes
-            </Button>
+            <div class="flex items-center gap-1">
+                <Button href="/credit-notes" variant="secondary">
+                    <FileText class="mr-2 size-4" />
+                    Credit Notes
+                </Button>
+                <Tooltip.Root>
+                    <Tooltip.Trigger>
+                        <Info class="size-4 text-text-muted cursor-help" />
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                        <p class="max-w-[250px] text-xs">
+                            A credit note is a document issued to a customer
+                            that indicates a return of funds in the event of an
+                            invoice error or return.
+                        </p>
+                    </Tooltip.Content>
+                </Tooltip.Root>
+            </div>
             <Button href="/customers/new">
                 <Plus class="mr-2 size-4" />
                 New Customer

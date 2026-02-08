@@ -12,6 +12,7 @@
         MapPin,
     } from "lucide-svelte";
     import { INDIAN_STATES } from "../customers/new/schema";
+    import * as Tooltip from "$lib/components/ui/tooltip";
     import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
@@ -42,9 +43,21 @@
         class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                Vendors
-            </h1>
+            <div class="flex items-center gap-2">
+                <Tooltip.Root>
+                    <Tooltip.Trigger
+                        class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
+                    >
+                        Vendors
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                        <p class="max-w-[250px] text-xs">
+                            A vendor is a person or company you buy products or
+                            services from.
+                        </p>
+                    </Tooltip.Content>
+                </Tooltip.Root>
+            </div>
             <p class="text-sm text-text-muted">
                 Manage your suppliers and service providers
             </p>

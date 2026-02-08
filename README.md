@@ -19,22 +19,30 @@
 
 ---
 
-## 🎯 What is Slate?
+## How It's Built
 
-**Slate** is a **self-hosted, open-source accounting system** built specifically for **Indian micro and small businesses**. It provides **GST-compliant invoicing**, payment tracking, expense management, and financial reporting—all powered by a robust **double-entry accounting engine**.
+This project grew through a lot of experimenting—trying things, breaking them, fixing them, and starting over more times than I can count. AI helped along the way, but every choice, every tweak, and every "this doesn't feel right" moment came from human judgment. The code carries all those small mistakes, lessons, and iterations. It's not perfect—and that's exactly what makes it real.
+
+---
+
+## What is Slate?
+
+**Slate** is a **self-hosted, open-source accounting system** built specifically for **Indian micro and small businesses**. It adopts a **business-first approach**, meaning you don't need to be an accountant to use it.
+
+Designed for micro-enterprises, it provides **GST-compliant invoicing**, payment tracking, expense management, and financial reporting—all powered by a robust **double-entry accounting engine** that works in the background.
 
 Unlike cloud-based solutions, Slate gives you **complete control** of your financial data with **zero monthly fees**. Run it on your own server, laptop, or VPS.
 
-### 🎨 Business-First, Not Accounting-First
+### Business-First, Not Accounting-First
 
-Slate is designed for **business owners, not accountants**. You don't need to understand debits and credits—just create invoices, record payments, and track expenses. The accounting **happens automatically** behind the scenes.
+Slate is designed for **business owners, not accountants**. You don't need to understand debits and credits—just create invoices, record payments, and track expenses.
 
 **Business language you understand:**
 - "Create Invoice" → System posts: Debit AR, Credit Sales, Credit GST
 - "Record Payment" → System posts: Debit Cash, Credit AR
 - "Add Expense" → System posts: Debit Expense, Credit Cash
 
-### 🔒 Built on Rock-Solid Foundations
+### Built on Rock-Solid Foundations
 
 - **Immutable Ledger** - Once posted, transactions can never be edited, only reversed (like a bank statement)
 - **Idempotency Guarantees** - Accidentally clicking "Submit" twice? No problem—duplicate transactions are impossible
@@ -47,67 +55,67 @@ A slate represents a **clean start**—just like double-entry accounting gives y
 
 ---
 
-## ✨ Features
+## Features
 
-### 🛡️ Core Guarantees
+### Core Guarantees
 
-- ✅ **ACID Compliant** - Full database ACID guarantees (Atomicity, Consistency, Isolation, Durability)
-- ✅ **Immutable Ledger** - Posted transactions can never be edited, only reversed (complete audit trail)
-- ✅ **Idempotency** - Duplicate submissions are automatically prevented (safe to retry)
-- ✅ **Always Balanced** - Database constraints ensure debits always equal credits
-- ✅ **Atomic Operations** - Transactions either complete fully or not at all (no partial states)
-- ✅ **Audit Logging** - Every change is logged with timestamp, user, and action
+- **ACID Compliant** - Full database ACID guarantees (Atomicity, Consistency, Isolation, Durability)
+- **Immutable Ledger** - Posted transactions can never be edited, only reversed (complete audit trail)
+- **Idempotency** - Duplicate submissions are automatically prevented (safe to retry)
+- **Always Balanced** - Database constraints ensure debits always equal credits
+- **Atomic Operations** - Transactions either complete fully or not at all (no partial states)
+- **Audit Logging** - Every change is logged with timestamp, user, and action
 
-### �📊 Core Accounting
+### Core Accounting
 
-- ✅ **GST-Compliant Invoicing** - Automatic CGST/SGST/IGST calculation with intra/inter-state routing
-- ✅ **Double-Entry Posting Engine** - Every transaction maintains accounting integrity with database-level constraints
-- ✅ **Payment Allocation** - Smart payment matching with overpayment handling (advance credits)
-- ✅ **Credit Notes** - Handle returns and sales adjustments correctly
-- ✅ **Expense Tracking** - Record expenses with input GST split
-- ✅ **Multi-Document Linking** - Link payments to multiple invoices, track credit note allocations
+- **GST-Compliant Invoicing** - Automatic CGST/SGST/IGST calculation with intra/inter-state routing
+- **Double-Entry Posting Engine** - Every transaction maintains accounting integrity with database-level constraints
+- **Payment Allocation** - Smart payment matching with overpayment handling (advance credits)
+- **Credit Notes** - Handle returns and sales adjustments correctly
+- **Expense Tracking** - Record expenses with input GST split
+- **Multi-Document Linking** - Link payments to multiple invoices, track credit note allocations
 
-### 📈 Financial Management
+### Financial Management
 
-- ✅ **Chart of Accounts** - Pre-configured Indian accounting structure
-- ✅ **Journal Entries** - Full double-entry journal with immutable posting
-- ✅ **Account Balances** - Real-time running balances for all accounts
-- ✅ **Complete Audit Trail** - Immutable history of all financial transactions
-- ✅ **Number Series** - Automatic document numbering (INV-2026-0001, PAY-2026-0042, etc.)
+- **Chart of Accounts** - Pre-configured Indian accounting structure
+- **Journal Entries** - Full double-entry journal with immutable posting
+- **Account Balances** - Real-time running balances for all accounts
+- **Complete Audit Trail** - Immutable history of all financial transactions
+- **Number Series** - Automatic document numbering (INV-2026-0001, PAY-2026-0042, etc.)
 
-### 📑 Reports & Compliance
+### Reports & Compliance
 
-- ✅ **Customer Aging Report** - See who owes what, when
-- ✅ **Customer Ledger** - Complete transaction history per customer
-- ✅ **GST Summary** - Monthly GSTR-1 preparation support
-- ✅ **Profit & Loss** - Income and expense breakdown
-- ✅ **Activity Log** - Full audit trail of user actions
+### Reports & Compliance
 
-### 🎨 User Experience
+- **Financial Reports** - Profit & Loss, Balance Sheet (Coming Soon), Trial Balance
+- **GST Reports** - GSTR-1 (Sales), GSTR-3B (Summary), GSTR-2A/2B Reconciliation
+- **Receivables & Payables** - Customer Aging, Vendor Aging, Ledger Statements
+- **Activity Log** - Comprehensive audit trail of all user actions
 
-- ✅ **Modern UI** - Built with Svelte 5 and Tailwind CSS v4
-- ✅ **Dark Mode** - Easy on the eyes, day or night
-- ✅ **PDF Generation** - Print professional invoices and statements
-- ✅ **Responsive Design** - Works on desktop, tablet, and mobile
-- ✅ **Progressive Enhancement** - Works without JavaScript (forms submit natively)
+### Key Utilities
 
-### 🔒 Security & Privacy
+- **PDF Generation** - Download professional invoices and financial reports
+- **WhatsApp Integration** - Send invoices and reports directly to customers via WhatsApp
+- **Email Support** - Configurable SMTP for sending documents via email
 
-- ✅ **Self-Hosted** - Your data stays on your server
-- ✅ **Session-Based Auth** - Secure authentication via Lucia Auth
-- ✅ **Argon2id Password Hashing** - Industry-standard password security
-- ✅ **Multi-Tenancy** - Org-level data isolation
-- ✅ **No Tracking** - Zero telemetry, zero phone-home
+### User Experience
+
+- **Modern UI** - Built with Svelte 5 and Tailwind CSS v4
+- **Dark Mode** - Easy on the eyes, day or night
+- **Responsive Design** - Works on desktop, tablet, and mobile
+- **Progressive Enhancement** - Works without JavaScript (forms submit natively)
+
+### Security & Privacy
+
+- **Self-Hosted** - Your data stays on your server
+- **Session-Based Auth** - Secure authentication via Lucia Auth
+- **Argon2id Password Hashing** - Industry-standard password security
+- **Multi-Tenancy** - Org-level data isolation
+- **No Tracking** - Zero telemetry, zero phone-home
 
 ---
 
-## 🖼️ Screenshots
-
-> _Coming soon: Dashboard, Invoice, Payment, and Reports screenshots_
-
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 Slate is built with modern, battle-tested technologies:
 
@@ -117,22 +125,12 @@ Slate is built with modern, battle-tested technologies:
 - **[Tailwind CSS v4](https://tailwindcss.com/)** - Utility-first CSS
 - **[shadcn-svelte](https://shadcn-svelte.com/)** - Beautiful UI components (bits-ui)
 - **[Lucide Icons](https://lucide.dev/)** - Clean, consistent icons
-
-### Backend
-- **[SQLite](https://www.sqlite.org/)** - Embedded SQL database (via better-sqlite3)
-- **[Drizzle ORM](https://orm.drizzle.team/)** - Type-safe database queries
-- **[Lucia Auth](https://lucia-auth.com/)** - Session-based authentication
-- **[Zod](https://zod.dev/)** - TypeScript-first schema validation
-- **[Decimal.js](https://mikemcl.github.io/decimal.js/)** - Precision financial math
-
-### Utilities
-- **[sveltekit-superforms](https://superforms.rocks/)** - Advanced form handling
 - **[pdfmake](http://pdfmake.org/)** - Client-side PDF generation
 - **TypeScript** - End-to-end type safety
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -184,7 +182,7 @@ PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 slate/
@@ -215,18 +213,18 @@ slate/
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 Comprehensive documentation is available in the [`/docs`](./docs) folder:
 
-- **[Architecture Guide](./docs/ARCHITECTURE.md)** - Complete system architecture, tech stack decisions, database schema, and gotchas (for developers and LLMs)
+- **[System Architecture](./docs/ARCHITECTURE.md)** - Complete system architecture, design tokens, and technical deep dive
 - **[Roadmap](./docs/ROADMAP.md)** - Feature roadmap and development plans
-- **[Style Guide](./docs/STYLE_GUIDE.md)** - Code style and design patterns
+- **[Style Guide](./docs/STYLE_GUIDE.md)** - Detailed UI component rules
 - **[Accounting Invariants](./docs/ACCOUNTING_INVARIANTS.md)** - Double-entry accounting rules enforced by Slate
 
 ---
 
-## 🧪 Development
+## Development
 
 ### Database Commands
 
@@ -260,7 +258,7 @@ npm run preview
 
 ---
 
-## 🐳 Deployment
+## Deployment
 
 ### Docker (Example)
 
@@ -294,7 +292,7 @@ CMD ["node", "build"]
 
 ---
 
-## 🔒 Security
+## Security
 
 Slate takes security seriously:
 
@@ -308,7 +306,7 @@ Slate takes security seriously:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) first.
 
@@ -324,29 +322,28 @@ See [`docs/STYLE_GUIDE.md`](./docs/STYLE_GUIDE.md) for detailed code style guide
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 Slate is under active development. See [`docs/ROADMAP.md`](./docs/ROADMAP.md) for the full roadmap.
 
 ### Upcoming Features
 
-- [ ] **Vendor Management** - Track purchases and accounts payable
-- [ ] **Bank Reconciliation** - Match bank statements with transactions
-- [ ] **Recurring Invoices** - Automate subscription billing
-- [ ] **Multi-Currency** - Support for foreign currencies
-- [ ] **E-Way Bill Integration** - Generate e-way bills for goods transport
 - [ ] **GSTR Reports** - Direct GSTR-1, GSTR-3B generation
-- [ ] **Mobile App** - Native iOS/Android companion app
+- [ ] **MCP Support** - Model Context Protocol for AI Agent interactions
+- [ ] **Backup & Export/Import** - Easy data portability and safety
+- [ ] **Mobile Optimization** - Improved experience on small screens
+- [ ] **Edit Draft** - Edit invoices before they are posted
+
 
 ---
 
-## 💡 Key Concepts
+## Key Concepts
 
 ### ACID Compliance (Financial-Grade Reliability)
 
 Slate provides **full ACID guarantees** for all financial transactions:
 
-#### ⚛️ Atomicity
+#### Atomicity
 Transactions are **all-or-nothing**. If creating an invoice fails halfway through, the entire operation rolls back—no partial invoices, no orphaned line items.
 
 ```typescript
@@ -359,7 +356,7 @@ db.transaction(async (tx) => {
 });
 ```
 
-#### ✅ Consistency
+#### Consistency
 Database constraints **always** enforce accounting rules. Even if there's a bug in the code, the database will reject invalid data:
 
 ```sql
@@ -368,13 +365,13 @@ INSERT INTO journal_entries (total_debit, total_credit)
 VALUES (1000.00, 999.99);  -- ❌ ERROR: Debits ≠ Credits
 ```
 
-#### 🔒 Isolation
+#### Isolation
 **WAL (Write-Ahead Logging) mode** ensures readers don't block writers. Multiple users can:
 - Read invoices while another user creates a payment
 - Generate reports while invoices are being posted
 - No "database is locked" errors under normal load
 
-#### 💾 Durability
+#### Durability
 Once a transaction is committed, it **survives** system crashes, power failures, or app restarts:
 
 ```typescript
@@ -386,16 +383,6 @@ await db.insert(invoices).values(data);
 ```
 
 Slate uses `PRAGMA synchronous = FULL`, which means data is **physically written to disk** before the transaction completes.
-
-### Business-First Design Philosophy
-
-You don't need to be an accountant to use Slate. Just do what's natural:
-
-- **Create an invoice** → Accounting happens automatically
-- **Record a payment** → Ledger updates in the background
-- **Track an expense** → Double-entry posting is transparent
-
-Slate translates business actions into proper accounting entries, so you can focus on running your business.
 
 ### Immutable Ledger
 
@@ -471,7 +458,7 @@ ALTER TABLE journal_lines ADD CONSTRAINT single_sided
 
 ---
 
-## 📄 License
+## License
 
 Slate is open-source software licensed under the [MIT License](LICENSE).
 
@@ -501,7 +488,7 @@ SOFTWARE.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Slate is built on the shoulders of giants:
 
@@ -509,21 +496,7 @@ Slate is built on the shoulders of giants:
 - **[Drizzle ORM](https://orm.drizzle.team/)** - The best TypeScript ORM
 - **[shadcn-svelte](https://shadcn-svelte.com/)** - Beautiful UI components
 - **[Lucia Auth](https://lucia-auth.com/)** - Simple, secure authentication
-- **Indian GST System** - For keeping things... interesting 😅
-
----
-
-## 🧠 How This Was Really Built
-
-This project grew through a lot of experimenting—trying things, breaking them, fixing them, and starting over more times than I can count. AI helped along the way, but every choice, every tweak, and every "this doesn't feel right" moment came from human judgment. The code carries all those small mistakes, lessons, and iterations. It's not perfect—and that's exactly what makes it real.
-
----
-
-## 💬 Support
-
-- **Documentation**: [`/docs`](./docs)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/slate/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/slate/discussions)
+- **Indian GST System** - For keeping things... interesting
 
 ---
 

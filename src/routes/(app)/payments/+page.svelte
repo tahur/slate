@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Plus, FileText } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
     import Badge from "$lib/components/ui/badge/badge.svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
@@ -24,9 +25,21 @@
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
     >
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                Payments Received
-            </h1>
+            <div class="flex items-center gap-2">
+                <Tooltip.Root>
+                    <Tooltip.Trigger
+                        class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
+                    >
+                        Payments Received
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                        <p class="max-w-[250px] text-xs">
+                            A payment is money you receive from a customer
+                            against an invoice.
+                        </p>
+                    </Tooltip.Content>
+                </Tooltip.Root>
+            </div>
             <p class="text-sm text-text-muted">
                 Record and manage payments you receive from customers
             </p>

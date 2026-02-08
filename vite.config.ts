@@ -6,6 +6,6 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	ssr: {
 		external: ['pdfmake', 'nodemailer'],
-		noExternal: ['svelte-sonner', 'mode-watcher']
+		noExternal: ['svelte-sonner', 'mode-watcher', 'bits-ui']
 	}
 });

@@ -1,7 +1,8 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Card } from "$lib/components/ui/card";
-    import { Plus, FileText } from "lucide-svelte";
+    import { Plus, FileText, Info } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
@@ -15,11 +16,23 @@
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
     >
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                All Invoices
-            </h1>
+            <div class="flex items-center gap-2">
+                <Tooltip.Root>
+                    <Tooltip.Trigger
+                        class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
+                    >
+                        All Invoices
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                        <p class="max-w-[250px] text-xs">
+                            An invoice is a bill you send to your customer to
+                            request payment for products or services you sold.
+                        </p>
+                    </Tooltip.Content>
+                </Tooltip.Root>
+            </div>
             <p class="text-sm text-text-muted">
-                Create and manage bills you send to your customers
+                Create and manage invoices you send to your customers
             </p>
         </div>
         <Button href="/invoices/new">

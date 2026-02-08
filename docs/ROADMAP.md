@@ -1,4 +1,4 @@
-# OpenBill Development Roadmap
+# Slate Development Roadmap
 
 > **Goal**: Build step-by-step with clear validation at each checkpoint.  
 > Each checkpoint = 1 commit. AI agent can pick up from any checkpoint.

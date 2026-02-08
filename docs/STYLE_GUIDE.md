@@ -1,4 +1,4 @@
-# OpenBill Style Guide
+# Slate Style Guide
 
 > Single source of truth for all UI decisions. Every contributor and LLM **must** follow these rules.
 > Last updated: February 6, 2026

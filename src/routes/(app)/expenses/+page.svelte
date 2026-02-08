@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Plus, Receipt } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
@@ -13,9 +14,21 @@
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
     >
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                Expenses
-            </h1>
+            <div class="flex items-center gap-2">
+                <Tooltip.Root>
+                    <Tooltip.Trigger
+                        class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
+                    >
+                        Expenses
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                        <p class="max-w-[250px] text-xs">
+                            Expenses are costs you incur to run your business,
+                            like rent, utilities, or office supplies.
+                        </p>
+                    </Tooltip.Content>
+                </Tooltip.Root>
+            </div>
             <p class="text-sm text-text-muted">
                 Track money you spend on business costs
             </p>

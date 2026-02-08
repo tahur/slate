@@ -9,7 +9,9 @@
         ArrowRight,
         FileSpreadsheet,
         Receipt,
+        Info,
     } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
 
     const reportSections = [
         {
@@ -18,6 +20,8 @@
                 {
                     title: "Profit & Loss",
                     description: "Income, expenses, and net profit summary",
+                    simpleDescription:
+                        "See if you are making money or losing it",
                     href: "/reports/pnl",
                     icon: TrendingUp,
                     color: "text-orange-600",
@@ -131,11 +135,29 @@
                                 />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <h3
-                                    class="text-sm font-bold text-text-strong group-hover:text-primary transition-colors"
-                                >
-                                    {item.title}
-                                </h3>
+                                <div class="flex items-center gap-1">
+                                    <h3
+                                        class="text-sm font-bold text-text-strong group-hover:text-primary transition-colors"
+                                    >
+                                        {item.title}
+                                    </h3>
+                                    {#if item.simpleDescription}
+                                        <Tooltip.Root>
+                                            <Tooltip.Trigger>
+                                                <Info
+                                                    class="size-3.5 text-text-muted cursor-help"
+                                                />
+                                            </Tooltip.Trigger>
+                                            <Tooltip.Content>
+                                                <p
+                                                    class="max-w-[250px] text-xs"
+                                                >
+                                                    {item.simpleDescription}
+                                                </p>
+                                            </Tooltip.Content>
+                                        </Tooltip.Root>
+                                    {/if}
+                                </div>
                                 <p
                                     class="text-xs text-text-muted mt-1 leading-relaxed line-clamp-2"
                                 >
