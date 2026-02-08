@@ -6,20 +6,9 @@
     import { Card } from "$lib/components/ui/card";
     import * as Select from "$lib/components/ui/select";
     import type { PageData } from "./$types";
-    import {
-        Building2,
-        FileText,
-        CreditCard,
-        Check,
-        ArrowRight,
-        ArrowLeft,
-    } from "lucide-svelte";
+    import { Building2, ArrowRight } from "lucide-svelte";
 
     let { data, form }: { data: PageData; form: any } = $props();
-
-    // Step management
-    let currentStep = $state(1);
-    const totalSteps = 2;
 
     const {
         form: formData,
@@ -75,31 +64,6 @@
         { code: "34", name: "Puducherry" },
         { code: "38", name: "Ladakh" },
     ].sort((a, b) => a.name.localeCompare(b.name));
-
-    const steps = [
-        { id: 1, title: "Business", icon: Building2 },
-        { id: 2, title: "GST", icon: FileText },
-    ];
-
-    function nextStep() {
-        if (currentStep < totalSteps) {
-            currentStep++;
-        }
-    }
-
-    function prevStep() {
-        if (currentStep > 1) {
-            currentStep--;
-        }
-    }
-
-    // Validation for step 1
-    const canProceedStep1 = $derived(
-        $formData.name?.trim() &&
-            $formData.state_code &&
-            $formData.address?.trim() &&
-            $formData.pincode?.trim(),
-    );
 </script>
 
 <div class="min-h-screen bg-surface-1 flex flex-col">
@@ -118,58 +82,30 @@
     <!-- Main Content -->
     <main class="flex-1 flex items-center justify-center p-6">
         <div class="w-full max-w-2xl">
-            <!-- Progress Steps -->
-            <div class="mb-8">
-                <div class="flex items-center justify-center gap-2 mb-4">
-                    {#each steps as step, i}
-                        <div class="flex items-center">
-                            <div
-                                class="flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all {currentStep >
-                                step.id
-                                    ? 'bg-primary border-primary text-white'
-                                    : currentStep === step.id
-                                      ? 'border-primary text-primary bg-primary/10'
-                                      : 'border-border text-text-muted bg-surface-0'}"
-                            >
-                                {#if currentStep > step.id}
-                                    <Check class="size-5" />
-                                {:else}
-                                    <step.icon class="size-5" />
-                                {/if}
-                            </div>
-                            {#if i < steps.length - 1}
-                                <div
-                                    class="w-12 h-0.5 mx-2 {currentStep >
-                                    step.id
-                                        ? 'bg-primary'
-                                        : 'bg-border'}"
-                                ></div>
-                            {/if}
-                        </div>
-                    {/each}
-                </div>
-                <p class="text-center text-sm text-text-muted">
-                    Step {currentStep} of {totalSteps}
-                </p>
-            </div>
-
             <!-- Card -->
             <Card class="p-8 bg-surface-0 border-border shadow-lg">
-                <form method="POST" use:enhance id="setup-form">
-                    <!-- Step 1: Business Info -->
-                    {#if currentStep === 1}
-                        <div class="text-center mb-6">
-                            <h2
-                                class="text-2xl font-bold text-text-strong mb-2"
-                            >
-                                Let's set up your business
-                            </h2>
-                            <p class="text-text-muted">
-                                This information appears on your invoices
-                            </p>
-                        </div>
+                <div class="text-center mb-8">
+                    <div
+                        class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4"
+                    >
+                        <Building2 class="size-7 text-primary" />
+                    </div>
+                    <h2 class="text-3xl font-bold text-text-strong mb-2">
+                        Set up your business
+                    </h2>
+                    <p class="text-text-muted">
+                        This information appears on your invoices
+                    </p>
+                </div>
 
+                <form method="POST" use:enhance id="setup-form">
+                    <div class="space-y-6">
+                        <!-- Business Info Section -->
                         <div class="space-y-4">
+                            <h3 class="text-lg font-semibold text-text-strong">
+                                Business Details
+                            </h3>
+
                             <div class="space-y-2">
                                 <Label for="name" class="text-text-subtle">
                                     Business Name <span class="text-destructive"
@@ -187,6 +123,62 @@
                                 {#if $errors.name}
                                     <span class="text-xs text-destructive"
                                         >{$errors.name}</span
+                                    >
+                                {/if}
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <Label for="email" class="text-text-subtle"
+                                        >Email</Label
+                                    >
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        placeholder="business@example.com"
+                                        bind:value={$formData.email}
+                                        class="bg-surface-0 border-border"
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="phone" class="text-text-subtle"
+                                        >Phone</Label
+                                    >
+                                    <Input
+                                        id="phone"
+                                        name="phone"
+                                        placeholder="+91 98765 43210"
+                                        bind:value={$formData.phone}
+                                        class="bg-surface-0 border-border"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address Section -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold text-text-strong">
+                                Address
+                            </h3>
+
+                            <div class="space-y-2">
+                                <Label for="address" class="text-text-subtle">
+                                    Street Address <span
+                                        class="text-destructive">*</span
+                                    >
+                                </Label>
+                                <Input
+                                    id="address"
+                                    name="address"
+                                    placeholder="123, Business Street, Area"
+                                    bind:value={$formData.address}
+                                    {...$constraints.address}
+                                    class="bg-surface-0 border-border"
+                                />
+                                {#if $errors.address}
+                                    <span class="text-xs text-destructive"
+                                        >{$errors.address}</span
                                     >
                                 {/if}
                             </div>
@@ -267,72 +259,21 @@
                                     {/if}
                                 </div>
                             </div>
-
-                            <div class="space-y-2">
-                                <Label for="address" class="text-text-subtle">
-                                    Address <span class="text-destructive"
-                                        >*</span
-                                    >
-                                </Label>
-                                <Input
-                                    id="address"
-                                    name="address"
-                                    placeholder="123, Business Street, Area"
-                                    bind:value={$formData.address}
-                                    {...$constraints.address}
-                                    class="bg-surface-0 border-border"
-                                />
-                                {#if $errors.address}
-                                    <span class="text-xs text-destructive"
-                                        >{$errors.address}</span
-                                    >
-                                {/if}
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <Label for="email" class="text-text-subtle"
-                                        >Email</Label
-                                    >
-                                    <Input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        placeholder="business@example.com"
-                                        bind:value={$formData.email}
-                                        class="bg-surface-0 border-border"
-                                    />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label for="phone" class="text-text-subtle"
-                                        >Phone</Label
-                                    >
-                                    <Input
-                                        id="phone"
-                                        name="phone"
-                                        placeholder="+91 98765 43210"
-                                        bind:value={$formData.phone}
-                                        class="bg-surface-0 border-border"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    {/if}
-
-                    <!-- Step 2: GST Info -->
-                    {#if currentStep === 2}
-                        <div class="text-center mb-6">
-                            <h2
-                                class="text-2xl font-bold text-text-strong mb-2"
-                            >
-                                GST Registration
-                            </h2>
-                            <p class="text-text-muted">
-                                Optional — add this later in Settings
-                            </p>
                         </div>
 
+                        <!-- GST Section -->
                         <div class="space-y-4">
+                            <div>
+                                <h3
+                                    class="text-lg font-semibold text-text-strong"
+                                >
+                                    GST Registration
+                                </h3>
+                                <p class="text-sm text-text-muted mt-1">
+                                    Optional — add this later in Settings
+                                </p>
+                            </div>
+
                             <div class="space-y-2">
                                 <Label for="gstin" class="text-text-subtle"
                                     >GSTIN</Label
@@ -365,71 +306,30 @@
                                 </p>
                             </div>
                         </div>
-                    {/if}
+                    </div>
 
                     {#if form?.error}
                         <div
-                            class="mt-4 text-sm text-destructive font-medium text-center py-2 px-3 bg-red-50 rounded-lg border border-red-200"
+                            class="mt-6 text-sm text-destructive font-medium text-center py-2 px-3 bg-red-50 rounded-lg border border-red-200"
                         >
                             {form.error}
                         </div>
                     {/if}
 
-                    <!-- Navigation Buttons -->
-                    <div class="mt-8 flex items-center justify-between">
-                        {#if currentStep > 1}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onclick={prevStep}
-                                class="gap-2"
-                            >
-                                <ArrowLeft class="size-4" />
-                                Back
-                            </Button>
-                        {:else}
-                            <div></div>
-                        {/if}
-
-                        {#if currentStep < totalSteps}
-                            <div class="flex items-center gap-3">
-                                {#if currentStep > 1}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        onclick={nextStep}
-                                        class="text-text-muted"
-                                    >
-                                        Skip
-                                    </Button>
-                                {/if}
-                                <Button
-                                    type="button"
-                                    onclick={nextStep}
-                                    disabled={currentStep === 1 &&
-                                        !canProceedStep1}
-                                    class="gap-2"
-                                >
-                                    Continue
-                                    <ArrowRight class="size-4" />
-                                </Button>
-                            </div>
-                        {:else}
-                            <div class="flex items-center gap-3">
-                                <Button
-                                    type="submit"
-                                    disabled={$delayed}
-                                    class="gap-2"
-                                >
-                                    {#if $delayed}
-                                        Setting up...
-                                    {:else}
-                                        Start Invoicing
-                                        <ArrowRight class="size-4" />
-                                    {/if}
-                                </Button>
-                            </div>
-                        {/if}
+                    <!-- Submit Button -->
+                    <div class="mt-8">
+                        <Button
+                            type="submit"
+                            disabled={$delayed}
+                            class="w-full gap-2"
+                        >
+                            {#if $delayed}
+                                Setting up...
+                            {:else}
+                                Start Invoicing
+                                <ArrowRight class="size-4" />
+                            {/if}
+                        </Button>
                     </div>
                 </form>
             </Card>
