@@ -513,6 +513,16 @@ Slate is built on the shoulders of giants:
 
 ---
 
+## 🧠 Development Philosophy
+
+**Human-Driven, AI-Assisted Development**
+
+While the code in this project was written by Large Language Models (LLMs), every decision—from architecture to feature prioritization—was made by humans through countless iterations of trial and error. This project embodies the **human soul to solve real problems**, using AI as a powerful tool to accelerate development while maintaining human judgment, creativity, and accountability at the core.
+
+The workflow is simple: humans identify the problems, make the decisions, review the solutions, and iterate until it's right. The LLM is a collaborator, not a replacement. This approach combines the speed and capability of modern AI with the irreplaceable human understanding of business needs, user experience, and real-world constraints.
+
+---
+
 ## 💬 Support
 
 - **Documentation**: [`/docs`](./docs)
