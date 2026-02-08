@@ -277,6 +277,9 @@
                         <p class="text-sm text-text-subtle">
                             Your legal business information.
                         </p>
+                        <p class="text-xs text-text-muted mt-2 font-mono">
+                            Organization ID: {data.orgId}
+                        </p>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">

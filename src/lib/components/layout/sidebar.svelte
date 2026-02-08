@@ -16,24 +16,29 @@
 
     const navSections = [
         {
-            title: "MAIN",
+            title: "",
             items: [
                 {
                     href: "/dashboard",
                     label: "Dashboard",
                     icon: LayoutDashboard,
                 },
-                { href: "/invoices", label: "Invoices", icon: FileText },
-                { href: "/expenses", label: "Expenses", icon: Wallet },
             ],
         },
         {
-            title: "MANAGE",
+            title: "SALES",
             items: [
-                { href: "/customers", label: "Customers", icon: Users },
-                { href: "/vendors", label: "Vendors", icon: Briefcase },
-                { href: "/items", label: "Items", icon: Package },
+                { href: "/invoices", label: "Invoices", icon: FileText },
                 { href: "/payments", label: "Payments", icon: Banknote },
+                { href: "/customers", label: "Customers", icon: Users },
+                { href: "/items", label: "Items", icon: Package },
+            ],
+        },
+        {
+            title: "PURCHASE",
+            items: [
+                { href: "/expenses", label: "Expenses", icon: Wallet },
+                { href: "/vendors", label: "Vendors", icon: Briefcase },
             ],
         },
         {
@@ -70,11 +75,13 @@
     <div class="flex-1 overflow-auto py-3 px-2.5 space-y-5">
         {#each navSections as section}
             <div class="space-y-0.5">
-                <h3
-                    class="px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted mb-2"
-                >
-                    {section.title}
-                </h3>
+                {#if section.title}
+                    <h3
+                        class="px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted mb-2"
+                    >
+                        {section.title}
+                    </h3>
+                {/if}
                 {#each section.items as item}
                     {@const isActive = $page.url.pathname.startsWith(item.href)}
                     <a

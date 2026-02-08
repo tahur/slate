@@ -71,17 +71,26 @@
                         {#each data.payments as payment}
                             <tr class="group cursor-pointer">
                                 <td class="data-cell--muted font-medium">
-                                    <a href="/payments/{payment.id}" class="data-row-link">
+                                    <a
+                                        href="/payments/{payment.id}"
+                                        class="data-row-link"
+                                    >
                                         {formatDate(payment.payment_date)}
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/payments/{payment.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
+                                    <a
+                                        href="/payments/{payment.id}"
+                                        class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap"
+                                    >
                                         {payment.payment_number}
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/payments/{payment.id}" class="data-row-link">
+                                    <a
+                                        href="/payments/{payment.id}"
+                                        class="data-row-link"
+                                    >
                                         <div class="flex flex-col">
                                             <span
                                                 class="font-medium text-text-strong text-sm"
@@ -101,7 +110,10 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/payments/{payment.id}" class="data-row-link">
+                                    <a
+                                        href="/payments/{payment.id}"
+                                        class="data-row-link"
+                                    >
                                         <Badge
                                             variant="outline"
                                             class="capitalize bg-surface-1"
@@ -111,7 +123,10 @@
                                     </a>
                                 </td>
                                 <td class="data-cell--number text-text-strong">
-                                    <a href="/payments/{payment.id}" class="data-row-link justify-end">
+                                    <a
+                                        href="/payments/{payment.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         {formatINR(payment.amount)}
                                     </a>
                                 </td>

@@ -63,17 +63,26 @@
                         {#each data.invoices as invoice}
                             <tr class="group cursor-pointer">
                                 <td class="data-cell--muted font-medium">
-                                    <a href="/invoices/{invoice.id}" class="data-row-link">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="data-row-link"
+                                    >
                                         {formatDate(invoice.invoice_date)}
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/invoices/{invoice.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap"
+                                    >
                                         {invoice.invoice_number}
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/invoices/{invoice.id}" class="data-row-link">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="data-row-link"
+                                    >
                                         <div class="flex flex-col">
                                             <span
                                                 class="text-sm font-semibold text-text-strong"
@@ -91,7 +100,10 @@
                                     </a>
                                 </td>
                                 <td class="text-right">
-                                    <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         <StatusBadge
                                             status={invoice.status.replace(
                                                 "_",
@@ -101,7 +113,10 @@
                                     </a>
                                 </td>
                                 <td class="data-cell--number text-text-strong">
-                                    <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         {formatINR(invoice.total)}
                                     </a>
                                 </td>
@@ -111,7 +126,10 @@
                                         ? 'text-text-strong'
                                         : 'text-text-muted'}"
                                 >
-                                    <a href="/invoices/{invoice.id}" class="data-row-link justify-end">
+                                    <a
+                                        href="/invoices/{invoice.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         {formatINR(invoice.balance_due)}
                                     </a>
                                 </td>

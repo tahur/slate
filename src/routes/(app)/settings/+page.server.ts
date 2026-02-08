@@ -113,6 +113,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         );
 
         return {
+            orgId,
             orgForm,
             profileForm,
             seriesForm,

@@ -62,17 +62,26 @@
                         {#each data.expenses as expense}
                             <tr class="group cursor-pointer">
                                 <td class="data-cell--muted font-medium">
-                                    <a href="/expenses/{expense.id}" class="data-row-link">
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="data-row-link"
+                                    >
                                         {formatDate(expense.expense_date)}
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/expenses/{expense.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap"
+                                    >
                                         {expense.expense_number}
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="/expenses/{expense.id}" class="data-row-link">
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="data-row-link"
+                                    >
                                         <div class="flex flex-col">
                                             <span
                                                 class="font-medium text-text-strong text-sm"
@@ -91,22 +100,36 @@
                                 </td>
                                 <td class="text-sm text-text-strong">
                                     {#if expense.vendor_id}
-                                        <a href="/vendors/{expense.vendor_id}" class="text-primary hover:underline relative z-10">
-                                            {expense.vendor_display_name || expense.vendor_actual_name || expense.vendor_name}
+                                        <a
+                                            href="/vendors/{expense.vendor_id}"
+                                            class="text-primary hover:underline relative z-10"
+                                        >
+                                            {expense.vendor_display_name ||
+                                                expense.vendor_actual_name ||
+                                                expense.vendor_name}
                                         </a>
                                     {:else}
-                                        <a href="/expenses/{expense.id}" class="data-row-link">
+                                        <a
+                                            href="/expenses/{expense.id}"
+                                            class="data-row-link"
+                                        >
                                             {expense.vendor_name || "—"}
                                         </a>
                                     {/if}
                                 </td>
                                 <td class="data-cell--number text-text-subtle">
-                                    <a href="/expenses/{expense.id}" class="data-row-link justify-end">
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         {formatINR(expense.amount)}
                                     </a>
                                 </td>
                                 <td class="data-cell--number text-text-subtle">
-                                    <a href="/expenses/{expense.id}" class="data-row-link justify-end">
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         {formatINR(
                                             (expense.cgst || 0) +
                                                 (expense.sgst || 0) +
@@ -114,8 +137,13 @@
                                         )}
                                     </a>
                                 </td>
-                                <td class="data-cell--number font-medium text-text-strong">
-                                    <a href="/expenses/{expense.id}" class="data-row-link justify-end">
+                                <td
+                                    class="data-cell--number font-medium text-text-strong"
+                                >
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="data-row-link justify-end"
+                                    >
                                         {formatINR(expense.total)}
                                     </a>
                                 </td>

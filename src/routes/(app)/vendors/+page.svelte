@@ -27,7 +27,7 @@
                 vendor.email?.toLowerCase().includes(query) ||
                 vendor.gstin?.toLowerCase().includes(query)
             );
-        })
+        }),
     );
 
     function getStateName(code: string | null): string {
@@ -38,10 +38,16 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20">
+    <header
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+    >
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">Vendors</h1>
-            <p class="text-sm text-text-muted">Manage your suppliers and service providers</p>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                Vendors
+            </h1>
+            <p class="text-sm text-text-muted">
+                Manage your suppliers and service providers
+            </p>
         </div>
         <Button href="/vendors/new">
             <Plus class="mr-2 size-4" />
@@ -55,23 +61,38 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Users class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider">Total Vendors</span>
+                    <span class="text-xs font-medium uppercase tracking-wider"
+                        >Total Vendors</span
+                    >
                 </div>
-                <p class="text-2xl font-bold text-text-strong">{data.summary.totalVendors}</p>
+                <p class="text-2xl font-bold text-text-strong">
+                    {data.summary.totalVendors}
+                </p>
             </div>
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Building2 class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider">Active</span>
+                    <span class="text-xs font-medium uppercase tracking-wider"
+                        >Active</span
+                    >
                 </div>
-                <p class="text-2xl font-bold text-green-600">{data.summary.activeVendors}</p>
+                <p class="text-2xl font-bold text-green-600">
+                    {data.summary.activeVendors}
+                </p>
             </div>
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Wallet class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider">Total Payable</span>
+                    <span class="text-xs font-medium uppercase tracking-wider"
+                        >Total Payable</span
+                    >
                 </div>
-                <p class="text-2xl font-bold font-mono {data.summary.totalPayable > 0 ? 'text-amber-600' : 'text-text-strong'}">
+                <p
+                    class="text-2xl font-bold font-mono {data.summary
+                        .totalPayable > 0
+                        ? 'text-amber-600'
+                        : 'text-text-strong'}"
+                >
                     {formatINR(data.summary.totalPayable)}
                 </p>
             </div>
@@ -81,7 +102,9 @@
     <!-- Search Bar -->
     <div class="px-6 py-3 bg-surface-0 border-b border-border">
         <div class="relative max-w-md">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted" />
+            <Search
+                class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted"
+            />
             <Input
                 type="search"
                 placeholder="Search vendors..."
@@ -94,14 +117,24 @@
     <!-- Vendor List -->
     <div class="flex-1 overflow-y-auto bg-surface-1">
         {#if filteredVendors.length === 0}
-            <div class="flex flex-col items-center justify-center h-full text-center p-8">
+            <div
+                class="flex flex-col items-center justify-center h-full text-center p-8"
+            >
                 <Building2 class="size-16 text-text-muted/30 mb-4" />
                 {#if searchQuery}
-                    <h3 class="text-lg font-medium text-text-strong">No vendors found</h3>
-                    <p class="text-sm text-text-muted mt-1">Try a different search term</p>
+                    <h3 class="text-lg font-medium text-text-strong">
+                        No vendors found
+                    </h3>
+                    <p class="text-sm text-text-muted mt-1">
+                        Try a different search term
+                    </p>
                 {:else}
-                    <h3 class="text-lg font-medium text-text-strong">No vendors yet</h3>
-                    <p class="text-sm text-text-muted mt-1">Add your first vendor to start tracking purchases</p>
+                    <h3 class="text-lg font-medium text-text-strong">
+                        No vendors yet
+                    </h3>
+                    <p class="text-sm text-text-muted mt-1">
+                        Add your first vendor to start tracking purchases
+                    </p>
                     <Button href="/vendors/new" class="mt-4">
                         <Plus class="mr-2 size-4" />
                         Add Vendor
@@ -116,7 +149,9 @@
                         class="flex items-center gap-4 px-6 py-4 bg-surface-0 hover:bg-surface-2/50 transition-colors"
                     >
                         <!-- Avatar -->
-                        <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <div
+                            class="size-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
+                        >
                             <span class="text-lg font-semibold text-primary">
                                 {vendor.name.charAt(0).toUpperCase()}
                             </span>
@@ -125,24 +160,34 @@
                         <!-- Info -->
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
-                                <h3 class="font-semibold text-text-strong truncate">
+                                <h3
+                                    class="font-semibold text-text-strong truncate"
+                                >
                                     {vendor.display_name || vendor.name}
                                 </h3>
                                 {#if !vendor.is_active}
-                                    <span class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                                    <span
+                                        class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600"
+                                    >
                                         Inactive
                                     </span>
                                 {/if}
                                 {#if vendor.gstin}
-                                    <span class="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 font-mono">
+                                    <span
+                                        class="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 font-mono"
+                                    >
                                         GST
                                     </span>
                                 {/if}
                             </div>
                             {#if vendor.company_name}
-                                <p class="text-sm text-text-muted truncate">{vendor.company_name}</p>
+                                <p class="text-sm text-text-muted truncate">
+                                    {vendor.company_name}
+                                </p>
                             {/if}
-                            <div class="flex items-center gap-4 mt-1 text-xs text-text-muted">
+                            <div
+                                class="flex items-center gap-4 mt-1 text-xs text-text-muted"
+                            >
                                 {#if vendor.phone}
                                     <span class="flex items-center gap-1">
                                         <Phone class="size-3" />
@@ -158,7 +203,12 @@
                                 {#if vendor.city || vendor.state_code}
                                     <span class="flex items-center gap-1">
                                         <MapPin class="size-3" />
-                                        {vendor.city}{vendor.city && vendor.state_code ? ', ' : ''}{getStateName(vendor.state_code)}
+                                        {vendor.city}{vendor.city &&
+                                        vendor.state_code
+                                            ? ", "
+                                            : ""}{getStateName(
+                                            vendor.state_code,
+                                        )}
                                     </span>
                                 {/if}
                             </div>
@@ -166,8 +216,17 @@
 
                         <!-- Balance -->
                         <div class="text-right shrink-0">
-                            <p class="text-xs text-text-muted uppercase tracking-wider">Payable</p>
-                            <p class="font-mono font-semibold {(vendor.balance || 0) > 0 ? 'text-amber-600' : 'text-text-muted'}">
+                            <p
+                                class="text-xs text-text-muted uppercase tracking-wider"
+                            >
+                                Payable
+                            </p>
+                            <p
+                                class="font-mono font-semibold {(vendor.balance ||
+                                    0) > 0
+                                    ? 'text-amber-600'
+                                    : 'text-text-muted'}"
+                            >
                                 {formatINR(vendor.balance)}
                             </p>
                         </div>

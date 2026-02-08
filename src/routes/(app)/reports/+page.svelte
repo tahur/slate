@@ -143,7 +143,9 @@
                                 </p>
                             </div>
                         </div>
-                        <div class="absolute top-5 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div
+                            class="absolute top-5 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
                             <ArrowRight class="size-4 text-primary" />
                         </div>
                     </a>

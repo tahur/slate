@@ -1,13 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
-    import {
-        Plus,
-        Search,
-        Package,
-        Briefcase,
-        Layers,
-    } from "lucide-svelte";
+    import { Plus, Search, Package, Briefcase, Layers } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
@@ -18,7 +12,8 @@
     const filteredItems = $derived(
         data.items.filter((item) => {
             // Type filter
-            if (activeFilter !== "all" && item.type !== activeFilter) return false;
+            if (activeFilter !== "all" && item.type !== activeFilter)
+                return false;
 
             // Search filter
             if (searchQuery) {
