@@ -10,6 +10,7 @@
         Phone,
         Mail,
         MapPin,
+        FileText,
     } from "lucide-svelte";
     import { INDIAN_STATES } from "./new/schema";
     import { formatINR } from "$lib/utils/currency";
@@ -49,10 +50,16 @@
                 Manage your customers and their details
             </p>
         </div>
-        <Button href="/customers/new">
-            <Plus class="mr-2 size-4" />
-            New Customer
-        </Button>
+        <div class="flex items-center gap-2">
+            <Button href="/credit-notes" variant="secondary">
+                <FileText class="mr-2 size-4" />
+                Credit Notes
+            </Button>
+            <Button href="/customers/new">
+                <Plus class="mr-2 size-4" />
+                New Customer
+            </Button>
+        </div>
     </header>
 
     <!-- Summary Cards -->

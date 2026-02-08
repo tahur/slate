@@ -23,10 +23,13 @@
     <div
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
     >
-        <div class="flex items-center gap-4">
+        <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Payments Received
             </h1>
+            <p class="text-sm text-text-muted">
+                Record and manage payments you receive from customers
+            </p>
         </div>
         <Button href="/payments/new">
             <Plus class="mr-2 size-4" />
