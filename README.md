@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Slate Logo](static/logo.svg)
+<img src="./static/logo.svg" width="100" alt="Slate Logo" />
 
 **Modern, Self-Hosted Accounting for Indian Small Businesses**
 
