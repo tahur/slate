@@ -11,6 +11,8 @@
         Download,
         XCircle,
         Lock,
+        Pencil,
+        Trash2,
     } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { toast } from "svelte-sonner";
@@ -149,20 +151,80 @@
                         <Send class="mr-2 size-3" /> Issue Invoice
                     </Button>
                 </form>
-            {/if}
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={downloadPdf}
-                disabled={isDownloading}
-            >
-                <Download class="mr-2 size-3" />
-                {isDownloading ? "Generating..." : "PDF"}
-            </Button>
-            <Button variant="outline" size="sm" onclick={() => window.print()}>
-                <Printer class="mr-2 size-3" /> Print
-            </Button>
-            {#if data.invoice.status !== "draft"}
+
+                <!-- Grouped secondary actions -->
+                <div class="flex items-center">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        href="/invoices/{data.invoice.id}/edit"
+                        class="rounded-r-none border-r-0"
+                    >
+                        <Pencil class="mr-2 size-3" /> Edit
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={downloadPdf}
+                        disabled={isDownloading}
+                        class="rounded-none border-r-0"
+                    >
+                        <Download class="mr-2 size-3" />
+                        {isDownloading ? "..." : "PDF"}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => window.print()}
+                        class="rounded-l-none"
+                    >
+                        <Printer class="mr-2 size-3" /> Print
+                    </Button>
+                </div>
+
+                <!-- Delete -->
+                <form
+                    method="POST"
+                    action="?/delete"
+                    use:enhance={() => {
+                        if (
+                            !confirm(
+                                "Delete this draft invoice? This cannot be undone.",
+                            )
+                        ) {
+                            return async () => {};
+                        }
+                        return async ({ result, update }) => {
+                            await update();
+                        };
+                    }}
+                >
+                    <Button
+                        type="submit"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="text-destructive hover:bg-destructive/10"
+                    >
+                        <Trash2 class="size-4" />
+                    </Button>
+                </form>
+            {:else}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onclick={downloadPdf}
+                    disabled={isDownloading}
+                >
+                    <Download class="mr-2 size-3" />
+                    {isDownloading ? "Generating..." : "PDF"}
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onclick={() => window.print()}
+                >
+                    <Printer class="mr-2 size-3" /> Print
+                </Button>
                 <WhatsAppShareButton url={whatsappUrl} />
             {/if}
         </div>

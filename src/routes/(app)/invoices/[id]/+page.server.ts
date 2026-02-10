@@ -15,6 +15,7 @@ import {
 import { eq, and, sql, gt, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumber, postInvoiceIssuance, postPaymentReceipt, logActivity } from '$lib/server/services';
+import { calculateLineItem, calculateInvoiceTotals, type LineItem } from '../new/schema';
 
 
 
@@ -709,5 +710,189 @@ export const actions: Actions = {
             console.error('Settlement Failed:', e);
             return fail(500, { error: 'Settlement failed: ' + (e instanceof Error ? e.message : String(e)) });
         }
+    },
+
+    update: async ({ request, locals, params }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+
+        // Get the invoice
+        const invoice = await db.query.invoices.findFirst({
+            where: and(
+                eq(invoices.id, params.id),
+                eq(invoices.org_id, orgId)
+            )
+        });
+
+        if (!invoice) {
+            return fail(404, { error: 'Invoice not found' });
+        }
+
+        if (invoice.status !== 'draft') {
+            return fail(400, { error: 'Only draft invoices can be edited' });
+        }
+
+        const formData = await request.formData();
+        const customer_id = formData.get('customer_id') as string;
+        const invoice_date = formData.get('invoice_date') as string;
+        const due_date = formData.get('due_date') as string;
+        const order_number = formData.get('order_number') as string;
+        const notes = formData.get('notes') as string;
+        const terms = formData.get('terms') as string;
+
+        // Validation
+        if (!customer_id) return fail(400, { error: 'Customer is required' });
+        if (!invoice_date) return fail(400, { error: 'Invoice date is required' });
+        if (!due_date) return fail(400, { error: 'Due date is required' });
+
+        // Parse line items
+        const lineItems: LineItem[] = [];
+        let i = 0;
+        while (formData.has(`items[${i}].description`)) {
+            const description = formData.get(`items[${i}].description`) as string;
+            const hsn_code = formData.get(`items[${i}].hsn_code`) as string || '';
+            const quantity = parseFloat(formData.get(`items[${i}].quantity`) as string) || 1;
+            const unit = formData.get(`items[${i}].unit`) as string || 'nos';
+            const rate = parseFloat(formData.get(`items[${i}].rate`) as string) || 0;
+            const gst_rate = parseFloat(formData.get(`items[${i}].gst_rate`) as string) || 18;
+            const item_id = formData.get(`items[${i}].item_id`) as string || '';
+
+            if (description && description.trim()) {
+                lineItems.push({ description, hsn_code, quantity, unit, rate, gst_rate, item_id: item_id || undefined });
+            }
+            i++;
+        }
+
+        if (lineItems.length === 0) {
+            return fail(400, { error: 'At least one item with a description is required' });
+        }
+
+        // Calculate totals
+        const customer = await db.query.customers.findFirst({
+            where: eq(customers.id, customer_id),
+            columns: { state_code: true },
+        });
+        const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId),
+            columns: { state_code: true },
+        });
+        const isInterState = customer?.state_code !== org?.state_code;
+        const totals = calculateInvoiceTotals(lineItems, isInterState);
+
+        try {
+            // Update invoice record
+            await db
+                .update(invoices)
+                .set({
+                    customer_id,
+                    invoice_date,
+                    due_date,
+                    order_number: order_number || null,
+                    subtotal: totals.subtotal,
+                    taxable_amount: totals.subtotal,
+                    cgst: totals.cgst,
+                    sgst: totals.sgst,
+                    igst: totals.igst,
+                    total: totals.total,
+                    balance_due: totals.total,
+                    is_inter_state: isInterState,
+                    notes: notes || null,
+                    terms: terms || null,
+                    updated_at: new Date().toISOString(),
+                    updated_by: locals.user.id,
+                })
+                .where(eq(invoices.id, params.id));
+
+            // Delete old line items and insert new ones
+            await db.delete(invoice_items).where(eq(invoice_items.invoice_id, params.id));
+
+            for (let idx = 0; idx < lineItems.length; idx++) {
+                const item = lineItems[idx];
+                const calc = calculateLineItem(item, isInterState);
+
+                await db.insert(invoice_items).values({
+                    id: crypto.randomUUID(),
+                    invoice_id: params.id,
+                    item_id: item.item_id || null,
+                    description: item.description,
+                    hsn_code: item.hsn_code || null,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    rate: item.rate,
+                    gst_rate: item.gst_rate,
+                    cgst: calc.cgst,
+                    sgst: calc.sgst,
+                    igst: calc.igst,
+                    amount: calc.amount,
+                    total: calc.total,
+                    sort_order: idx,
+                });
+            }
+
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'invoice',
+                entityId: params.id,
+                action: 'updated',
+                changedFields: {
+                    total: { old: invoice.total, new: totals.total },
+                }
+            });
+
+        } catch (e) {
+            console.error('Invoice update error:', e);
+            return fail(500, { error: 'Failed to update invoice' });
+        }
+
+        redirect(302, `/invoices/${params.id}`);
+    },
+
+    delete: async ({ locals, params }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+
+        const invoice = await db.query.invoices.findFirst({
+            where: and(
+                eq(invoices.id, params.id),
+                eq(invoices.org_id, orgId)
+            )
+        });
+
+        if (!invoice) {
+            return fail(404, { error: 'Invoice not found' });
+        }
+
+        if (invoice.status !== 'draft') {
+            return fail(400, { error: 'Only draft invoices can be deleted' });
+        }
+
+        try {
+            // Delete line items first (cascade should handle, but explicit is safer)
+            await db.delete(invoice_items).where(eq(invoice_items.invoice_id, params.id));
+            await db.delete(invoices).where(eq(invoices.id, params.id));
+
+            await logActivity({
+                orgId,
+                userId: locals.user.id,
+                entityType: 'invoice',
+                entityId: params.id,
+                action: 'deleted',
+                changedFields: {
+                    invoice_number: { old: invoice.invoice_number },
+                }
+            });
+        } catch (e) {
+            console.error('Invoice delete error:', e);
+            return fail(500, { error: 'Failed to delete invoice' });
+        }
+
+        redirect(302, '/invoices');
     }
 };

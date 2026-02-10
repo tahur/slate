@@ -200,22 +200,27 @@ export const actions: Actions = {
 
             // Auto-generate invoice number (only after all validation passes)
             if (invoiceNumberMode !== 'manual') {
-                invoiceNumber = await getNextNumber(orgId, 'invoice');
+                if (isIssue) {
+                    invoiceNumber = await getNextNumber(orgId, 'invoice');
 
-                // Check for duplicate (shouldn't happen but safety check)
-                const duplicate = await db
-                    .select({ id: invoices.id })
-                    .from(invoices)
-                    .where(
-                        and(
-                            eq(invoices.org_id, orgId),
-                            eq(invoices.invoice_number, invoiceNumber)
+                    // Check for duplicate (shouldn't happen but safety check)
+                    const duplicate = await db
+                        .select({ id: invoices.id })
+                        .from(invoices)
+                        .where(
+                            and(
+                                eq(invoices.org_id, orgId),
+                                eq(invoices.invoice_number, invoiceNumber)
+                            )
                         )
-                    )
-                    .get();
+                        .get();
 
-                if (duplicate) {
-                    return fail(400, { error: 'Invoice number already exists' });
+                    if (duplicate) {
+                        return fail(400, { error: 'Invoice number already exists' });
+                    }
+                } else {
+                    // Drafts get a temporary number — no sequential number consumed
+                    invoiceNumber = `DRAFT-${invoiceId.substring(0, 8).toUpperCase()}`;
                 }
             }
 
