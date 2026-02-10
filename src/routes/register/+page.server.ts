@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import { generateId } from 'lucia';
-import { Argon2id } from 'oslo/password';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
 import { lucia } from '$lib/server/auth';
+import { hashPassword } from '$lib/server/password';
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
@@ -47,7 +47,7 @@ export const actions: Actions = {
         }
 
         const userId = generateId(15);
-        const hashedPassword = await new Argon2id().hash(password);
+        const hashedPassword = await hashPassword(password);
 
         try {
             await db.insert(users).values({

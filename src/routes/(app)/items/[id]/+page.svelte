@@ -182,9 +182,9 @@
                             >
                                 <Button
                                     type="submit"
-                                    variant="outline"
+                                    variant="destructive"
                                     size="sm"
-                                    class="w-full justify-start text-destructive hover:text-destructive"
+                                    class="w-full justify-start"
                                 >
                                     <Trash2 class="mr-2 size-3" />
                                     Delete Item

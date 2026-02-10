@@ -1,0 +1,30 @@
+FROM node:20-bookworm-slim AS build
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV OPENBILL_DB_PATH=/app/data/openbill.db
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/build ./build
+COPY --from=build /app/static ./static
+COPY --from=build /app/migrations ./migrations
+COPY --from=build /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=build /app/scripts/docker-entrypoint-prod.sh ./scripts/docker-entrypoint-prod.sh
+
+RUN mkdir -p /app/data
+
+EXPOSE 3000
+
+ENTRYPOINT ["./scripts/docker-entrypoint-prod.sh"]
+CMD ["node", "build"]

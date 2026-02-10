@@ -60,7 +60,7 @@
                 variant="ghost"
                 href="/vendors"
                 size="icon"
-                class="h-8 w-8 text-text-muted hover:text-text-strong"
+                class="h-8 w-8"
             >
                 <ArrowLeft class="size-4" />
             </Button>

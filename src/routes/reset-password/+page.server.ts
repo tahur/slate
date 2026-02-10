@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users, password_reset_tokens } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { hash } from '@node-rs/argon2';
+import { hashPassword } from '$lib/server/password';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
@@ -93,12 +93,7 @@ export const actions: Actions = {
         }
 
         // Hash new password
-        const passwordHash = await hash(form.data.password, {
-            memoryCost: 19456,
-            timeCost: 2,
-            outputLen: 32,
-            parallelism: 1
-        });
+        const passwordHash = await hashPassword(form.data.password);
 
         // Update user password
         await db

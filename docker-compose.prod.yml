@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3000:3000"
+    environment:
+      OPENBILL_DB_PATH: /app/data/openbill.db
+    volumes:
+      - openbill_data:/app/data
+
+volumes:
+  openbill_data:

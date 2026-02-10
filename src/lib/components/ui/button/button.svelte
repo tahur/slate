@@ -22,7 +22,6 @@
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 			size: {
-				xs: "h-6 gap-1 rounded-[4px] px-2 text-[11px] has-[>svg]:px-1.5",
 				default: "h-8 px-3 has-[>svg]:px-2.5",
 				sm: "h-7 gap-1.5 rounded-[4px] px-2.5 text-xs has-[>svg]:px-2",
 				lg: "h-9 rounded-[4px] px-4 has-[>svg]:px-3",

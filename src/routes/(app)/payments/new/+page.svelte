@@ -112,7 +112,7 @@
                 variant="ghost"
                 href="/payments"
                 size="icon"
-                class="h-8 w-8 text-text-muted hover:text-text-strong"
+                class="h-8 w-8"
             >
                 <ArrowLeft class="size-4" />
             </Button>
@@ -310,9 +310,8 @@
                             <Button
                                 type="button"
                                 variant="outline"
-                                size="xs"
+                                size="sm"
                                 onclick={autoAllocate}
-                                class="h-8 text-xs bg-surface-0"
                             >
                                 Auto-Allocate
                             </Button>
@@ -427,9 +426,8 @@
             </Button>
             <Button
                 href="/payments"
-                variant="ghost"
+                variant="destructive"
                 type="button"
-                class="text-text-muted hover:text-destructive"
             >
                 Cancel
             </Button>

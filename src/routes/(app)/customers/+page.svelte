@@ -54,7 +54,7 @@
         </div>
         <div class="flex items-center gap-2">
             <div class="flex items-center gap-1">
-                <Button href="/credit-notes" variant="secondary">
+                <Button href="/credit-notes" variant="outline" size="sm">
                     <FileText class="mr-2 size-4" />
                     Credit Notes
                 </Button>

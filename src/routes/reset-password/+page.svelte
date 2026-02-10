@@ -145,7 +145,7 @@
                 {#if success}
                     <Button
                         href="/login"
-                        class="w-full bg-brand hover:bg-brand-hover text-white shadow-glow transition-all hover:scale-[1.02]"
+                        class="w-full shadow-glow transition-all hover:scale-[1.02]"
                     >
                         Go to Login
                     </Button>
@@ -153,7 +153,7 @@
                     <Button
                         type="submit"
                         form="reset-password-form"
-                        class="w-full bg-brand hover:bg-brand-hover text-white shadow-glow transition-all hover:scale-[1.02]"
+                        class="w-full shadow-glow transition-all hover:scale-[1.02]"
                         disabled={$delayed}
                     >
                         {#if $delayed}Resetting...{:else}Reset Password{/if}
@@ -161,7 +161,7 @@
                 {:else}
                     <Button
                         href="/forgot-password"
-                        class="w-full bg-brand hover:bg-brand-hover text-white shadow-glow transition-all hover:scale-[1.02]"
+                        class="w-full shadow-glow transition-all hover:scale-[1.02]"
                     >
                         Request New Link
                     </Button>

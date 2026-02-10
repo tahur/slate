@@ -288,9 +288,8 @@
                                                 </span>
                                                 <Button
                                                     href="/customers/new"
-                                                    variant="ghost"
-                                                    size="xs"
-                                                    class="text-primary"
+                                                    variant="outline"
+                                                    size="sm"
                                                 >
                                                     New Customer
                                                 </Button>
@@ -665,10 +664,9 @@
                             <div class="border-t border-border p-3">
                                 <Button
                                     type="button"
-                                    variant="ghost"
+                                    variant="outline"
                                     size="sm"
                                     onclick={addItem}
-                                    class="text-primary hover:text-primary hover:bg-primary/5"
                                 >
                                     <Plus class="mr-1 size-4" />
                                     Add Row

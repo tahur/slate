@@ -157,6 +157,15 @@ npm run dev
 
 Open **http://localhost:5173** and complete the setup wizard!
 
+### Docker (Dev)
+
+```bash
+docker compose up --build
+```
+
+This runs the dev server on **http://localhost:5173** and creates a **fresh SQLite DB** on each container start.  
+To persist data, set `FRESH_DB=0` and remove the `tmpfs` entry in `docker-compose.yml`.
+
 ### First-Time Setup
 
 1. **Navigate to `/register`** - Create your first user account
@@ -171,13 +180,16 @@ Open **http://localhost:5173** and complete the setup wizard!
 Create a `.env` file in the root directory:
 
 ```bash
-# Database path (default: data/slate.db)
-SLATE_DB_PATH=data/slate.db
+# Database path (default: data/openbill.db)
+OPENBILL_DB_PATH=data/openbill.db
 
-# Chrome path for PDF generation (optional)
-PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-# or on macOS:
-# CHROME_PATH=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+# SMTP (optional, only needed for email)
+SMTP_HOST=
+SMTP_USER=
+SMTP_PASS=
+SMTP_PORT=587
+SMTP_FROM=
+SMTP_SECURE=false
 ```
 
 ---
@@ -260,27 +272,47 @@ npm run preview
 
 ## Deployment
 
-### Docker (Example)
+### Docker (Production)
 
 ```dockerfile
-FROM node:18-alpine
+FROM node:20-bookworm-slim AS build
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --production
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
-# Install Chromium for PDF generation
-RUN apk add --no-cache chromium
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
 
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV SLATE_DB_PATH=/app/data/slate.db
+ENV NODE_ENV=production
+ENV OPENBILL_DB_PATH=/app/data/openbill.db
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/build ./build
+COPY --from=build /app/static ./static
+
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 CMD ["node", "build"]
 ```
+
+**Notes**
+- PDF generation uses **pdfmake**, no Chromium/Puppeteer required.
+- For persistence, mount `/app/data` as a volume.
+
+### Docker Compose (Production)
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+This runs on **http://localhost:3000** and persists data via the `openbill_data` volume.
 
 ### VPS / Bare Metal
 

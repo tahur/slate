@@ -16,6 +16,8 @@
     } from "lucide-svelte";
     import { enhance } from "$app/forms";
     import { toast } from "svelte-sonner";
+    import * as AlertDialog from "$lib/components/ui/alert-dialog";
+    import * as ButtonGroup from "$lib/components/ui/button-group";
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
     import { getInvoiceWhatsAppUrl } from "$lib/utils/whatsapp";
     import { page } from "$app/stores";
@@ -152,62 +154,70 @@
                     </Button>
                 </form>
 
-                <!-- Grouped secondary actions -->
-                <div class="flex items-center">
+                <!-- Actions -->
+                <ButtonGroup.Root>
                     <Button
                         variant="outline"
                         size="sm"
                         href="/invoices/{data.invoice.id}/edit"
-                        class="rounded-r-none border-r-0"
                     >
-                        <Pencil class="mr-2 size-3" /> Edit
+                        <Pencil class="size-4 mr-2" />
+                        Edit
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
                         onclick={downloadPdf}
                         disabled={isDownloading}
-                        class="rounded-none border-r-0"
                     >
-                        <Download class="mr-2 size-3" />
+                        <Download class="size-4 mr-2" />
                         {isDownloading ? "..." : "PDF"}
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
                         onclick={() => window.print()}
-                        class="rounded-l-none"
                     >
-                        <Printer class="mr-2 size-3" /> Print
+                        <Printer class="size-4 mr-2" />
+                        Print
                     </Button>
-                </div>
+                </ButtonGroup.Root>
 
-                <!-- Delete -->
-                <form
-                    method="POST"
-                    action="?/delete"
-                    use:enhance={() => {
-                        if (
-                            !confirm(
-                                "Delete this draft invoice? This cannot be undone.",
-                            )
-                        ) {
-                            return async () => {};
-                        }
-                        return async ({ result, update }) => {
-                            await update();
-                        };
-                    }}
-                >
-                    <Button
-                        type="submit"
-                        variant="ghost"
-                        size="icon-sm"
-                        class="text-destructive hover:bg-destructive/10"
-                    >
-                        <Trash2 class="size-4" />
-                    </Button>
-                </form>
+                <!-- Delete with AlertDialog -->
+                <AlertDialog.Root>
+                    <AlertDialog.Trigger>
+                        <Button variant="destructive" size="icon-sm">
+                            <Trash2 class="size-4" />
+                        </Button>
+                    </AlertDialog.Trigger>
+                    <AlertDialog.Content>
+                        <AlertDialog.Header>
+                            <AlertDialog.Title
+                                >Delete draft invoice?</AlertDialog.Title
+                            >
+                            <AlertDialog.Description>
+                                This action cannot be undone. This will
+                                permanently delete the draft invoice
+                                <span
+                                    class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded text-slate-900"
+                                    >{data.invoice.invoice_number}</span
+                                >
+                                from the database.
+                            </AlertDialog.Description>
+                        </AlertDialog.Header>
+                        <AlertDialog.Footer>
+                            <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                            <form method="POST" action="?/delete" use:enhance>
+                                <AlertDialog.Action
+                                    type="submit"
+                                    variant="destructive"
+                                >
+                                    Delete
+                                </AlertDialog.Action>
+                            </form>
+                        </AlertDialog.Footer>
+                    </AlertDialog.Content>
+                </AlertDialog.Root>
             {:else}
                 <Button
                     variant="outline"

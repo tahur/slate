@@ -147,12 +147,12 @@
             </CardContent>
             <CardFooter class="flex flex-col gap-3">
                 {#if !success && data.emailConfigured}
-                    <Button
-                        type="submit"
-                        form="forgot-password-form"
-                        class="w-full bg-brand hover:bg-brand-hover text-white shadow-glow transition-all hover:scale-[1.02]"
-                        disabled={$delayed}
-                    >
+					<Button
+						type="submit"
+						form="forgot-password-form"
+						class="w-full shadow-glow transition-all hover:scale-[1.02]"
+						disabled={$delayed}
+					>
                         {#if $delayed}Sending...{:else}Send Reset Link{/if}
                     </Button>
                 {/if}
