@@ -6,6 +6,8 @@ services:
     ports:
       - "3000:3000"
     environment:
+      PORT: 3000
+      ORIGIN: http://localhost:3000
       OPENBILL_DB_PATH: /app/data/openbill.db
     volumes:
       - openbill_data:/app/data
