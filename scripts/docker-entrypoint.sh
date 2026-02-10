@@ -10,6 +10,7 @@ if [ "${FRESH_DB:-0}" = "1" ]; then
   rm -f "$DB_PATH" "${DB_PATH}-wal" "${DB_PATH}-shm"
 fi
 
+npm run prepare
 npm run db:push
 
 exec "$@"
