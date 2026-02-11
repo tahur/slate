@@ -27,8 +27,11 @@ sqlite.pragma('journal_mode = WAL');
 // Enable foreign key constraints (part of Consistency)
 sqlite.pragma('foreign_keys = ON');
 
-// Ensure synchronous mode for durability (FULL = safest)
-// FULL: Wait for data to be written to disk before continuing
-sqlite.pragma('synchronous = FULL');
+// NORMAL is safe with WAL mode — data is synced at checkpoints
+// FULL causes excessive blocking on cloud disk I/O (e.g. Fly.io)
+sqlite.pragma('synchronous = NORMAL');
+
+// Wait up to 5s when the DB is locked instead of failing immediately
+sqlite.pragma('busy_timeout = 5000');
 
 export const db = drizzle(sqlite, { schema });

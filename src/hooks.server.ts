@@ -16,7 +16,21 @@ export const handle: Handle = async ({ event, resolve }) => {
         return resolve(event);
     }
 
-    const { session, user } = await lucia.validateSession(sessionId);
+    let session = null;
+    let user = null;
+
+    try {
+        const result = await lucia.validateSession(sessionId);
+        session = result.session;
+        user = result.user;
+    } catch (e) {
+        console.error('Session validation failed:', e);
+        // DB hiccup — don't wipe the cookie, just treat as unauthenticated for this request
+        event.locals.user = null;
+        event.locals.session = null;
+        return resolve(event);
+    }
+
     if (session && session.fresh) {
         const sessionCookie = lucia.createSessionCookie(session.id);
         // sveltekit types deviates from the cookie api
