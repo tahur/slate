@@ -1,17 +1,15 @@
 {
-    "$schema": "https://ui.shadcn.com/schema.json",
+    "$schema": "https://next.shadcn-svelte.com/schema.json",
     "style": "default",
-    "rsc": false,
-    "tsx": true,
     "tailwind": {
         "config": "tailwind.config.ts",
         "css": "src/app.css",
-        "baseColor": "slate",
-        "cssVariables": true,
-        "prefix": ""
+        "baseColor": "slate"
     },
     "aliases": {
-        "components": "$lib/components/ui",
-        "utils": "$lib/utils"
-    }
+        "components": "$lib/components",
+        "utils": "$lib/utils",
+        "ui": "$lib/components/ui"
+    },
+    "typescript": true
 }

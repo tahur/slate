@@ -1,9 +1,9 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
-    import { Card } from "$lib/components/ui/card";
-    import { Plus, FileText, Info } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
+    import { Plus, FileText } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
@@ -64,40 +64,40 @@
             <div
                 class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
             >
-                <table class="data-table w-full">
-                    <thead>
-                        <tr>
-                            <th class="w-28">Date</th>
-                            <th>Invoice #</th>
-                            <th>Customer Name</th>
-                            <th class="text-right w-28">Status</th>
-                            <th class="text-right w-32">Amount</th>
-                            <th class="text-right w-32">Balance Due</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHeader>
+                        <TableRow class="hover:bg-transparent">
+                            <TableHead class="w-28">Date</TableHead>
+                            <TableHead>Invoice #</TableHead>
+                            <TableHead>Customer Name</TableHead>
+                            <TableHead class="text-right w-28">Status</TableHead>
+                            <TableHead class="text-right w-32">Amount</TableHead>
+                            <TableHead class="text-right w-32">Balance Due</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {#each data.invoices as invoice}
-                            <tr class="group cursor-pointer">
-                                <td class="data-cell--muted font-medium">
+                            <TableRow class="group cursor-pointer">
+                                <TableCell class="text-text-muted font-medium">
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         {formatDate(invoice.invoice_date)}
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap"
+                                        class="flex items-center w-full h-full text-inherit no-underline font-mono text-sm font-medium text-primary whitespace-nowrap"
                                     >
                                         {invoice.invoice_number}
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         <div class="flex flex-col">
                                             <span
@@ -114,11 +114,11 @@
                                             {/if}
                                         </div>
                                     </a>
-                                </td>
-                                <td class="text-right">
+                                </TableCell>
+                                <TableCell class="text-right">
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         <StatusBadge
                                             status={invoice.status.replace(
@@ -127,32 +127,32 @@
                                             )}
                                         />
                                     </a>
-                                </td>
-                                <td class="data-cell--number text-text-strong">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         {formatINR(invoice.total)}
                                     </a>
-                                </td>
-                                <td
-                                    class="data-cell--number font-bold {invoice.balance_due >
+                                </TableCell>
+                                <TableCell
+                                    class="text-right font-mono tabular-nums text-[0.8125rem] font-bold {invoice.balance_due >
                                     0
                                         ? 'text-text-strong'
                                         : 'text-text-muted'}"
                                 >
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         {formatINR(invoice.balance_due)}
                                     </a>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         {/each}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
         {/if}
     </div>

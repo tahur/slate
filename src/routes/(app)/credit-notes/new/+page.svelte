@@ -64,7 +64,7 @@
                 <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Customer -->
                     <div class="space-y-2">
-                        <Label for="customer_id" class="form-label"
+                        <Label for="customer_id" variant="form"
                             >Customer <span class="text-destructive">*</span
                             ></Label
                         >
@@ -86,7 +86,7 @@
                     <div class="grid gap-4 grid-cols-2">
                         <!-- Date -->
                         <div class="space-y-2">
-                            <Label for="date" class="form-label"
+                            <Label for="date" variant="form"
                                 >Date <span class="text-destructive">*</span
                                 ></Label
                             >
@@ -100,7 +100,7 @@
 
                         <!-- Number -->
                         <div class="space-y-2">
-                            <Label for="number" class="form-label"
+                            <Label for="number" variant="form"
                                 >Credit Note #</Label
                             >
                             <Input
@@ -114,7 +114,7 @@
 
                     <!-- Reason -->
                     <div class="space-y-2">
-                        <Label for="reason" class="form-label"
+                        <Label for="reason" variant="form"
                             >Reason <span class="text-destructive">*</span
                             ></Label
                         >
@@ -134,7 +134,7 @@
 
                     <!-- Notes -->
                     <div class="space-y-2">
-                        <Label for="notes" class="form-label">Notes</Label>
+                        <Label for="notes" variant="form">Notes</Label>
                         <textarea
                             name="notes"
                             rows="3"
@@ -158,7 +158,7 @@
 
                     <!-- Amount -->
                     <div class="space-y-2">
-                        <Label for="amount" class="form-label"
+                        <Label for="amount" variant="form"
                             >Credit Amount <span class="text-destructive"
                                 >*</span
                             ></Label

@@ -14,6 +14,7 @@ if (!fs.existsSync(dbDir)) {
 const sqlite = new Database(dbPath);
 const db = drizzle(sqlite);
 
-migrate(db, { migrationsFolder: 'migrations' });
+const migrationsFolder = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', 'migrations');
+migrate(db, { migrationsFolder });
 
 sqlite.close();

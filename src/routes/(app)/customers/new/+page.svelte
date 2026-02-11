@@ -60,7 +60,7 @@
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
-                                <Label for="name" class="form-label">
+                                <Label for="name" variant="form">
                                     Customer Name <span class="text-destructive"
                                         >*</span
                                     >
@@ -82,7 +82,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="company_name" class="form-label"
+                                <Label for="company_name" variant="form"
                                     >Company Name</Label
                                 >
                                 <Input
@@ -95,7 +95,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="email" class="form-label"
+                                <Label for="email" variant="form"
                                     >Email</Label
                                 >
                                 <Input
@@ -116,7 +116,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="phone" class="form-label"
+                                <Label for="phone" variant="form"
                                     >Phone</Label
                                 >
                                 <Input
@@ -147,7 +147,7 @@
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="billing_address" class="form-label"
+                                <Label for="billing_address" variant="form"
                                     >Billing Address</Label
                                 >
                                 <Input
@@ -160,7 +160,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="city" class="form-label">City</Label
+                                <Label for="city" variant="form">City</Label
                                 >
                                 <Input
                                     id="city"
@@ -172,7 +172,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="state_code" class="form-label"
+                                <Label for="state_code" variant="form"
                                     >State</Label
                                 >
                                 <Select.Root
@@ -206,7 +206,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="pincode" class="form-label"
+                                <Label for="pincode" variant="form"
                                     >Pincode</Label
                                 >
                                 <Input
@@ -243,7 +243,7 @@
 
                         <div class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="gst_treatment" class="form-label"
+                                <Label for="gst_treatment" variant="form"
                                     >GST Treatment</Label
                                 >
                                 <Select.Root
@@ -271,7 +271,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="gstin" class="form-label"
+                                <Label for="gstin" variant="form"
                                     >GSTIN</Label
                                 >
                                 <Input
@@ -291,7 +291,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="payment_terms" class="form-label"
+                                <Label for="payment_terms" variant="form"
                                     >Payment Terms (Days)</Label
                                 >
                                 <Input

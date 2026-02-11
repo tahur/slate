@@ -1,5 +1,7 @@
 <script lang="ts">
     import { BookOpen } from "lucide-svelte";
+    import { Badge } from "$lib/components/ui/badge";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
@@ -65,60 +67,54 @@
                         <div
                             class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
                         >
-                            <table class="data-table w-full">
-                                <thead>
-                                    <tr>
-                                        <th class="w-28">Code</th>
-                                        <th>Account Name</th>
-                                        <th class="w-28">Type</th>
-                                        <th class="text-right w-36">Balance</th>
-                                        <th class="text-right w-24">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow class="hover:bg-transparent">
+                                        <TableHead class="w-28">Code</TableHead>
+                                        <TableHead>Account Name</TableHead>
+                                        <TableHead class="w-28">Type</TableHead>
+                                        <TableHead class="text-right w-36">Balance</TableHead>
+                                        <TableHead class="text-right w-24">Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {#each group.accounts as account}
-                                        <tr
-                                            class="group hover:bg-surface-2 transition-colors"
-                                        >
-                                            <td>
+                                        <TableRow>
+                                            <TableCell>
                                                 <span
                                                     class="font-mono text-sm font-medium text-primary"
                                                 >
                                                     {account.account_code}
                                                 </span>
-                                            </td>
-                                            <td>
+                                            </TableCell>
+                                            <TableCell>
                                                 <span
                                                     class="text-sm font-semibold text-text-strong"
                                                     >{account.account_name}</span
                                                 >
-                                            </td>
-                                            <td>
+                                            </TableCell>
+                                            <TableCell>
                                                 <span
                                                     class="text-sm text-text-subtle capitalize"
                                                     >{account.account_type}</span
                                                 >
-                                            </td>
-                                            <td
-                                                class="data-cell--number text-text-strong"
+                                            </TableCell>
+                                            <TableCell
+                                                class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong"
                                             >
                                                 {formatINR(account.balance)}
-                                            </td>
-                                            <td class="text-right">
-                                                <span
-                                                    class="status-pill {account.is_active
-                                                        ? 'status-pill--positive'
-                                                        : 'status-pill--negative'}"
-                                                >
+                                            </TableCell>
+                                            <TableCell class="text-right">
+                                                <Badge variant={account.is_active ? "success" : "destructive"}>
                                                     {account.is_active
                                                         ? "active"
                                                         : "inactive"}
-                                                </span>
-                                            </td>
-                                        </tr>
+                                                </Badge>
+                                            </TableCell>
+                                        </TableRow>
                                     {/each}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
                 {/each}

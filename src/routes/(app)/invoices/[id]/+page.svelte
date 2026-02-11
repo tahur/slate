@@ -219,23 +219,25 @@
                     </AlertDialog.Content>
                 </AlertDialog.Root>
             {:else}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={downloadPdf}
-                    disabled={isDownloading}
-                >
-                    <Download class="mr-2 size-3" />
-                    {isDownloading ? "Generating..." : "PDF"}
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={() => window.print()}
-                >
-                    <Printer class="mr-2 size-3" /> Print
-                </Button>
-                <WhatsAppShareButton url={whatsappUrl} />
+                <ButtonGroup.Root>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={downloadPdf}
+                        disabled={isDownloading}
+                    >
+                        <Download class="mr-2 size-3" />
+                        {isDownloading ? "Generating..." : "PDF"}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => window.print()}
+                    >
+                        <Printer class="mr-2 size-3" /> Print
+                    </Button>
+                    <WhatsAppShareButton url={whatsappUrl} />
+                </ButtonGroup.Root>
             {/if}
         </div>
     </header>
@@ -729,7 +731,7 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
-                                <Label for="payment_amount" class="form-label"
+                                <Label for="payment_amount" variant="form"
                                     >Amount</Label
                                 >
                                 <Input
@@ -742,7 +744,7 @@
                                 />
                             </div>
                             <div class="space-y-1.5">
-                                <Label for="payment_date" class="form-label"
+                                <Label for="payment_date" variant="form"
                                     >Date</Label
                                 >
                                 <Input
@@ -757,7 +759,7 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
-                                <Label for="payment_mode" class="form-label"
+                                <Label for="payment_mode" variant="form"
                                     >Mode</Label
                                 >
                                 <select
@@ -774,7 +776,7 @@
                             <div class="space-y-1.5">
                                 <Label
                                     for="payment_reference"
-                                    class="form-label">Ref (Opt)</Label
+                                    variant="form">Ref (Opt)</Label
                                 >
                                 <Input
                                     id="payment_reference"

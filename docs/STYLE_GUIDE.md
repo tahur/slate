@@ -138,7 +138,7 @@ These exist **only** for shadcn-svelte components (`Button`, `Input`, `Badge`, `
 | Page title | `text-xl font-bold tracking-tight text-text-strong` | All pages, including dashboard |
 | Page subtitle | `text-sm text-text-muted` | Below page title |
 | Section heading | `text-xs font-semibold uppercase tracking-wider text-text-muted` | Card headers, tab labels |
-| Table header | (automatic via `data-table`) | Do not style manually |
+| Table header | (automatic via `<TableHead>` component) | Do not style manually |
 | Body text | `text-sm text-text-strong` | Default content |
 | Small metadata | `text-xs text-text-muted` | Timestamps, refs, secondary info |
 | Paper views only | `text-[10px] font-bold uppercase tracking-wider` | Invoice/receipt print layout only |
@@ -245,26 +245,37 @@ Page titles are owned by each page's own header, not the layout header.
 
 ### 4.1 Tables
 
-**Always** use the `data-table` CSS class:
+**Always** use the shadcn `<Table>` component from `$lib/components/ui/table`:
 
 ```svelte
+<script>
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
+</script>
+
 <div class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0">
-    <table class="data-table w-full">
-        <thead><tr><th>Column</th></tr></thead>
-        <tbody>
-            <tr class="group cursor-pointer">
-                <td class="data-cell--muted font-medium">
-                    <a href="/item/{id}" class="data-row-link">{value}</a>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <Table>
+        <TableHeader>
+            <TableRow class="hover:bg-transparent">
+                <TableHead>Column</TableHead>
+            </TableRow>
+        </TableHeader>
+        <TableBody>
+            <TableRow class="group cursor-pointer">
+                <TableCell class="text-text-muted font-medium">
+                    <a href="/item/{id}" class="flex items-center w-full h-full text-inherit no-underline">{value}</a>
+                </TableCell>
+            </TableRow>
+        </TableBody>
+    </Table>
 </div>
 ```
 
-Cell classes: `data-cell--muted`, `data-cell--number`, `data-cell--primary`
+Cell variant classes (use Tailwind directly on `<TableCell>`):
+- Muted text: `text-text-muted`
+- Number cell: `text-right font-mono tabular-nums text-[0.8125rem]`
+- Primary cell: `text-primary font-semibold`
 
-> This applies to **all** tables: list pages, detail page tabs, reports. Do NOT write manual tailwind table styles.
+> This applies to **all** tables: list pages, detail page tabs, reports. Do NOT write manual tailwind table styles or use raw `<table>` elements.
 
 ### 4.2 Empty States
 
@@ -330,17 +341,18 @@ If you need a new utility (e.g., `getStateName`, `getModeLabel`), add it to `src
 | Class | Use for |
 |-------|---------|
 | `page-full-bleed` | Full-height page wrapper (cancels layout padding) |
-| `data-table` | All data tables |
-| `data-cell--muted` | Muted table cell text |
-| `data-cell--number` | Right-aligned mono numbers |
-| `data-cell--primary` | Primary-colored cell text |
-| `data-row-link` | Full-cell clickable link |
 | `action-bar` | Sticky bottom form footer |
-| `form-label` | Uppercase form labels |
-| `status-pill` | Status badge base (use with `--positive`, `--warning`, `--info`, `--negative`) |
 | `print-hide` | Hide element when printing |
 | `print-sheet` | Print-optimized container |
 | `font-display` | Space Grotesk font |
+
+**Components (use instead of CSS classes):**
+
+| Component | Import | Replaces |
+|-----------|--------|----------|
+| `<Table>`, `<TableHeader>`, etc. | `$lib/components/ui/table` | `data-table` CSS class |
+| `<Badge variant="success">` | `$lib/components/ui/badge` | `status-pill` CSS class |
+| `<Label variant="form">` | `$lib/components/ui/label` | `form-label` CSS class |
 
 ---
 
@@ -376,7 +388,7 @@ Before submitting, verify:
 - [ ] No inline `formatCurrency` / `formatDate` — imported from `$lib/utils`
 - [ ] No raw Tailwind palette colors (`slate-*`, `gray-*`, `zinc-*`) in app pages
 - [ ] Buttons use component variants, not explicit color classes
-- [ ] Tables use `data-table` class
+- [ ] Tables use `<Table>` component from `$lib/components/ui/table`
 - [ ] Empty state follows section 4.2 pattern
 - [ ] Monetary amounts use `font-mono`
 - [ ] Text colors use only `text-strong`, `text-subtle`, `text-muted` tokens
@@ -397,5 +409,4 @@ These are existing violations that should be fixed incrementally:
 6. **`--color-border-dashed`** is defined but unused — remove
 7. **`hover:bg-secondary-hover`** in `button.svelte` references undefined token — fix
 8. **Invoices/Payments/Expenses list pages** still use `flex flex-col h-full` — migrate to `page-full-bleed`
-9. **Detail page tab tables** use manual tailwind instead of `data-table` class
-10. **Some list page buttons** have explicit `bg-primary text-primary-foreground` — remove
+9. **Some list page buttons** have explicit `bg-primary text-primary-foreground` — remove

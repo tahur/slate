@@ -96,7 +96,7 @@
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
-                                <Label for="name" class="form-label">
+                                <Label for="name" variant="form">
                                     Name <span class="text-destructive">*</span>
                                 </Label>
                                 <Input
@@ -116,7 +116,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="sku" class="form-label"
+                                <Label for="sku" variant="form"
                                     >SKU / Barcode</Label
                                 >
                                 <Input
@@ -129,7 +129,7 @@
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="description" class="form-label"
+                                <Label for="description" variant="form"
                                     >Description</Label
                                 >
                                 <Input
@@ -158,7 +158,7 @@
 
                         <div class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="hsn_code" class="form-label"
+                                <Label for="hsn_code" variant="form"
                                     >HSN/SAC Code</Label
                                 >
                                 <Input
@@ -171,7 +171,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="gst_rate" class="form-label"
+                                <Label for="gst_rate" variant="form"
                                     >GST Rate</Label
                                 >
                                 <Select.Root
@@ -211,7 +211,7 @@
 
                         <div class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="rate" class="form-label"
+                                <Label for="rate" variant="form"
                                     >Default Rate</Label
                                 >
                                 <Input
@@ -227,7 +227,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="unit" class="form-label">Unit</Label
+                                <Label for="unit" variant="form">Unit</Label
                                 >
                                 <Select.Root
                                     type="single"

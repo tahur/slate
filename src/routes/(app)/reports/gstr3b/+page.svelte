@@ -3,6 +3,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter } from "$lib/components/ui/table";
     import {
         ArrowLeft,
         RefreshCw,
@@ -72,11 +73,11 @@
     <Card class="p-4">
         <div class="flex items-end gap-4 flex-wrap">
             <div class="space-y-2">
-                <Label for="from" class="form-label">From</Label>
+                <Label for="from" variant="form">From</Label>
                 <Input type="date" id="from" bind:value={startDate} />
             </div>
             <div class="space-y-2">
-                <Label for="to" class="form-label">To</Label>
+                <Label for="to" variant="form">To</Label>
                 <Input type="date" id="to" bind:value={endDate} />
             </div>
             <Button onclick={applyFilter}>
@@ -159,57 +160,57 @@
                 </p>
             {:else}
                 <div class="overflow-x-auto">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Vendor</th>
-                                <th>GSTIN</th>
-                                <th class="text-center">Expenses</th>
-                                <th class="text-right">Amount</th>
-                                <th class="text-right">CGST</th>
-                                <th class="text-right">SGST</th>
-                                <th class="text-right">IGST</th>
-                                <th class="text-right">Total Tax</th>
-                                <th class="text-center">ITC</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <Table>
+                        <TableHeader>
+                            <TableRow class="hover:bg-transparent">
+                                <TableHead>Vendor</TableHead>
+                                <TableHead>GSTIN</TableHead>
+                                <TableHead class="text-center">Expenses</TableHead>
+                                <TableHead class="text-right">Amount</TableHead>
+                                <TableHead class="text-right">CGST</TableHead>
+                                <TableHead class="text-right">SGST</TableHead>
+                                <TableHead class="text-right">IGST</TableHead>
+                                <TableHead class="text-right">Total Tax</TableHead>
+                                <TableHead class="text-center">ITC</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {#each data.data.vendorWise as vendor}
-                                <tr>
-                                    <td class="font-medium">{vendor.vendorName}</td>
-                                    <td class="font-mono text-xs data-cell--muted">
+                                <TableRow>
+                                    <TableCell class="font-medium">{vendor.vendorName}</TableCell>
+                                    <TableCell class="font-mono text-xs text-text-muted">
                                         {vendor.gstin || "-"}
-                                    </td>
-                                    <td class="text-center">{vendor.expenseCount}</td>
-                                    <td class="data-cell--number">{formatINR(vendor.totalAmount)}</td>
-                                    <td class="data-cell--number">{formatINR(vendor.cgst)}</td>
-                                    <td class="data-cell--number">{formatINR(vendor.sgst)}</td>
-                                    <td class="data-cell--number">{formatINR(vendor.igst)}</td>
-                                    <td class="data-cell--number font-medium">{formatINR(vendor.totalTax)}</td>
-                                    <td class="text-center">
+                                    </TableCell>
+                                    <TableCell class="text-center">{vendor.expenseCount}</TableCell>
+                                    <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(vendor.totalAmount)}</TableCell>
+                                    <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(vendor.cgst)}</TableCell>
+                                    <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(vendor.sgst)}</TableCell>
+                                    <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(vendor.igst)}</TableCell>
+                                    <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-medium">{formatINR(vendor.totalTax)}</TableCell>
+                                    <TableCell class="text-center">
                                         {#if vendor.isRegistered}
                                             <CheckCircle2 class="size-4 text-positive inline" />
                                         {:else}
                                             <XCircle class="size-4 text-negative inline" />
                                         {/if}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             {/each}
-                        </tbody>
-                        <tfoot>
-                            <tr class="border-t-2 border-border font-semibold bg-surface-1">
-                                <td class="px-4 py-3">Total</td>
-                                <td></td>
-                                <td class="text-center px-4 py-3">{data.data.summary.totalPurchases}</td>
-                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.summary.totalExpenseValue)}</td>
-                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.cgst, 0))}</td>
-                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.sgst, 0))}</td>
-                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.igst, 0))}</td>
-                                <td class="data-cell--number px-4 py-3">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.totalTax, 0))}</td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                        </TableBody>
+                        <TableFooter>
+                            <TableRow class="hover:bg-transparent">
+                                <TableCell class="font-semibold">Total</TableCell>
+                                <TableCell></TableCell>
+                                <TableCell class="text-center font-semibold">{data.data.summary.totalPurchases}</TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-semibold">{formatINR(data.data.summary.totalExpenseValue)}</TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-semibold">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.cgst, 0))}</TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-semibold">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.sgst, 0))}</TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-semibold">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.igst, 0))}</TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-semibold">{formatINR(data.data.vendorWise.reduce((sum, v) => sum + v.totalTax, 0))}</TableCell>
+                                <TableCell></TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
                 </div>
             {/if}
         </div>

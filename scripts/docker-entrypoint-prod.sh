@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-node scripts/migrate.mjs
+echo "Running database migrations..."
+node /app/scripts/migrate.mjs
 
+echo "Starting application..."
 exec "$@"

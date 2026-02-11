@@ -3,6 +3,8 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import { Badge } from "$lib/components/ui/badge";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import { FileText, RefreshCw, Lock } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
@@ -16,16 +18,16 @@
         goto(`/journals?from=${startDate}&to=${endDate}`);
     }
 
-    function getStatusClass(status: string | null): string {
+    function getStatusVariant(status: string | null): "success" | "warning" | "destructive" {
         switch (status) {
             case "posted":
-                return "status-pill--positive";
+                return "success";
             case "draft":
-                return "status-pill--warning";
+                return "warning";
             case "reversed":
-                return "status-pill--negative";
+                return "destructive";
             default:
-                return "status-pill--warning";
+                return "warning";
         }
     }
 </script>
@@ -86,68 +88,64 @@
             <div
                 class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
             >
-                <table class="data-table w-full">
-                    <thead>
-                        <tr>
-                            <th class="w-32">Date</th>
-                            <th class="w-36">Entry #</th>
-                            <th class="w-32">Ref Type</th>
-                            <th>Narration</th>
-                            <th class="text-right w-32">Debit</th>
-                            <th class="text-right w-32">Credit</th>
-                            <th class="text-right w-24">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHeader>
+                        <TableRow class="hover:bg-transparent">
+                            <TableHead class="w-32">Date</TableHead>
+                            <TableHead class="w-36">Entry #</TableHead>
+                            <TableHead class="w-32">Ref Type</TableHead>
+                            <TableHead>Narration</TableHead>
+                            <TableHead class="text-right w-32">Debit</TableHead>
+                            <TableHead class="text-right w-32">Credit</TableHead>
+                            <TableHead class="text-right w-24">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {#each data.journals as entry}
-                            <tr
-                                class="group hover:bg-surface-2 transition-colors"
-                            >
-                                <td class="data-cell--muted font-medium">
+                            <TableRow>
+                                <TableCell class="text-text-muted font-medium">
                                     {formatDate(entry.entry_date)}
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <span
                                         class="font-mono text-sm font-medium text-primary"
                                     >
                                         {entry.entry_number}
                                     </span>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <span
                                         class="text-sm text-text-subtle capitalize"
                                         >{entry.reference_type}</span
                                     >
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <span class="text-sm text-text-strong"
                                         >{entry.narration || "—"}</span
                                     >
-                                </td>
-                                <td class="data-cell--number text-text-strong">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
                                     {formatINR(entry.total_debit)}
-                                </td>
-                                <td class="data-cell--number text-text-strong">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
                                     {formatINR(entry.total_credit)}
-                                </td>
-                                <td class="text-right">
+                                </TableCell>
+                                <TableCell class="text-right">
                                     <div class="flex items-center justify-end gap-1.5">
-                                        <span
-                                            class="status-pill {getStatusClass(entry.status)}"
-                                        >
+                                        <Badge variant={getStatusVariant(entry.status)} class="capitalize">
                                             {entry.status}
-                                        </span>
+                                        </Badge>
                                         {#if entry.status === "posted"}
                                             <span class="text-text-muted" title="This journal entry is immutable">
                                                 <Lock class="size-3" />
                                             </span>
                                         {/if}
                                     </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         {/each}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
         {/if}
     </div>

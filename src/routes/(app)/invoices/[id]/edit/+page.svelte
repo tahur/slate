@@ -226,7 +226,7 @@
                         <div class="grid gap-6 md:grid-cols-2">
                             <!-- Customer Selector -->
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="customer_id" class="form-label">
+                                <Label for="customer_id" variant="form">
                                     Customer <span class="text-destructive"
                                         >*</span
                                     >
@@ -373,7 +373,7 @@
 
                             <!-- Invoice Number (read-only for edits) -->
                             <div class="space-y-2">
-                                <Label for="invoice_number" class="form-label"
+                                <Label for="invoice_number" variant="form"
                                     >Invoice #</Label
                                 >
                                 <Input
@@ -386,7 +386,7 @@
 
                             <!-- Order Number -->
                             <div class="space-y-2">
-                                <Label for="order_number" class="form-label"
+                                <Label for="order_number" variant="form"
                                     >Order / PO Number</Label
                                 >
                                 <Input
@@ -410,7 +410,7 @@
 
                         <div class="grid gap-6 md:grid-cols-3">
                             <div class="space-y-2">
-                                <Label for="invoice_date" class="form-label">
+                                <Label for="invoice_date" variant="form">
                                     Invoice Date <span class="text-destructive"
                                         >*</span
                                     >
@@ -424,7 +424,7 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="terms" class="form-label"
+                                <Label for="terms" variant="form"
                                     >Terms</Label
                                 >
                                 <Select.Root
@@ -458,7 +458,7 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="due_date" class="form-label">
+                                <Label for="due_date" variant="form">
                                     Due Date <span class="text-destructive"
                                         >*</span
                                     >

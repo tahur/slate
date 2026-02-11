@@ -85,7 +85,7 @@
                     <!-- Date & Category Row -->
                     <div class="grid gap-4 grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="expense_date" class="form-label"
+                            <Label for="expense_date" variant="form"
                                 >Date <span class="text-destructive">*</span
                                 ></Label
                             >
@@ -99,7 +99,7 @@
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="category" class="form-label"
+                            <Label for="category" variant="form"
                                 >Category <span class="text-destructive">*</span
                                 ></Label
                             >
@@ -122,7 +122,7 @@
                     <!-- Vendor -->
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                            <Label for="vendor_id" class="form-label"
+                            <Label for="vendor_id" variant="form"
                                 >Vendor</Label
                             >
                             <a
@@ -170,7 +170,7 @@
 
                     <!-- Description -->
                     <div class="space-y-2">
-                        <Label for="description" class="form-label"
+                        <Label for="description" variant="form"
                             >Description</Label
                         >
                         <textarea
@@ -185,7 +185,7 @@
                     <div class="grid gap-4 grid-cols-2">
                         <!-- Paid Through -->
                         <div class="space-y-2">
-                            <Label for="paid_through" class="form-label"
+                            <Label for="paid_through" variant="form"
                                 >Paid Through <span class="text-destructive"
                                     >*</span
                                 ></Label
@@ -206,7 +206,7 @@
 
                         <!-- Reference -->
                         <div class="space-y-2">
-                            <Label for="reference" class="form-label"
+                            <Label for="reference" variant="form"
                                 >Reference</Label
                             >
                             <Input
@@ -233,7 +233,7 @@
 
                     <!-- Amount -->
                     <div class="space-y-2">
-                        <Label for="amount" class="form-label"
+                        <Label for="amount" variant="form"
                             >Amount (excl. Tax) <span class="text-destructive"
                                 >*</span
                             ></Label
@@ -255,7 +255,7 @@
                         class="p-4 rounded-lg bg-surface-1 border border-border space-y-4"
                     >
                         <div class="space-y-2">
-                            <Label for="gst_rate" class="form-label"
+                            <Label for="gst_rate" variant="form"
                                 >Tax Rate</Label
                             >
                             <select

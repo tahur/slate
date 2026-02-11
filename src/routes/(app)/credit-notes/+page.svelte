@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { Plus, FileText } from "lucide-svelte";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
@@ -46,62 +47,62 @@
             <div
                 class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
             >
-                <table class="data-table w-full">
-                    <thead>
-                        <tr>
-                            <th class="w-28">Date</th>
-                            <th>CN #</th>
-                            <th>Customer</th>
-                            <th>Reason</th>
-                            <th class="text-right w-28">Status</th>
-                            <th class="text-right w-32">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHeader>
+                        <TableRow class="hover:bg-transparent">
+                            <TableHead class="w-28">Date</TableHead>
+                            <TableHead>CN #</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead class="text-right w-28">Status</TableHead>
+                            <TableHead class="text-right w-32">Amount</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {#each data.creditNotes as cn}
-                            <tr class="group cursor-pointer">
-                                <td class="data-cell--muted font-medium">
-                                    <a href="/credit-notes/{cn.id}" class="data-row-link">
+                            <TableRow class="group cursor-pointer">
+                                <TableCell class="text-text-muted font-medium">
+                                    <a href="/credit-notes/{cn.id}" class="flex items-center w-full h-full text-inherit no-underline">
                                         {formatDate(cn.credit_note_date)}
                                     </a>
-                                </td>
-                                <td>
-                                    <a href="/credit-notes/{cn.id}" class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap">
+                                </TableCell>
+                                <TableCell>
+                                    <a href="/credit-notes/{cn.id}" class="flex items-center w-full h-full text-inherit no-underline font-mono text-sm font-medium text-primary whitespace-nowrap">
                                         {cn.credit_note_number}
                                     </a>
-                                </td>
-                                <td>
-                                    <a href="/credit-notes/{cn.id}" class="data-row-link">
+                                </TableCell>
+                                <TableCell>
+                                    <a href="/credit-notes/{cn.id}" class="flex items-center w-full h-full text-inherit no-underline">
                                         <span
                                             class="text-sm font-semibold text-text-strong"
                                             >{cn.customer_name || "—"}</span
                                         >
                                     </a>
-                                </td>
-                                <td>
-                                    <a href="/credit-notes/{cn.id}" class="data-row-link">
+                                </TableCell>
+                                <TableCell>
+                                    <a href="/credit-notes/{cn.id}" class="flex items-center w-full h-full text-inherit no-underline">
                                         <span
                                             class="text-sm text-text-subtle capitalize"
                                             >{cn.reason}</span
                                         >
                                     </a>
-                                </td>
-                                <td class="text-right">
-                                    <a href="/credit-notes/{cn.id}" class="data-row-link justify-end">
+                                </TableCell>
+                                <TableCell class="text-right">
+                                    <a href="/credit-notes/{cn.id}" class="flex items-center justify-end w-full h-full text-inherit no-underline">
                                         <StatusBadge
                                             status={cn.status}
                                         />
                                     </a>
-                                </td>
-                                <td class="data-cell--number text-text-strong">
-                                    <a href="/credit-notes/{cn.id}" class="data-row-link justify-end">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
+                                    <a href="/credit-notes/{cn.id}" class="flex items-center justify-end w-full h-full text-inherit no-underline">
                                         {formatINR(cn.total)}
                                     </a>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         {/each}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
         {/if}
     </div>

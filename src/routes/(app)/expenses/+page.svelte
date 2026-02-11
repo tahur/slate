@@ -2,6 +2,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Plus, Receipt } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
@@ -62,41 +63,41 @@
             <div
                 class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
             >
-                <table class="data-table w-full">
-                    <thead>
-                        <tr>
-                            <th class="w-32">Date</th>
-                            <th class="w-32">Number</th>
-                            <th>Category</th>
-                            <th class="w-48">Vendor</th>
-                            <th class="text-right w-32">Amount (Ex)</th>
-                            <th class="text-right w-32">Input Tax</th>
-                            <th class="text-right w-32">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHeader>
+                        <TableRow class="hover:bg-transparent">
+                            <TableHead class="w-32">Date</TableHead>
+                            <TableHead class="w-32">Number</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead class="w-48">Vendor</TableHead>
+                            <TableHead class="text-right w-32">Amount (Ex)</TableHead>
+                            <TableHead class="text-right w-32">Input Tax</TableHead>
+                            <TableHead class="text-right w-32">Total</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {#each data.expenses as expense}
-                            <tr class="group cursor-pointer">
-                                <td class="data-cell--muted font-medium">
+                            <TableRow class="group cursor-pointer">
+                                <TableCell class="text-text-muted font-medium">
                                     <a
                                         href="/expenses/{expense.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         {formatDate(expense.expense_date)}
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/expenses/{expense.id}"
-                                        class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap"
+                                        class="flex items-center w-full h-full text-inherit no-underline font-mono text-sm font-medium text-primary whitespace-nowrap"
                                     >
                                         {expense.expense_number}
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/expenses/{expense.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         <div class="flex flex-col">
                                             <span
@@ -113,8 +114,8 @@
                                             {/if}
                                         </div>
                                     </a>
-                                </td>
-                                <td class="text-sm text-text-strong">
+                                </TableCell>
+                                <TableCell class="text-sm text-text-strong">
                                     {#if expense.vendor_id}
                                         <a
                                             href="/vendors/{expense.vendor_id}"
@@ -127,24 +128,24 @@
                                     {:else}
                                         <a
                                             href="/expenses/{expense.id}"
-                                            class="data-row-link"
+                                            class="flex items-center w-full h-full text-inherit no-underline"
                                         >
                                             {expense.vendor_name || "—"}
                                         </a>
                                     {/if}
-                                </td>
-                                <td class="data-cell--number text-text-subtle">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-subtle">
                                     <a
                                         href="/expenses/{expense.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         {formatINR(expense.amount)}
                                     </a>
-                                </td>
-                                <td class="data-cell--number text-text-subtle">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-subtle">
                                     <a
                                         href="/expenses/{expense.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         {formatINR(
                                             (expense.cgst || 0) +
@@ -152,21 +153,21 @@
                                                 (expense.igst || 0),
                                         )}
                                     </a>
-                                </td>
-                                <td
-                                    class="data-cell--number font-medium text-text-strong"
+                                </TableCell>
+                                <TableCell
+                                    class="text-right font-mono tabular-nums text-[0.8125rem] font-medium text-text-strong"
                                 >
                                     <a
                                         href="/expenses/{expense.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         {formatINR(expense.total)}
                                     </a>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         {/each}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
         {/if}
     </div>

@@ -4,6 +4,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Tabs, TabsList, TabsTrigger, TabsContent } from "$lib/components/ui/tabs";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import {
         ArrowLeft,
         RefreshCw,
@@ -76,11 +77,11 @@
     <Card class="p-4">
         <div class="flex items-end gap-4 flex-wrap">
             <div class="space-y-2">
-                <Label for="from" class="form-label">From</Label>
+                <Label for="from" variant="form">From</Label>
                 <Input type="date" id="from" bind:value={startDate} />
             </div>
             <div class="space-y-2">
-                <Label for="to" class="form-label">To</Label>
+                <Label for="to" variant="form">To</Label>
                 <Input type="date" id="to" bind:value={endDate} />
             </div>
             <Button onclick={applyFilter}>
@@ -175,34 +176,34 @@
                     <p class="text-sm text-text-muted py-8 text-center">No B2B invoices in this period</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>GSTIN</th>
-                                    <th>Invoice No</th>
-                                    <th>Date</th>
-                                    <th class="text-right">Taxable</th>
-                                    <th class="text-right">CGST</th>
-                                    <th class="text-right">SGST</th>
-                                    <th class="text-right">IGST</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="hover:bg-transparent">
+                                    <TableHead>GSTIN</TableHead>
+                                    <TableHead>Invoice No</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead class="text-right">Taxable</TableHead>
+                                    <TableHead class="text-right">CGST</TableHead>
+                                    <TableHead class="text-right">SGST</TableHead>
+                                    <TableHead class="text-right">IGST</TableHead>
+                                    <TableHead class="text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {#each data.data.b2b as entry}
-                                    <tr>
-                                        <td class="font-mono text-xs">{entry.gstin}</td>
-                                        <td>{entry.invoiceNumber}</td>
-                                        <td class="data-cell--muted">{formatDate(entry.invoiceDate)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatINR(entry.invoiceValue)}</td>
-                                    </tr>
+                                    <TableRow>
+                                        <TableCell class="font-mono text-xs">{entry.gstin}</TableCell>
+                                        <TableCell>{entry.invoiceNumber}</TableCell>
+                                        <TableCell class="text-text-muted">{formatDate(entry.invoiceDate)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.taxableValue)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.cgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.sgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.igst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-medium">{formatINR(entry.invoiceValue)}</TableCell>
+                                    </TableRow>
                                 {/each}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 {/if}
             </Card>
@@ -217,30 +218,30 @@
                     <p class="text-sm text-text-muted py-8 text-center">No B2CL invoices in this period</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Invoice No</th>
-                                    <th>Date</th>
-                                    <th>POS</th>
-                                    <th class="text-right">Taxable</th>
-                                    <th class="text-right">IGST</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="hover:bg-transparent">
+                                    <TableHead>Invoice No</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>POS</TableHead>
+                                    <TableHead class="text-right">Taxable</TableHead>
+                                    <TableHead class="text-right">IGST</TableHead>
+                                    <TableHead class="text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {#each data.data.b2cl as entry}
-                                    <tr>
-                                        <td>{entry.invoiceNumber}</td>
-                                        <td class="data-cell--muted">{formatDate(entry.invoiceDate)}</td>
-                                        <td>{entry.placeOfSupply}</td>
-                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatINR(entry.invoiceValue)}</td>
-                                    </tr>
+                                    <TableRow>
+                                        <TableCell>{entry.invoiceNumber}</TableCell>
+                                        <TableCell class="text-text-muted">{formatDate(entry.invoiceDate)}</TableCell>
+                                        <TableCell>{entry.placeOfSupply}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.taxableValue)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.igst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-medium">{formatINR(entry.invoiceValue)}</TableCell>
+                                    </TableRow>
                                 {/each}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 {/if}
             </Card>
@@ -255,32 +256,32 @@
                     <p class="text-sm text-text-muted py-8 text-center">No B2CS supplies in this period</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Place of Supply</th>
-                                    <th>Type</th>
-                                    <th class="text-right">Rate</th>
-                                    <th class="text-right">Taxable</th>
-                                    <th class="text-right">CGST</th>
-                                    <th class="text-right">SGST</th>
-                                    <th class="text-right">IGST</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="hover:bg-transparent">
+                                    <TableHead>Place of Supply</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead class="text-right">Rate</TableHead>
+                                    <TableHead class="text-right">Taxable</TableHead>
+                                    <TableHead class="text-right">CGST</TableHead>
+                                    <TableHead class="text-right">SGST</TableHead>
+                                    <TableHead class="text-right">IGST</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {#each data.data.b2cs as entry}
-                                    <tr>
-                                        <td>{entry.placeOfSupply}</td>
-                                        <td>{entry.type}</td>
-                                        <td class="data-cell--number">{entry.rate}%</td>
-                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
-                                    </tr>
+                                    <TableRow>
+                                        <TableCell>{entry.placeOfSupply}</TableCell>
+                                        <TableCell>{entry.type}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{entry.rate}%</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.taxableValue)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.cgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.sgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.igst)}</TableCell>
+                                    </TableRow>
                                 {/each}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 {/if}
             </Card>
@@ -295,36 +296,36 @@
                     <p class="text-sm text-text-muted py-8 text-center">No credit notes in this period</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>GSTIN</th>
-                                    <th>Note No</th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th class="text-right">Taxable</th>
-                                    <th class="text-right">CGST</th>
-                                    <th class="text-right">SGST</th>
-                                    <th class="text-right">IGST</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="hover:bg-transparent">
+                                    <TableHead>GSTIN</TableHead>
+                                    <TableHead>Note No</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead class="text-right">Taxable</TableHead>
+                                    <TableHead class="text-right">CGST</TableHead>
+                                    <TableHead class="text-right">SGST</TableHead>
+                                    <TableHead class="text-right">IGST</TableHead>
+                                    <TableHead class="text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {#each data.data.cdnr as entry}
-                                    <tr>
-                                        <td class="font-mono text-xs">{entry.gstin}</td>
-                                        <td>{entry.noteNumber}</td>
-                                        <td class="data-cell--muted">{formatDate(entry.noteDate)}</td>
-                                        <td>{entry.noteType === 'C' ? 'Credit' : 'Debit'}</td>
-                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatINR(entry.noteValue)}</td>
-                                    </tr>
+                                    <TableRow>
+                                        <TableCell class="font-mono text-xs">{entry.gstin}</TableCell>
+                                        <TableCell>{entry.noteNumber}</TableCell>
+                                        <TableCell class="text-text-muted">{formatDate(entry.noteDate)}</TableCell>
+                                        <TableCell>{entry.noteType === 'C' ? 'Credit' : 'Debit'}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.taxableValue)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.cgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.sgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.igst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-medium">{formatINR(entry.noteValue)}</TableCell>
+                                    </TableRow>
                                 {/each}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 {/if}
             </Card>
@@ -339,36 +340,36 @@
                     <p class="text-sm text-text-muted py-8 text-center">No HSN data in this period</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>HSN/SAC</th>
-                                    <th>Description</th>
-                                    <th>UQC</th>
-                                    <th class="text-right">Qty</th>
-                                    <th class="text-right">Taxable</th>
-                                    <th class="text-right">CGST</th>
-                                    <th class="text-right">SGST</th>
-                                    <th class="text-right">IGST</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="hover:bg-transparent">
+                                    <TableHead>HSN/SAC</TableHead>
+                                    <TableHead>Description</TableHead>
+                                    <TableHead>UQC</TableHead>
+                                    <TableHead class="text-right">Qty</TableHead>
+                                    <TableHead class="text-right">Taxable</TableHead>
+                                    <TableHead class="text-right">CGST</TableHead>
+                                    <TableHead class="text-right">SGST</TableHead>
+                                    <TableHead class="text-right">IGST</TableHead>
+                                    <TableHead class="text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {#each data.data.hsn as entry}
-                                    <tr>
-                                        <td class="font-mono">{entry.hsnCode}</td>
-                                        <td class="max-w-[200px] truncate">{entry.description}</td>
-                                        <td>{entry.uqc}</td>
-                                        <td class="data-cell--number">{entry.totalQuantity}</td>
-                                        <td class="data-cell--number">{formatINR(entry.taxableValue)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.cgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.sgst)}</td>
-                                        <td class="data-cell--number">{formatINR(entry.igst)}</td>
-                                        <td class="data-cell--number font-medium">{formatINR(entry.totalValue)}</td>
-                                    </tr>
+                                    <TableRow>
+                                        <TableCell class="font-mono">{entry.hsnCode}</TableCell>
+                                        <TableCell class="max-w-[200px] truncate">{entry.description}</TableCell>
+                                        <TableCell>{entry.uqc}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{entry.totalQuantity}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.taxableValue)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.cgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.sgst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem]">{formatINR(entry.igst)}</TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] font-medium">{formatINR(entry.totalValue)}</TableCell>
+                                    </TableRow>
                                 {/each}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 {/if}
             </Card>

@@ -2,6 +2,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Plus, FileText } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
+    import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import Badge from "$lib/components/ui/badge/badge.svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
@@ -73,39 +74,39 @@
             <div
                 class="border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
             >
-                <table class="data-table w-full">
-                    <thead>
-                        <tr>
-                            <th class="w-28">Date</th>
-                            <th>Payment #</th>
-                            <th>Customer Name</th>
-                            <th class="w-32">Mode</th>
-                            <th class="text-right w-32">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <Table>
+                    <TableHeader>
+                        <TableRow class="hover:bg-transparent">
+                            <TableHead class="w-28">Date</TableHead>
+                            <TableHead>Payment #</TableHead>
+                            <TableHead>Customer Name</TableHead>
+                            <TableHead class="w-32">Mode</TableHead>
+                            <TableHead class="text-right w-32">Amount</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {#each data.payments as payment}
-                            <tr class="group cursor-pointer">
-                                <td class="data-cell--muted font-medium">
+                            <TableRow class="group cursor-pointer">
+                                <TableCell class="text-text-muted font-medium">
                                     <a
                                         href="/payments/{payment.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         {formatDate(payment.payment_date)}
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/payments/{payment.id}"
-                                        class="data-row-link font-mono text-sm font-medium text-primary whitespace-nowrap"
+                                        class="flex items-center w-full h-full text-inherit no-underline font-mono text-sm font-medium text-primary whitespace-nowrap"
                                     >
                                         {payment.payment_number}
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/payments/{payment.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         <div class="flex flex-col">
                                             <span
@@ -124,11 +125,11 @@
                                             {/if}
                                         </div>
                                     </a>
-                                </td>
-                                <td>
+                                </TableCell>
+                                <TableCell>
                                     <a
                                         href="/payments/{payment.id}"
-                                        class="data-row-link"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
                                     >
                                         <Badge
                                             variant="outline"
@@ -137,19 +138,19 @@
                                             {getModeLabel(payment.payment_mode)}
                                         </Badge>
                                     </a>
-                                </td>
-                                <td class="data-cell--number text-text-strong">
+                                </TableCell>
+                                <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
                                     <a
                                         href="/payments/{payment.id}"
-                                        class="data-row-link justify-end"
+                                        class="flex items-center justify-end w-full h-full text-inherit no-underline"
                                     >
                                         {formatINR(payment.amount)}
                                     </a>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         {/each}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
         {/if}
     </div>

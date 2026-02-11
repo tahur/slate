@@ -2,6 +2,7 @@
     import { Button } from "$lib/components/ui/button";
     import { formatINR } from "$lib/utils/currency";
     import { ArrowLeft, Printer, Lock } from "lucide-svelte";
+    import * as ButtonGroup from "$lib/components/ui/button-group";
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
     import { formatDate } from "$lib/utils/date";
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
@@ -37,7 +38,7 @@
             <div>
                 <div class="flex items-center gap-3">
                     <h1
-                        class="text-xl font-bold tracking-tight text-text-strong"
+                        class="text-xl font-bold tracking-tight text-text-strong font-mono"
                     >
                         {data.creditNote.credit_note_number}
                     </h1>
@@ -54,13 +55,13 @@
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <ButtonGroup.Root>
             <Button variant="outline" size="sm" onclick={() => window.print()}>
                 <Printer class="size-4 mr-2" />
                 Print
             </Button>
             <WhatsAppShareButton url={whatsappUrl} />
-        </div>
+        </ButtonGroup.Root>
     </header>
 
     <!-- Content: Paper View -->

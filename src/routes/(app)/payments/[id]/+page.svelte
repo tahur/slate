@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
     import { ArrowLeft, Printer, Lock } from "lucide-svelte";
+    import * as ButtonGroup from "$lib/components/ui/button-group";
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
     import { getPaymentWhatsAppUrl } from "$lib/utils/whatsapp";
     import { formatINR } from "$lib/utils/currency";
@@ -67,13 +68,13 @@
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <ButtonGroup.Root>
             <Button variant="outline" size="sm" onclick={() => window.print()}>
                 <Printer class="size-4 mr-2" />
                 Print Receipt
             </Button>
             <WhatsAppShareButton url={whatsappUrl} />
-        </div>
+        </ButtonGroup.Root>
     </header>
 
     <!-- Content: Paper View -->

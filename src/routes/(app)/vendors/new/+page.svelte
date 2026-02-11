@@ -62,7 +62,7 @@
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
-                                <Label for="name" class="form-label">
+                                <Label for="name" variant="form">
                                     Vendor Name <span class="text-destructive"
                                         >*</span
                                     >
@@ -84,7 +84,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="company_name" class="form-label"
+                                <Label for="company_name" variant="form"
                                     >Company Name</Label
                                 >
                                 <Input
@@ -97,7 +97,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="display_name" class="form-label"
+                                <Label for="display_name" variant="form"
                                     >Display Name</Label
                                 >
                                 <Input
@@ -113,7 +113,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="email" class="form-label"
+                                <Label for="email" variant="form"
                                     >Email</Label
                                 >
                                 <Input
@@ -127,7 +127,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="phone" class="form-label"
+                                <Label for="phone" variant="form"
                                     >Phone</Label
                                 >
                                 <Input
@@ -140,7 +140,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="website" class="form-label"
+                                <Label for="website" variant="form"
                                     >Website</Label
                                 >
                                 <Input
@@ -164,7 +164,7 @@
 
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="billing_address" class="form-label"
+                                <Label for="billing_address" variant="form"
                                     >Address Line</Label
                                 >
                                 <Input
@@ -177,7 +177,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="city" class="form-label">City</Label
+                                <Label for="city" variant="form">City</Label
                                 >
                                 <Input
                                     id="city"
@@ -189,7 +189,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="state_code" class="form-label"
+                                <Label for="state_code" variant="form"
                                     >State</Label
                                 >
                                 <Select.Root
@@ -216,7 +216,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="pincode" class="form-label"
+                                <Label for="pincode" variant="form"
                                     >Pincode</Label
                                 >
                                 <Input
@@ -246,7 +246,7 @@
 
                         <div class="space-y-4">
                             <div class="space-y-2">
-                                <Label for="gst_treatment" class="form-label"
+                                <Label for="gst_treatment" variant="form"
                                     >GST Treatment</Label
                                 >
                                 <Select.Root
@@ -274,7 +274,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="gstin" class="form-label"
+                                <Label for="gstin" variant="form"
                                     >GSTIN</Label
                                 >
                                 <Input
@@ -294,7 +294,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="pan" class="form-label">PAN</Label>
+                                <Label for="pan" variant="form">PAN</Label>
                                 <Input
                                     id="pan"
                                     name="pan"
@@ -305,7 +305,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="payment_terms" class="form-label"
+                                <Label for="payment_terms" variant="form"
                                     >Payment Terms (days)</Label
                                 >
                                 <Input
@@ -355,7 +355,7 @@
                                 <div
                                     class="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200"
                                 >
-                                    <Label for="tds_section" class="form-label"
+                                    <Label for="tds_section" variant="form"
                                         >TDS Section</Label
                                     >
                                     <Select.Root
