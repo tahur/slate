@@ -108,7 +108,7 @@ A slate represents a **clean start**—just like double-entry accounting gives y
 ### Security & Privacy
 
 - **Self-Hosted** - Your data stays on your server
-- **Session-Based Auth** - Secure authentication via Lucia Auth
+- **Session-Based Auth** - Secure authentication via Better Auth
 - **Argon2id Password Hashing** - Industry-standard password security
 - **Multi-Tenancy** - Org-level data isolation
 - **No Tracking** - Zero telemetry, zero phone-home
@@ -226,7 +226,7 @@ slate/
 │   │   ├── server/          # Server-only code
 │   │   │   ├── db/          # Database connection & schemas
 │   │   │   ├── services/    # Business logic (posting engine, etc.)
-│   │   │   └── auth.ts      # Lucia authentication
+│   │   │   └── auth.ts      # Better Auth configuration
 │   │   └── utils/           # Shared utilities
 │   ├── routes/              # SvelteKit file-based routing
 │   │   ├── (app)/          # Protected routes (dashboard, invoices, etc.)
@@ -547,7 +547,7 @@ Slate is built on the shoulders of giants:
 - **[SvelteKit](https://kit.svelte.dev/)** - The amazing full-stack framework
 - **[Drizzle ORM](https://orm.drizzle.team/)** - The best TypeScript ORM
 - **[shadcn-svelte](https://shadcn-svelte.com/)** - Beautiful UI components
-- **[Lucia Auth](https://lucia-auth.com/)** - Simple, secure authentication
+- **[Better Auth](https://better-auth.com/)** - Comprehensive authentication solution
 - **Indian GST System** - For keeping things... interesting
 
 ---

@@ -31,7 +31,7 @@ graph TB
     
     subgraph "Server (Node.js)"
         API[SvelteKit Server Load/Actions]
-        Auth[Lucia Auth]
+        Auth[Better Auth]
         Logic[Posting Engine Service]
         PDF[PDF Generation Service]
         DB_Layer[Drizzle ORM]
@@ -60,7 +60,7 @@ graph TB
 | **Styling** | **Tailwind CSS v4** | Utility-first styling with custom design tokens |
 | **Database** | **SQLite** | Embedded SQL database (via `better-sqlite3`) |
 | **ORM** | **Drizzle ORM** | Type-safe database queries & schema management |
-| **Auth** | **Lucia Auth** | Session-based authentication |
+| **Auth** | **Better Auth** | Comprehensive authentication solution |
 | **Validation** | **Zod** | Schema validation for forms and API inputs |
 | **Math** | **Decimal.js** | Precision financial calculations (no floating point errors) |
 
@@ -230,7 +230,7 @@ Rules enforced at Database and Application levels to ensure financial data integ
 ---
 
 ## 9. Security
-*   **Authentication**: Lucia Auth (Session cookies, HTTP-only).
+*   **Authentication**: Better Auth (Session cookies, HTTP-only).
 *   **Password Hashing**: Argon2id.
 *   **Authorization**: `hooks.server.ts` validates session; `+layout.server.ts` checks Org ID.
 *   **Data Isolation**: All DB queries MUST filter by `org_id`.
