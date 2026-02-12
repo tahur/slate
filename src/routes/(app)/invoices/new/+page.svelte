@@ -14,12 +14,13 @@
     type CatalogItem = (typeof data.catalogItems)[number];
 
     let { data } = $props();
+    const { defaults } = data;
 
     // Form state (managed locally instead of superforms)
     let formData = $state({
         customer_id: "",
-        invoice_date: data.defaults.invoice_date,
-        due_date: data.defaults.due_date,
+        invoice_date: defaults.invoice_date,
+        due_date: defaults.due_date,
         order_number: "",
         notes: "",
         terms: "",

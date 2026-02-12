@@ -1,8 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { users, password_reset_tokens } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { hashPassword } from '$lib/server/password';
+import { auth } from '$lib/server/auth';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
@@ -17,7 +14,6 @@ const resetPasswordSchema = z.object({
 });
 
 export const load: PageServerLoad = async ({ url, locals }) => {
-    // If already logged in, redirect to dashboard
     if (locals.user) {
         redirect(302, '/dashboard');
     }
@@ -29,30 +25,6 @@ export const load: PageServerLoad = async ({ url, locals }) => {
             form: await superValidate(zod(resetPasswordSchema)),
             valid: false,
             error: 'Invalid reset link. Please request a new one.'
-        };
-    }
-
-    // Hash token and check if valid
-    const tokenHash = await hashToken(token);
-    const resetToken = await db.query.password_reset_tokens.findFirst({
-        where: eq(password_reset_tokens.token_hash, tokenHash)
-    });
-
-    if (!resetToken) {
-        return {
-            form: await superValidate(zod(resetPasswordSchema)),
-            valid: false,
-            error: 'Invalid reset link. Please request a new one.'
-        };
-    }
-
-    if (resetToken.expires_at < Date.now()) {
-        // Delete expired token
-        await db.delete(password_reset_tokens).where(eq(password_reset_tokens.id, resetToken.id));
-        return {
-            form: await superValidate(zod(resetPasswordSchema)),
-            valid: false,
-            error: 'This reset link has expired. Please request a new one.'
         };
     }
 
@@ -79,33 +51,19 @@ export const actions: Actions = {
             });
         }
 
-        // Hash token and find it
-        const tokenHash = await hashToken(token);
-        const resetToken = await db.query.password_reset_tokens.findFirst({
-            where: eq(password_reset_tokens.token_hash, tokenHash)
-        });
-
-        if (!resetToken || resetToken.expires_at < Date.now()) {
+        try {
+            await auth.api.resetPassword({
+                body: {
+                    newPassword: form.data.password,
+                    token
+                }
+            });
+        } catch {
             return fail(400, {
                 form,
                 error: 'This reset link is invalid or has expired.'
             });
         }
-
-        // Hash new password
-        const passwordHash = await hashPassword(form.data.password);
-
-        // Update user password
-        await db
-            .update(users)
-            .set({
-                password_hash: passwordHash,
-                updated_at: new Date().toISOString()
-            })
-            .where(eq(users.id, resetToken.user_id));
-
-        // Delete all reset tokens for this user
-        await db.delete(password_reset_tokens).where(eq(password_reset_tokens.user_id, resetToken.user_id));
 
         return {
             form,
@@ -113,11 +71,3 @@ export const actions: Actions = {
         };
     }
 };
-
-async function hashToken(token: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(token);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}

@@ -193,7 +193,7 @@ export const actions: Actions = {
                 .set({
                     name: form.data.name,
                     email: form.data.email,
-                    updated_at: new Date().toISOString()
+                    updatedAt: new Date()
                 })
                 .where(eq(users.id, locals.user.id));
         } catch (error) {

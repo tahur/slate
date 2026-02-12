@@ -24,19 +24,40 @@ CREATE TABLE `organizations` (
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP
 );
 --> statement-breakpoint
-CREATE TABLE `sessions` (
+CREATE TABLE `auth_accounts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
-	`expires_at` integer NOT NULL,
+	`account_id` text NOT NULL,
+	`provider_id` text NOT NULL,
+	`access_token` text,
+	`refresh_token` text,
+	`expires_at` integer,
+	`password` text,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE TABLE `sessions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`expires_at` integer NOT NULL,
+	`token` text NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP,
+	`ip_address` text,
+	`user_agent` text,
+	`user_id` text NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `sessions_token_unique` ON `sessions` (`token`);--> statement-breakpoint
 CREATE TABLE `users` (
 	`id` text PRIMARY KEY NOT NULL,
 	`org_id` text,
 	`email` text NOT NULL,
-	`password_hash` text NOT NULL,
+	`email_verified` integer DEFAULT false,
 	`name` text NOT NULL,
+	`image` text,
 	`role` text DEFAULT 'admin',
 	`is_active` integer DEFAULT true,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
@@ -45,6 +66,15 @@ CREATE TABLE `users` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint
+CREATE TABLE `verification` (
+	`id` text PRIMARY KEY NOT NULL,
+	`identifier` text NOT NULL,
+	`value` text NOT NULL,
+	`expires_at` integer NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP
+);
+--> statement-breakpoint
 CREATE TABLE `fiscal_years` (
 	`id` text PRIMARY KEY NOT NULL,
 	`org_id` text NOT NULL,
@@ -172,9 +202,33 @@ CREATE TABLE `customers` (
 );
 --> statement-breakpoint
 CREATE INDEX `idx_customers_org` ON `customers` (`org_id`);--> statement-breakpoint
+CREATE TABLE `items` (
+	`id` text PRIMARY KEY NOT NULL,
+	`org_id` text NOT NULL,
+	`type` text DEFAULT 'service' NOT NULL,
+	`sku` text,
+	`name` text NOT NULL,
+	`description` text,
+	`hsn_code` text,
+	`gst_rate` real DEFAULT 18 NOT NULL,
+	`rate` real DEFAULT 0 NOT NULL,
+	`unit` text DEFAULT 'nos',
+	`is_active` integer DEFAULT true NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP,
+	`created_by` text,
+	`updated_by` text,
+	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE INDEX `idx_items_org` ON `items` (`org_id`);--> statement-breakpoint
+CREATE INDEX `idx_items_org_type` ON `items` (`org_id`,`type`);--> statement-breakpoint
 CREATE TABLE `invoice_items` (
 	`id` text PRIMARY KEY NOT NULL,
 	`invoice_id` text NOT NULL,
+	`item_id` text,
 	`description` text NOT NULL,
 	`hsn_code` text,
 	`quantity` real DEFAULT 1 NOT NULL,
@@ -187,7 +241,8 @@ CREATE TABLE `invoice_items` (
 	`amount` real NOT NULL,
 	`total` real NOT NULL,
 	`sort_order` integer DEFAULT 0,
-	FOREIGN KEY (`invoice_id`) REFERENCES `invoices`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`invoice_id`) REFERENCES `invoices`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `invoices` (
@@ -223,6 +278,7 @@ CREATE TABLE `invoices` (
 	`notes` text,
 	`terms` text,
 	`journal_entry_id` text,
+	`idempotency_key` text,
 	`issued_at` text,
 	`cancelled_at` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
@@ -278,6 +334,7 @@ CREATE TABLE `payments` (
 	`notes` text,
 	`deposit_to` text NOT NULL,
 	`journal_entry_id` text,
+	`idempotency_key` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
 	`created_by` text,
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`) ON UPDATE no action ON DELETE no action,
@@ -308,6 +365,7 @@ CREATE TABLE `expenses` (
 	`reference` text,
 	`receipt_url` text,
 	`journal_entry_id` text,
+	`idempotency_key` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP,
 	`created_by` text,
@@ -336,6 +394,7 @@ CREATE TABLE `credit_notes` (
 	`notes` text,
 	`status` text DEFAULT 'issued',
 	`journal_entry_id` text,
+	`idempotency_key` text,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
 	`created_by` text,
 	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`) ON UPDATE no action ON DELETE no action,
@@ -387,4 +446,19 @@ CREATE TABLE `vendors` (
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP,
 	`created_by` text,
 	`updated_by` text
+);
+--> statement-breakpoint
+CREATE TABLE `app_settings` (
+	`id` text PRIMARY KEY NOT NULL,
+	`org_id` text NOT NULL,
+	`smtp_host` text,
+	`smtp_port` integer DEFAULT 587,
+	`smtp_user` text,
+	`smtp_pass` text,
+	`smtp_from` text,
+	`smtp_secure` integer DEFAULT false,
+	`smtp_enabled` integer DEFAULT false,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (`org_id`) REFERENCES `organizations`(`id`) ON UPDATE no action ON DELETE no action
 );

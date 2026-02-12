@@ -18,9 +18,10 @@
     import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
+    const { startDate: initStart, endDate: initEnd } = data;
 
-    let startDate = $state(data.startDate);
-    let endDate = $state(data.endDate);
+    let startDate = $state(initStart);
+    let endDate = $state(initEnd);
 
     function applyFilter() {
         goto(`/reports/gstr3b?from=${startDate}&to=${endDate}`);

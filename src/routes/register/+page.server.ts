@@ -1,15 +1,10 @@
 import { redirect } from '@sveltejs/kit';
-import { generateId } from 'lucia';
-import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
-import { lucia } from '$lib/server/auth';
-import { hashPassword } from '$lib/server/password';
+import { auth } from '$lib/server/auth';
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
-import { eq } from 'drizzle-orm';
 
 const schema = z.object({
     email: z.string().email(),
@@ -34,46 +29,58 @@ export const actions: Actions = {
 
         const { email, password, name } = form.data;
 
-        // Check if email already exists
-        const existingUser = await db.query.users.findFirst({
-            where: eq(users.email, email.toLowerCase())
+        const result = await auth.api.signUpEmail({
+            body: { email: email.toLowerCase(), password, name },
+            asResponse: true
         });
 
-        if (existingUser) {
-            return fail(400, {
-                form,
-                error: 'An account with this email already exists. Please login instead.'
-            });
-        }
-
-        const userId = generateId(15);
-        const hashedPassword = await hashPassword(password);
-
-        try {
-            await db.insert(users).values({
-                id: userId,
-                email: email.toLowerCase(),
-                password_hash: hashedPassword,
-                name,
-                role: 'admin',
-                is_active: true
-            });
-
-            const session = await lucia.createSession(userId, {});
-            const sessionCookie = lucia.createSessionCookie(session.id);
-            event.cookies.set(sessionCookie.name, sessionCookie.value, {
-                path: '.',
-                ...sessionCookie.attributes
-            });
-
-        } catch (e) {
-            console.error(e);
+        if (!result.ok) {
+            const body = await result.json().catch(() => null);
+            const code = body?.code || '';
+            if (code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL' || code === 'USER_ALREADY_EXISTS') {
+                return fail(400, {
+                    form,
+                    error: 'An account with this email already exists. Please login instead.'
+                });
+            }
             return fail(500, {
                 form,
                 error: 'Failed to create account. Please try again.'
             });
         }
 
+        // Forward set-cookie headers from better-auth response
+        forwardCookies(result, event);
+
         redirect(302, '/setup');
     }
 };
+
+function forwardCookies(response: Response, event: any) {
+    const setCookieHeaders = response.headers.getSetCookie();
+    for (const cookieStr of setCookieHeaders) {
+        const name = cookieStr.split('=')[0];
+        const rawValue = cookieStr.split('=').slice(1).join('=').split(';')[0];
+        const attrs = parseCookieAttributes(cookieStr);
+        // Use encode: v => v to prevent SvelteKit from double-encoding the already-encoded value
+        event.cookies.set(name, rawValue, {
+            path: '/',
+            encode: (v: string) => v,
+            ...attrs
+        });
+    }
+}
+
+function parseCookieAttributes(cookie: string): Record<string, any> {
+    const attrs: Record<string, any> = {};
+    const parts = cookie.split(';').slice(1);
+    for (const part of parts) {
+        const trimmed = part.trim().toLowerCase();
+        if (trimmed === 'httponly') attrs.httpOnly = true;
+        else if (trimmed === 'secure') attrs.secure = true;
+        else if (trimmed.startsWith('samesite=')) attrs.sameSite = trimmed.split('=')[1];
+        else if (trimmed.startsWith('max-age=')) attrs.maxAge = parseInt(trimmed.split('=')[1]);
+        else if (trimmed.startsWith('path=')) attrs.path = part.trim().split('=')[1];
+    }
+    return attrs;
+}

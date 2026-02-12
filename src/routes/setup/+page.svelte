@@ -9,6 +9,7 @@
     import { Building2, ArrowRight } from "lucide-svelte";
 
     let { data, form }: { data: PageData; form: any } = $props();
+    const { form: initialForm } = data;
 
     const {
         form: formData,
@@ -16,7 +17,7 @@
         constraints,
         enhance,
         delayed,
-    } = superForm(data.form, {
+    } = superForm(initialForm, {
         onUpdated: ({ form }) => {
             // If form submission was successful, redirect to dashboard
             if (form.valid) {

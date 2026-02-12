@@ -9,8 +9,9 @@
     import { ArrowLeft, Save } from "lucide-svelte";
 
     let { data } = $props();
+    const { form: initialForm } = data;
 
-    const { form, errors, enhance, submitting } = superForm(data.form, {
+    const { form, errors, enhance, submitting } = superForm(initialForm, {
         onResult: ({ result }) => {
             if (result.type === "failure" && result.data?.error) {
                 toast.error(result.data.error as string);

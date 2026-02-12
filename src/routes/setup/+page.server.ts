@@ -64,7 +64,7 @@ export const actions: Actions = {
             // 2. Link User to Org
             await db
                 .update(users)
-                .set({ org_id: orgId, role: 'admin' }) // Ensure they are admin
+                .set({ orgId: orgId, role: 'admin' }) // Ensure they are admin
                 .where(eq(users.id, event.locals.user.id));
 
             // 3. Create Fiscal Year - FIXED: Removed is_current

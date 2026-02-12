@@ -7,6 +7,7 @@
     import type { PageData } from "./$types";
 
     let { data, form }: { data: PageData; form: any } = $props();
+    const { form: initialForm } = data;
 
     const {
         form: formData,
@@ -14,7 +15,7 @@
         constraints,
         enhance,
         delayed,
-    } = superForm(data.form);
+    } = superForm(initialForm);
 </script>
 
 <div

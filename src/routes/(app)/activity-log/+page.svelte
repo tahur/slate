@@ -6,10 +6,11 @@
     import { History, RefreshCw, FileText, User, CreditCard, Receipt, Users, Building2, BookOpen } from "lucide-svelte";
 
     let { data } = $props();
+    const { startDate: initStart, endDate: initEnd, entityType: initType } = data;
 
-    let startDate = $state(data.startDate);
-    let endDate = $state(data.endDate);
-    let entityType = $state(data.entityType);
+    let startDate = $state(initStart);
+    let endDate = $state(initEnd);
+    let entityType = $state(initType);
 
     function applyFilter() {
         const params = new URLSearchParams();

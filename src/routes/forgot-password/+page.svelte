@@ -15,6 +15,7 @@
 
     let { data, form: actionData }: { data: PageData; form: ActionData } =
         $props();
+    const { form: initialForm } = data;
 
     const {
         form: formData,
@@ -22,7 +23,7 @@
         constraints,
         enhance,
         delayed,
-    } = superForm(data.form);
+    } = superForm(initialForm);
 
     const success = $derived(actionData?.success);
     const errorMessage = $derived(

@@ -18,11 +18,12 @@
     } from "lucide-svelte";
 
     let { data } = $props();
+    const { form: initialForm, item: initialItem } = data;
 
     let isEditing = $state(false);
-    let gstRateStr = $state(String(data.item.gst_rate));
+    let gstRateStr = $state(String(initialItem.gst_rate));
 
-    const { form, errors, enhance, submitting } = superForm(data.form, {
+    const { form, errors, enhance, submitting } = superForm(initialForm, {
         onResult: ({ result }) => {
             if (result.type === "success") {
                 isEditing = false;

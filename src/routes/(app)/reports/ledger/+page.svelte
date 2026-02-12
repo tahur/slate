@@ -8,8 +8,9 @@
     import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
+    const { ledger } = data;
 
-    let selectedCustomer = $state(data.ledger?.id || "");
+    let selectedCustomer = $state(ledger?.id || "");
 
     function handleCustomerChange(e: Event) {
         const value = (e.target as HTMLSelectElement).value;

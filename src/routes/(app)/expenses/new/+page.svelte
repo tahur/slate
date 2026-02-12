@@ -8,13 +8,14 @@
     import { formatINR } from "$lib/utils/currency";
 
     let { data, form } = $props();
+    const { selectedVendorId: initVendorId } = data;
     let isSubmitting = $state(false);
 
     // Form state
     let amount = $state(0);
     let gstRate = $state(0);
     let isInterState = $state(false);
-    let selectedVendorId = $state(data.selectedVendorId || "");
+    let selectedVendorId = $state(initVendorId || "");
     let vendorName = $state("");
 
     // When vendor is selected, update the display name

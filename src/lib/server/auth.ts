@@ -1,38 +1,49 @@
-import { Lucia } from 'lucia';
-import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
-import { dev } from '$app/environment';
-import { db } from '$lib/server/db';
-import { sessions, users } from '$lib/server/db/schema'; // We need to export sessions from schema/index.ts first
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { db } from './db';
+import * as schema from './db/schema';
 
-const adapter = new DrizzleSQLiteAdapter(db, sessions, users);
+let _auth: ReturnType<typeof betterAuth> | null = null;
 
-export const lucia = new Lucia(adapter, {
-    sessionCookie: {
-        attributes: {
-            secure: !dev
+function createAuth() {
+    const { env } = process;
+    return betterAuth({
+        database: drizzleAdapter(db, {
+            provider: 'sqlite',
+            schema: {
+                user: schema.users,
+                session: schema.sessions,
+                account: schema.auth_accounts,
+                verification: schema.verification
+            }
+        }),
+        baseURL: env.BETTER_AUTH_URL || 'http://localhost:5173',
+        secret: env.BETTER_AUTH_SECRET,
+        emailAndPassword: {
+            enabled: true,
+            sendResetPassword: async ({ user, url }) => {
+                const { sendPasswordResetEmail } = await import('./email');
+                await sendPasswordResetEmail(user.email, url);
+            }
+        },
+        user: {
+            additionalFields: {
+                orgId: { type: 'string', required: false, input: false },
+                role: { type: 'string', required: false, defaultValue: 'admin', input: false },
+                isActive: { type: 'boolean', required: false, defaultValue: true, input: false }
+            }
+        },
+        session: {
+            cookieCache: { enabled: true, maxAge: 300 }
         }
-    },
-    getUserAttributes: (attributes) => {
-        return {
-            // attributes has the type of DatabaseUserAttributes
-            email: attributes.email,
-            name: attributes.name,
-            role: attributes.role,
-            orgId: attributes.org_id
-        };
+    });
+}
+
+export const auth = new Proxy({} as ReturnType<typeof betterAuth>, {
+    get(_, prop) {
+        if (!_auth) {
+            _auth = createAuth();
+        }
+        return (_auth as any)[prop];
     }
 });
-
-declare module 'lucia' {
-    interface Register {
-        Lucia: typeof lucia;
-        DatabaseUserAttributes: DatabaseUserAttributes;
-    }
-}
-
-interface DatabaseUserAttributes {
-    email: string;
-    name: string;
-    role: string;
-    org_id: string;
-}

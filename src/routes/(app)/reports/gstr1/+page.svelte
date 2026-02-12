@@ -22,9 +22,10 @@
     import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
+    const { startDate: initStart, endDate: initEnd } = data;
 
-    let startDate = $state(data.startDate);
-    let endDate = $state(data.endDate);
+    let startDate = $state(initStart);
+    let endDate = $state(initEnd);
 
     function applyFilter() {
         goto(`/reports/gstr1?from=${startDate}&to=${endDate}`);

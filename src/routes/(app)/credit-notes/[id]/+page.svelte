@@ -9,15 +9,16 @@
     import { getCreditNoteWhatsAppUrl } from "$lib/utils/whatsapp";
 
     let { data } = $props();
+    const { creditNote, customer, org } = data;
 
     const whatsappUrl = getCreditNoteWhatsAppUrl({
-        creditNoteNumber: data.creditNote.credit_note_number,
-        customerName: data.customer?.name || "Customer",
-        customerPhone: data.customer?.phone,
-        total: data.creditNote.total,
-        date: data.creditNote.credit_note_date,
-        orgName: data.org?.name || "Our Company",
-        reason: data.creditNote.reason,
+        creditNoteNumber: creditNote.credit_note_number,
+        customerName: customer?.name || "Customer",
+        customerPhone: customer?.phone,
+        total: creditNote.total,
+        date: creditNote.credit_note_date,
+        orgName: org?.name || "Our Company",
+        reason: creditNote.reason,
     });
 </script>
 

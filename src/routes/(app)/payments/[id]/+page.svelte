@@ -8,15 +8,16 @@
     import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
+    const { payment, customer, org } = data;
 
     const whatsappUrl = getPaymentWhatsAppUrl({
-        paymentNumber: data.payment.payment_number,
-        customerName: data.customer?.name || "Customer",
-        customerPhone: data.customer?.phone,
-        amount: data.payment.amount,
-        date: data.payment.payment_date,
-        orgName: data.org?.name || "Our Company",
-        mode: data.payment.payment_mode,
+        paymentNumber: payment.payment_number,
+        customerName: customer?.name || "Customer",
+        customerPhone: customer?.phone,
+        amount: payment.amount,
+        date: payment.payment_date,
+        orgName: org?.name || "Our Company",
+        mode: payment.payment_mode,
     });
 
     function getModeLabel(mode: string): string {

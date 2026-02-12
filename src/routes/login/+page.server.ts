@@ -1,9 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { lucia } from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { verifyPassword } from '$lib/server/password';
+import { auth } from '$lib/server/auth';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from './schema';
@@ -28,27 +24,46 @@ export const actions: Actions = {
 
         const { email, password } = form.data;
 
-        const existingUser = await db.query.users.findFirst({
-            where: eq(users.email, email.toLowerCase())
+        const result = await auth.api.signInEmail({
+            body: { email: email.toLowerCase(), password },
+            asResponse: true
         });
 
-        if (!existingUser) {
-            // Don't reveal user existence
+        if (!result.ok) {
             return fail(400, { form, error: 'Incorrect email or password' });
         }
 
-        const validPassword = await verifyPassword(existingUser.password_hash, password);
-        if (!validPassword) {
-            return fail(400, { form, error: 'Incorrect email or password' });
-        }
-
-        const session = await lucia.createSession(existingUser.id, {});
-        const sessionCookie = lucia.createSessionCookie(session.id);
-        event.cookies.set(sessionCookie.name, sessionCookie.value, {
-            path: '.',
-            ...sessionCookie.attributes
-        });
+        // Forward set-cookie headers from better-auth response
+        forwardCookies(result, event);
 
         redirect(302, '/dashboard');
     }
 };
+
+function forwardCookies(response: Response, event: any) {
+    const setCookieHeaders = response.headers.getSetCookie();
+    for (const cookieStr of setCookieHeaders) {
+        const name = cookieStr.split('=')[0];
+        const rawValue = cookieStr.split('=').slice(1).join('=').split(';')[0];
+        const attrs = parseCookieAttributes(cookieStr);
+        event.cookies.set(name, rawValue, {
+            path: '/',
+            encode: (v: string) => v,
+            ...attrs
+        });
+    }
+}
+
+function parseCookieAttributes(cookie: string): Record<string, any> {
+    const attrs: Record<string, any> = {};
+    const parts = cookie.split(';').slice(1);
+    for (const part of parts) {
+        const trimmed = part.trim().toLowerCase();
+        if (trimmed === 'httponly') attrs.httpOnly = true;
+        else if (trimmed === 'secure') attrs.secure = true;
+        else if (trimmed.startsWith('samesite=')) attrs.sameSite = trimmed.split('=')[1];
+        else if (trimmed.startsWith('max-age=')) attrs.maxAge = parseInt(trimmed.split('=')[1]);
+        else if (trimmed.startsWith('path=')) attrs.path = part.trim().split('=')[1];
+    }
+    return attrs;
+}

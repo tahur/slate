@@ -10,18 +10,19 @@
     import { formatDate } from "$lib/utils/date";
 
     let { data, form } = $props();
+    const { selectedCustomer: initCustomer, depositAccounts, unpaidInvoices: initUnpaid } = data;
     let isSubmitting = $state(false);
 
     // Form state
-    let selectedCustomer = $state(data.selectedCustomer);
+    let selectedCustomer = $state(initCustomer);
     let amount = $state(0);
     let paymentMode = $state("bank");
     let depositTo = $state(
-        data.depositAccounts.find((a) => a.code === "1100")?.id || "",
+        depositAccounts.find((a) => a.code === "1100")?.id || "",
     );
 
     // Invoice allocations
-    let unpaidInvoices = $state(data.unpaidInvoices || []);
+    let unpaidInvoices = $state(initUnpaid || []);
     let allocations = $state<Record<string, number>>({});
 
     // Initialize allocations from data

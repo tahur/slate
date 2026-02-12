@@ -18,16 +18,17 @@
     type CatalogItem = (typeof data.catalogItems)[number];
 
     let { data } = $props();
+    const { invoice, lineItems } = data;
 
     // Pre-populate form from existing invoice data
     let formData = $state({
-        customer_id: data.invoice.customer_id,
-        invoice_date: data.invoice.invoice_date,
-        due_date: data.invoice.due_date,
-        order_number: data.invoice.order_number || "",
-        notes: data.invoice.notes || "",
-        terms: data.invoice.terms || "",
-        items: data.lineItems.map((item) => ({
+        customer_id: invoice.customer_id,
+        invoice_date: invoice.invoice_date,
+        due_date: invoice.due_date,
+        order_number: invoice.order_number || "",
+        notes: invoice.notes || "",
+        terms: invoice.terms || "",
+        items: lineItems.map((item) => ({
             description: item.description,
             hsn_code: item.hsn_code || "",
             quantity: item.quantity,

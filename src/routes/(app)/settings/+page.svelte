@@ -26,6 +26,7 @@
     } from "lucide-svelte";
 
     let { data } = $props();
+    const { orgForm: initOrgForm, profileForm: initProfileForm, seriesForm: initSeriesForm, smtpForm: initSmtpForm } = data;
     let activeTab = $state("business");
 
     const tabs = [
@@ -42,7 +43,7 @@
         errors: orgErrors,
         enhance: orgEnhance,
         submitting: orgSubmitting,
-    } = superForm(data.orgForm, {
+    } = superForm(initOrgForm, {
         id: "org-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -58,7 +59,7 @@
         form: profileForm,
         enhance: profileEnhance,
         submitting: profileSubmitting,
-    } = superForm(data.profileForm, {
+    } = superForm(initProfileForm, {
         id: "profile-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -71,7 +72,7 @@
         form: seriesForm,
         enhance: seriesEnhance,
         submitting: seriesSubmitting,
-    } = superForm(data.seriesForm, {
+    } = superForm(initSeriesForm, {
         id: "series-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -90,7 +91,7 @@
         errors: smtpErrors,
         enhance: smtpEnhance,
         submitting: smtpSubmitting,
-    } = superForm(data.smtpForm, {
+    } = superForm(initSmtpForm, {
         id: "smtp-settings",
         onResult: ({ result }) => {
             if (result.type === "success") {

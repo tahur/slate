@@ -30,13 +30,14 @@
     import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
+    const { form: initialForm } = data;
 
     let isEditing = $state(false);
     let activeTab = $state<"ledger" | "invoices" | "payments" | "credits">(
         "ledger",
     );
 
-    const { form, errors, enhance, submitting } = superForm(data.form, {
+    const { form, errors, enhance, submitting } = superForm(initialForm, {
         onResult: ({ result }) => {
             if (result.type === "success") {
                 isEditing = false;
