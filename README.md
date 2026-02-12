@@ -113,7 +113,27 @@ A slate represents a **clean start**—just like double-entry accounting gives y
 - **Multi-Tenancy** - Org-level data isolation
 - **No Tracking** - Zero telemetry, zero phone-home
 
+
 ---
+
+## Screenshots
+
+<div align="center">
+  <img src="./static/DASHBORAD.png" alt="Dashboard" width="800" />
+  <p><em>Real-time Dashboard</em></p>
+
+  <img src="./static/INVOICE.png" alt="Invoice List" width="800" />
+  <p><em>Invoice Management</em></p>
+
+  <img src="./static/CREATE_INVOICE.png" alt="Create Invoice" width="800" />
+  <p><em>Creating a New Invoice</em></p>
+  
+  <img src="./static/GST_SUMMARY.png" alt="GST Summary" width="800" />
+  <p><em>GST Summary Report</em></p>
+</div>
+
+---
+
 
 ## Tech Stack
 
