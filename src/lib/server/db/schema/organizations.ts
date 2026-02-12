@@ -28,6 +28,9 @@ export const organizations = sqliteTable('organizations', {
     // Signature
     signature_url: text('signature_url'),
 
+    // GST Pricing
+    pricesIncludeGst: integer('prices_include_gst', { mode: 'boolean' }).default(false),
+
     created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`)
 });

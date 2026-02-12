@@ -44,6 +44,7 @@ export const invoices = sqliteTable(
 
         // GST
         is_inter_state: integer('is_inter_state', { mode: 'boolean' }).default(false), // 0 = intra, 1 = inter
+        prices_include_gst: integer('prices_include_gst', { mode: 'boolean' }).default(false),
 
         // TDS (Phase 2 - columns added for future)
         tds_rate: real('tds_rate').default(0),

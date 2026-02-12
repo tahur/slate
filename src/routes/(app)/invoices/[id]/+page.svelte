@@ -362,6 +362,15 @@
                     </div>
                 </div>
 
+                <!-- GST Pricing Indicator -->
+                {#if data.invoice.prices_include_gst}
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">
+                            Prices include GST
+                        </span>
+                    </div>
+                {/if}
+
                 <!-- Items Table -->
                 <div class="border rounded-md overflow-hidden">
                     <table class="w-full text-sm">

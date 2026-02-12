@@ -34,7 +34,8 @@ export const orgSettingsSchema = z.object({
     logo_url: z.string().optional().or(z.literal('')),
     signature_url: z.string().optional().or(z.literal('')),
     invoice_notes_default: z.string().optional().or(z.literal('')),
-    invoice_terms_default: z.string().optional().or(z.literal(''))
+    invoice_terms_default: z.string().optional().or(z.literal('')),
+    prices_include_gst: z.boolean().default(false)
 }).refine(
     (data) => {
         if (data.gstin && data.state_code) {

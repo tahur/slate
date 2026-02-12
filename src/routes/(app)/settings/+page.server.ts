@@ -67,7 +67,8 @@ export const load: PageServerLoad = async ({ locals }) => {
                 logo_url: org.logo_url || '',
                 signature_url: (org as any).signature_url || '',
                 invoice_notes_default: org.invoice_notes_default || '',
-                invoice_terms_default: org.invoice_terms_default || ''
+                invoice_terms_default: org.invoice_terms_default || '',
+                prices_include_gst: (org as any).pricesIncludeGst || false
             },
             zod(orgSettingsSchema),
             { id: 'org-settings' }
@@ -163,6 +164,7 @@ export const actions: Actions = {
                 signature_url: form.data.signature_url || null,
                 invoice_notes_default: form.data.invoice_notes_default || null,
                 invoice_terms_default: form.data.invoice_terms_default || null,
+                pricesIncludeGst: form.data.prices_include_gst,
                 updated_at: new Date().toISOString()
             } as any)
             .where(eq(organizations.id, locals.user.orgId));

@@ -43,7 +43,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     // Fetch org state for GST calculation
     const org = await db.query.organizations.findFirst({
         where: eq(organizations.id, orgId),
-        columns: { state_code: true },
+        columns: { state_code: true, pricesIncludeGst: true },
     });
 
     // Fetch active catalog items
@@ -73,6 +73,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         customers: customerList,
         catalogItems,
         orgStateCode: org?.state_code || '',
+        orgPricesIncludeGst: org?.pricesIncludeGst || false,
         autoInvoiceNumber,
         idempotencyKey,
         defaults: {
@@ -114,6 +115,7 @@ export const actions: Actions = {
         const intent = (formData.get('intent') as string || 'draft').trim();
         const invoiceNumberMode = (formData.get('invoice_number_mode') as string || 'auto').trim();
         const providedInvoiceNumber = (formData.get('invoice_number') as string || '').trim();
+        const pricesIncludeGst = formData.get('prices_include_gst') === 'true';
 
 
         // Validation
@@ -169,7 +171,7 @@ export const actions: Actions = {
         });
 
         const isInterState = customer?.state_code !== org?.state_code;
-        const totals = calculateInvoiceTotals(lineItems, isInterState);
+        const totals = calculateInvoiceTotals(lineItems, isInterState, pricesIncludeGst);
 
         // Handle manual invoice number mode (outside transaction - user explicitly chose the number)
         if (invoiceNumberMode === 'manual') {
@@ -235,13 +237,14 @@ export const actions: Actions = {
                 order_number: order_number || null,
                 status: isIssue ? 'issued' : 'draft',
                 subtotal: totals.subtotal,
-                taxable_amount: totals.subtotal,
+                taxable_amount: totals.taxableAmount,
                 cgst: totals.cgst,
                 sgst: totals.sgst,
                 igst: totals.igst,
                 total: totals.total,
                 balance_due: totals.total,
                 is_inter_state: isInterState,
+                prices_include_gst: pricesIncludeGst,
                 notes: notes || null,
                 terms: terms || null,
                 journal_entry_id: null,
@@ -254,7 +257,7 @@ export const actions: Actions = {
             // Insert line items
             for (let idx = 0; idx < lineItems.length; idx++) {
                 const item = lineItems[idx];
-                const calc = calculateLineItem(item, isInterState);
+                const calc = calculateLineItem(item, isInterState, pricesIncludeGst);
 
                 await db.insert(invoice_items).values({
                     id: crypto.randomUUID(),

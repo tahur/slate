@@ -19,6 +19,7 @@ export const invoiceSchema = z.object({
     order_number: z.string().optional().default(''),
     notes: z.string().optional().default(''),
     terms: z.string().optional().default(''),
+    prices_include_gst: z.boolean().default(false),
     items: z.array(lineItemSchema).min(1, 'At least one item is required'),
 });
 
@@ -26,13 +27,25 @@ export type InvoiceSchema = typeof invoiceSchema;
 export type LineItem = z.infer<typeof lineItemSchema>;
 
 // Calculate line item totals
-export function calculateLineItem(item: LineItem, isInterState: boolean) {
+export function calculateLineItem(item: LineItem, isInterState: boolean, pricesIncludeGst = false) {
     const quantity = Number(item.quantity) || 0;
     const rate = Number(item.rate) || 0;
     const gstRate = Number(item.gst_rate) || 0;
 
     const amount = quantity * rate;
-    const taxAmount = amount * (gstRate / 100);
+
+    let taxableAmount: number;
+    let taxAmount: number;
+
+    if (pricesIncludeGst && gstRate > 0) {
+        // Inclusive: tax is inside the amount
+        taxableAmount = amount / (1 + gstRate / 100);
+        taxAmount = amount - taxableAmount;
+    } else {
+        // Exclusive: tax is added on top
+        taxableAmount = amount;
+        taxAmount = amount * (gstRate / 100);
+    }
 
     let cgst = 0, sgst = 0, igst = 0;
     if (isInterState) {
@@ -44,23 +57,26 @@ export function calculateLineItem(item: LineItem, isInterState: boolean) {
 
     return {
         amount,
+        taxableAmount,
         cgst,
         sgst,
         igst,
-        total: amount + taxAmount,
+        total: pricesIncludeGst ? amount : amount + taxAmount,
     };
 }
 
 // Calculate invoice totals
-export function calculateInvoiceTotals(items: LineItem[], isInterState: boolean) {
+export function calculateInvoiceTotals(items: LineItem[], isInterState: boolean, pricesIncludeGst = false) {
     let subtotal = 0;
+    let taxableAmount = 0;
     let totalCgst = 0;
     let totalSgst = 0;
     let totalIgst = 0;
 
     for (const item of items) {
-        const calc = calculateLineItem(item, isInterState);
+        const calc = calculateLineItem(item, isInterState, pricesIncludeGst);
         subtotal += calc.amount;
+        taxableAmount += calc.taxableAmount;
         totalCgst += calc.cgst;
         totalSgst += calc.sgst;
         totalIgst += calc.igst;
@@ -68,9 +84,10 @@ export function calculateInvoiceTotals(items: LineItem[], isInterState: boolean)
 
     return {
         subtotal,
+        taxableAmount,
         cgst: totalCgst,
         sgst: totalSgst,
         igst: totalIgst,
-        total: subtotal + totalCgst + totalSgst + totalIgst,
+        total: pricesIncludeGst ? subtotal : subtotal + totalCgst + totalSgst + totalIgst,
     };
 }

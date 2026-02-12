@@ -494,6 +494,9 @@
                     name="signature_url"
                     bind:value={$orgForm.signature_url}
                 />
+                {#if $orgForm.prices_include_gst}
+                    <input type="hidden" name="prices_include_gst" value="on" />
+                {/if}
 
                 <Card class="p-6 space-y-6">
                     <div class="flex items-center justify-between">
@@ -680,6 +683,42 @@
                     name="logo_url"
                     bind:value={$orgForm.logo_url}
                 />
+                <input
+                    type="hidden"
+                    name="signature_url"
+                    bind:value={$orgForm.signature_url}
+                />
+
+                <!-- GST Pricing -->
+                <Card class="p-6 space-y-6">
+                    <div>
+                        <h2 class="text-base font-semibold text-text-strong">
+                            GST Pricing
+                        </h2>
+                        <p class="text-sm text-text-subtle">
+                            Configure how rates and prices are treated for GST.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-1">
+                            <Label for="prices_include_gst" class="text-sm font-medium text-text-strong">
+                                Prices include GST
+                            </Label>
+                            <p class="text-xs text-text-muted max-w-md">
+                                When enabled, item rates entered on invoices are treated as GST-inclusive.
+                                Tax is calculated backwards from the entered amount. This is the default for new invoices — you can override it per invoice.
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            id="prices_include_gst"
+                            name="prices_include_gst"
+                            bind:checked={$orgForm.prices_include_gst}
+                            class="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                        />
+                    </div>
+                </Card>
 
                 <!-- Signature -->
                 <Card class="p-6 space-y-6">

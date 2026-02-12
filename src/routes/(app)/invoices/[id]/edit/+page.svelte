@@ -39,6 +39,7 @@
         })) as (LineItem & { item_id?: string })[],
     });
 
+    let pricesIncludeGst = $state(invoice.prices_include_gst ?? false);
     let submitting = $state(false);
     let error = $state<string | null>(null);
 
@@ -110,7 +111,7 @@
     );
 
     // Calculate totals reactively
-    let totals = $derived(calculateInvoiceTotals(formData.items, isInterState));
+    let totals = $derived(calculateInvoiceTotals(formData.items, isInterState, pricesIncludeGst));
 
     function addItem() {
         formData.items = [
@@ -211,6 +212,12 @@
                 };
             }}
         >
+            <input
+                type="hidden"
+                name="prices_include_gst"
+                value={pricesIncludeGst ? "true" : "false"}
+            />
+
             <!-- LEFT COLUMN: Main Details -->
             <div
                 class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
@@ -483,6 +490,16 @@
                             >
                                 Line Items
                             </h3>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <span class="text-xs font-medium text-text-subtle">
+                                    Prices include GST
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    bind:checked={pricesIncludeGst}
+                                    class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                                />
+                            </label>
                         </div>
 
                         <div
@@ -708,12 +725,27 @@
 
                     <!-- Totals Breakdown -->
                     <div class="space-y-3 text-sm">
-                        <div class="flex justify-between text-text-subtle">
-                            <span>Subtotal</span>
-                            <span class="font-mono font-medium text-text-strong"
-                                >{formatINR(totals.subtotal)}</span
-                            >
-                        </div>
+                        {#if pricesIncludeGst}
+                            <div class="flex justify-between text-text-subtle">
+                                <span>Subtotal (incl. GST)</span>
+                                <span class="font-mono font-medium text-text-strong"
+                                    >{formatINR(totals.subtotal)}</span
+                                >
+                            </div>
+                            <div class="flex justify-between text-text-subtle">
+                                <span>Taxable Amount</span>
+                                <span class="font-mono font-medium text-text-strong"
+                                    >{formatINR(totals.taxableAmount)}</span
+                                >
+                            </div>
+                        {:else}
+                            <div class="flex justify-between text-text-subtle">
+                                <span>Subtotal</span>
+                                <span class="font-mono font-medium text-text-strong"
+                                    >{formatINR(totals.subtotal)}</span
+                                >
+                            </div>
+                        {/if}
                         {#if isInterState}
                             <div class="flex justify-between text-text-subtle">
                                 <span>IGST</span>

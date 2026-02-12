@@ -742,6 +742,7 @@ export const actions: Actions = {
         const order_number = formData.get('order_number') as string;
         const notes = formData.get('notes') as string;
         const terms = formData.get('terms') as string;
+        const pricesIncludeGst = formData.get('prices_include_gst') === 'true';
 
         // Validation
         if (!customer_id) return fail(400, { error: 'Customer is required' });
@@ -780,7 +781,7 @@ export const actions: Actions = {
             columns: { state_code: true },
         });
         const isInterState = customer?.state_code !== org?.state_code;
-        const totals = calculateInvoiceTotals(lineItems, isInterState);
+        const totals = calculateInvoiceTotals(lineItems, isInterState, pricesIncludeGst);
 
         try {
             // Update invoice record
@@ -792,13 +793,14 @@ export const actions: Actions = {
                     due_date,
                     order_number: order_number || null,
                     subtotal: totals.subtotal,
-                    taxable_amount: totals.subtotal,
+                    taxable_amount: totals.taxableAmount,
                     cgst: totals.cgst,
                     sgst: totals.sgst,
                     igst: totals.igst,
                     total: totals.total,
                     balance_due: totals.total,
                     is_inter_state: isInterState,
+                    prices_include_gst: pricesIncludeGst,
                     notes: notes || null,
                     terms: terms || null,
                     updated_at: new Date().toISOString(),
@@ -811,7 +813,7 @@ export const actions: Actions = {
 
             for (let idx = 0; idx < lineItems.length; idx++) {
                 const item = lineItems[idx];
-                const calc = calculateLineItem(item, isInterState);
+                const calc = calculateLineItem(item, isInterState, pricesIncludeGst);
 
                 await db.insert(invoice_items).values({
                     id: crypto.randomUUID(),
