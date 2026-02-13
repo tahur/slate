@@ -35,3 +35,6 @@ sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('busy_timeout = 5000');
 
 export const db = drizzle(sqlite, { schema });
+
+/** Drizzle transaction type for passing transactions through service layers */
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

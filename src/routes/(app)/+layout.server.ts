@@ -9,13 +9,26 @@ export const load: LayoutServerLoad = async (event) => {
         redirect(302, '/login');
     }
 
+    if (!event.locals.user.orgId) {
+        redirect(302, '/setup');
+    }
+
     const org = await db.query.organizations.findFirst({
         where: eq(organizations.id, event.locals.user.orgId),
         columns: {
             name: true,
-            logo_url: true
+            logo_url: true,
+            address: true,
+            city: true,
+            state_code: true,
+            pincode: true,
+            gstin: true
         }
     });
+
+    if (!org) {
+        redirect(302, '/setup');
+    }
 
     return {
         user: event.locals.user,

@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { accounts, invoices, expenses, audit_log, customers, payments, vendors } from '$lib/server/db/schema';
-import { eq, and, ne, sql, gte, lte, lt, desc, or, gt } from 'drizzle-orm';
+import { eq, and, ne, sql, gte, lte, lt, desc, or, gt, inArray } from 'drizzle-orm';
 
 export interface MoneyPosition {
     cash: number;
@@ -267,7 +267,7 @@ async function getAlerts(orgId: string): Promise<{ overdue: Alert; dueSoon: Aler
 }
 
 async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
-    // Get last 5 audit log entries with relevant details
+    // Get last 5 audit log entries
     const recentLogs = await db
         .select({
             id: audit_log.id,
@@ -281,86 +281,83 @@ async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
         .orderBy(desc(audit_log.created_at))
         .limit(5);
 
-    // Enrich with entity details
-    const enrichedActivity: RecentActivityItem[] = [];
+    if (recentLogs.length === 0) return [];
 
-    for (const log of recentLogs) {
+    // Batch-fetch all related entities by type (instead of N+1 queries)
+    const invoiceIds = recentLogs.filter(l => l.entityType === 'invoice').map(l => l.entityId);
+    const paymentIds = recentLogs.filter(l => l.entityType === 'payment').map(l => l.entityId);
+    const expenseIds = recentLogs.filter(l => l.entityType === 'expense').map(l => l.entityId);
+    const customerEntityIds = recentLogs.filter(l => l.entityType === 'customer').map(l => l.entityId);
+
+    const [invoiceRows, paymentRows, expenseRows, customerRows] = await Promise.all([
+        invoiceIds.length > 0
+            ? db.select({ id: invoices.id, invoice_number: invoices.invoice_number, total: invoices.total })
+                .from(invoices).where(inArray(invoices.id, invoiceIds))
+            : Promise.resolve([]),
+        paymentIds.length > 0
+            ? db.select({ id: payments.id, payment_number: payments.payment_number, amount: payments.amount, customer_id: payments.customer_id })
+                .from(payments).where(inArray(payments.id, paymentIds))
+            : Promise.resolve([]),
+        expenseIds.length > 0
+            ? db.select({ id: expenses.id, expense_number: expenses.expense_number, total: expenses.total })
+                .from(expenses).where(inArray(expenses.id, expenseIds))
+            : Promise.resolve([]),
+        customerEntityIds.length > 0
+            ? db.select({ id: customers.id, name: customers.name })
+                .from(customers).where(inArray(customers.id, customerEntityIds))
+            : Promise.resolve([])
+    ]);
+
+    // Also fetch customer names for payments
+    const paymentCustomerIds = paymentRows.map(p => p.customer_id).filter(Boolean);
+    const paymentCustomerRows = paymentCustomerIds.length > 0
+        ? await db.select({ id: customers.id, name: customers.name })
+            .from(customers).where(inArray(customers.id, paymentCustomerIds))
+        : [];
+
+    // Build lookup maps
+    const invoiceMap = new Map(invoiceRows.map(r => [r.id, r]));
+    const paymentMap = new Map(paymentRows.map(r => [r.id, r]));
+    const expenseMap = new Map(expenseRows.map(r => [r.id, r]));
+    const customerMap = new Map([...customerRows, ...paymentCustomerRows].map(r => [r.id, r]));
+
+    return recentLogs.map(log => {
         let description = formatActivityDescription(log.action, log.entityType);
         let amount: number | undefined;
 
-        // Get entity details based on type
         if (log.entityType === 'invoice') {
-            const invoice = await db
-                .select({
-                    invoice_number: invoices.invoice_number,
-                    total: invoices.total
-                })
-                .from(invoices)
-                .where(eq(invoices.id, log.entityId))
-                .limit(1);
-
-            if (invoice[0]) {
-                description = `${formatActionVerb(log.action)} Invoice ${invoice[0].invoice_number}`;
-                amount = invoice[0].total;
+            const inv = invoiceMap.get(log.entityId);
+            if (inv) {
+                description = `${formatActionVerb(log.action)} Invoice ${inv.invoice_number}`;
+                amount = inv.total;
             }
         } else if (log.entityType === 'payment') {
-            const payment = await db
-                .select({
-                    payment_number: payments.payment_number,
-                    amount: payments.amount,
-                    customer_id: payments.customer_id
-                })
-                .from(payments)
-                .where(eq(payments.id, log.entityId))
-                .limit(1);
-
-            if (payment[0]) {
-                const customer = await db
-                    .select({ name: customers.name })
-                    .from(customers)
-                    .where(eq(customers.id, payment[0].customer_id))
-                    .limit(1);
-
-                const customerName = customer[0]?.name || 'Customer';
-                description = `Payment received from ${customerName}`;
-                amount = payment[0].amount;
+            const pay = paymentMap.get(log.entityId);
+            if (pay) {
+                const cust = customerMap.get(pay.customer_id);
+                description = `Payment received from ${cust?.name || 'Customer'}`;
+                amount = pay.amount;
             }
         } else if (log.entityType === 'expense') {
-            const expense = await db
-                .select({
-                    expense_number: expenses.expense_number,
-                    total: expenses.total,
-                    description: expenses.description
-                })
-                .from(expenses)
-                .where(eq(expenses.id, log.entityId))
-                .limit(1);
-
-            if (expense[0]) {
-                description = `${formatActionVerb(log.action)} Expense ${expense[0].expense_number}`;
-                amount = expense[0].total;
+            const exp = expenseMap.get(log.entityId);
+            if (exp) {
+                description = `${formatActionVerb(log.action)} Expense ${exp.expense_number}`;
+                amount = exp.total;
             }
         } else if (log.entityType === 'customer') {
-            const customer = await db
-                .select({ name: customers.name })
-                .from(customers)
-                .where(eq(customers.id, log.entityId))
-                .limit(1);
-
-            if (customer[0]) {
-                description = `${formatActionVerb(log.action)} customer ${customer[0].name}`;
+            const cust = customerMap.get(log.entityId);
+            if (cust) {
+                description = `${formatActionVerb(log.action)} customer ${cust.name}`;
             }
         }
 
-        enrichedActivity.push({
+        return {
             id: log.id,
             description,
             amount,
             createdAt: log.createdAt || ''
-        });
-    }
-
-    return enrichedActivity;
+        };
+    });
 }
 
 function formatActivityDescription(action: string, entityType: string): string {

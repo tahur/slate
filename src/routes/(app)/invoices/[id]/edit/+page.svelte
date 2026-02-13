@@ -54,7 +54,7 @@
             rate: number;
             unit: string;
             gst_rate: number;
-            item_id: string;
+            item_id?: string;
         },
     ) {
         formData.items[index] = {

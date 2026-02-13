@@ -33,18 +33,11 @@ export const GET: RequestHandler = async ({ params, locals }) => {
             )
         );
 
-    // Fetch Credit Notes (status = issued)
-    // Note: If we had partial usage on CN, we would check balance. 
-    // For now assuming full CN is available or using a 'balance' field if added later.
-    // The schema for credit_notes has 'total', but no 'balance'. 
-    // WE ASSUME CN is either Used or Unused for now, OR we need to check allocations.
-    // Limitation: Current CN schema doesn't track partial balance well without summing allocations.
-    // For simplicity, we'll just check status='issued' and assume full amount available.
-    // TODO: Improve CN balance tracking.
+    // Fetch Credit Notes with remaining balance
     const credits = await db
         .select({
             id: credit_notes.id,
-            amount: credit_notes.total,
+            amount: credit_notes.balance,
             date: credit_notes.credit_note_date,
             number: credit_notes.credit_note_number
         })
@@ -53,7 +46,8 @@ export const GET: RequestHandler = async ({ params, locals }) => {
             and(
                 eq(credit_notes.org_id, orgId),
                 eq(credit_notes.customer_id, customerId),
-                eq(credit_notes.status, 'issued')
+                eq(credit_notes.status, 'issued'),
+                gt(credit_notes.balance, 0.01)
             )
         );
 

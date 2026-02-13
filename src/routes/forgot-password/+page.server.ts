@@ -40,7 +40,7 @@ export const actions: Actions = {
         }
 
         try {
-            await auth.api.forgetPassword({
+            await auth.api.requestPasswordReset({
                 body: {
                     email,
                     redirectTo: `${url.origin}/reset-password`

@@ -33,7 +33,10 @@ export const journal_entries = sqliteTable(
     (t) => ({
         unq: unique().on(t.org_id, t.entry_number),
         orgIdx: index('idx_journals_org').on(t.org_id),
-        dateIdx: index('idx_journals_date').on(t.org_id, t.entry_date)
+        dateIdx: index('idx_journals_date').on(t.org_id, t.entry_date),
+
+        // ⚠️ ACCOUNTING INVARIANT: Journal entry totals must balance
+        entryBalanced: check('entry_balanced', sql`ROUND(total_debit, 2) = ROUND(total_credit, 2)`)
     })
 );
 
@@ -63,8 +66,10 @@ export const journal_lines = sqliteTable(
         debitPositive: check('debit_positive', sql`debit >= 0`),
         creditPositive: check('credit_positive', sql`credit >= 0`),
 
-        // ⚠️ ACCOUNTING INVARIANT: A line is EITHER debit OR credit, not both
-        // (debit > 0 AND credit = 0) OR (debit = 0 AND credit > 0) OR (debit = 0 AND credit = 0)
-        singleSided: check('single_sided_entry', sql`NOT (debit > 0 AND credit > 0)`)
+        // ⚠️ ACCOUNTING INVARIANT: A line is EITHER debit OR credit, exactly one side > 0
+        singleSided: check(
+            'single_sided_entry',
+            sql`(debit > 0 AND credit = 0) OR (debit = 0 AND credit > 0)`
+        )
     })
 );

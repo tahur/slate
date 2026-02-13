@@ -1,13 +1,27 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { items, invoice_items } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { items, invoice_items, invoices, customers } from '$lib/server/db/schema';
+import { eq, and, ne, desc, sum, count, sql } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from '../new/schema';
 import { setFlash } from '$lib/server/flash';
 import { logActivity } from '$lib/server/services';
 import type { Actions, PageServerLoad } from './$types';
+
+async function isSkuTaken(orgId: string, sku: string, excludeItemId?: string): Promise<boolean> {
+    if (!sku) return false;
+    const conditions = [eq(items.org_id, orgId), eq(items.sku, sku)];
+    if (excludeItemId) {
+        conditions.push(ne(items.id, excludeItemId));
+    }
+    const existing = await db
+        .select({ id: items.id })
+        .from(items)
+        .where(and(...conditions))
+        .limit(1);
+    return existing.length > 0;
+}
 
 export const load: PageServerLoad = async ({ locals, params }) => {
     if (!locals.user) {
@@ -28,14 +42,52 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         redirect(302, '/items');
     }
 
-    // Check if item is used in any invoices
-    const usageCount = await db
-        .select({ id: invoice_items.id })
+    // Usage stats: count of invoices, total quantity, total revenue
+    const [stats] = await db
+        .select({
+            invoiceCount: count(sql`DISTINCT ${invoice_items.invoice_id}`),
+            totalQuantity: sum(invoice_items.quantity),
+            totalRevenue: sum(invoice_items.amount),
+        })
         .from(invoice_items)
-        .where(eq(invoice_items.item_id, itemId))
-        .limit(1);
+        .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
+        .where(
+            and(
+                eq(invoice_items.item_id, itemId),
+                eq(invoices.org_id, orgId)
+            )
+        );
 
-    const isUsedInInvoices = usageCount.length > 0;
+    const usageStats = {
+        invoiceCount: Number(stats?.invoiceCount ?? 0),
+        totalQuantity: Number(stats?.totalQuantity ?? 0),
+        totalRevenue: Number(stats?.totalRevenue ?? 0),
+    };
+
+    // Recent invoices using this item (last 10)
+    const recentInvoices = await db
+        .select({
+            invoiceId: invoices.id,
+            invoiceNumber: invoices.invoice_number,
+            invoiceDate: invoices.invoice_date,
+            customerName: customers.name,
+            quantity: invoice_items.quantity,
+            amount: invoice_items.amount,
+            status: invoices.status,
+        })
+        .from(invoice_items)
+        .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
+        .innerJoin(customers, eq(invoices.customer_id, customers.id))
+        .where(
+            and(
+                eq(invoice_items.item_id, itemId),
+                eq(invoices.org_id, orgId)
+            )
+        )
+        .orderBy(desc(invoices.invoice_date))
+        .limit(10);
+
+    const isUsedInInvoices = usageStats.invoiceCount > 0;
 
     const form = await superValidate({
         name: item.name,
@@ -52,6 +104,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         item,
         form,
         isUsedInInvoices,
+        usageStats,
+        recentInvoices,
     };
 };
 
@@ -69,11 +123,16 @@ export const actions: Actions = {
 
         try {
             const data = form.data;
+            const sku = data.sku || null;
+
+            if (sku && await isSkuTaken(event.locals.user.orgId, sku, event.params.id)) {
+                return fail(400, { form, error: 'An item with this SKU already exists.' });
+            }
 
             await db.update(items)
                 .set({
                     type: data.type,
-                    sku: data.sku || null,
+                    sku,
                     name: data.name,
                     description: data.description || null,
                     hsn_code: data.hsn_code || null,

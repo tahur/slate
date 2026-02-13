@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
@@ -40,6 +40,7 @@ export const items = sqliteTable(
     },
     (t) => ({
         orgIdx: index('idx_items_org').on(t.org_id),
-        orgTypeIdx: index('idx_items_org_type').on(t.org_id, t.type)
+        orgTypeIdx: index('idx_items_org_type').on(t.org_id, t.type),
+        orgSkuIdx: uniqueIndex('idx_items_org_sku').on(t.org_id, t.sku)
     })
 );

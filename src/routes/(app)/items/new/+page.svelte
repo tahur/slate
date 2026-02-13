@@ -6,13 +6,14 @@
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
     import { UNITS, GST_RATES } from "./schema";
-    import { ArrowLeft, Save } from "lucide-svelte";
+    import { ArrowLeft, Save, Hash, PenLine } from "lucide-svelte";
 
     let { data } = $props();
-    const { form: initialForm } = data;
+    const { form: initialForm, nextSku } = data;
 
     let gstRateStr = $state("18");
     let unitStr = $state("nos");
+    let skuMode = $state<"auto" | "manual">("auto");
 
     const { form, errors, enhance, submitting } = superForm(initialForm, {
         onResult: ({ result }) => {
@@ -20,6 +21,13 @@
                 toast.error(result.data.error as string);
             }
         },
+    });
+
+    // Set auto SKU initially
+    $effect(() => {
+        if (skuMode === "auto") {
+            $form.sku = nextSku;
+        }
     });
 </script>
 
@@ -54,31 +62,33 @@
                 class="flex-1 p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
             >
                 <div class="max-w-3xl space-y-8">
-                    <!-- Section: Type -->
-                    <section class="space-y-6">
+                    <!-- Section: Type (compact segmented control) -->
+                    <section class="space-y-4">
                         <h3
                             class="text-xs font-bold uppercase tracking-wide text-text-muted"
                         >
                             Item Type
                         </h3>
 
-                        <div class="flex gap-3">
+                        <div
+                            class="inline-flex rounded-lg border border-border bg-surface-0 p-0.5"
+                        >
                             <button
                                 type="button"
-                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type ===
+                                class="px-4 py-1.5 rounded-md text-sm font-medium transition-all {$form.type ===
                                 'product'
-                                    ? 'border-primary bg-primary/5 text-primary'
-                                    : 'border-border bg-surface-0 text-text-muted hover:border-border-strong'}"
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'text-text-muted hover:text-text-strong'}"
                                 onclick={() => ($form.type = "product")}
                             >
                                 Product
                             </button>
                             <button
                                 type="button"
-                                class="flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all {$form.type ===
+                                class="px-4 py-1.5 rounded-md text-sm font-medium transition-all {$form.type ===
                                 'service'
-                                    ? 'border-primary bg-primary/5 text-primary'
-                                    : 'border-border bg-surface-0 text-text-muted hover:border-border-strong'}"
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'text-text-muted hover:text-text-strong'}"
                                 onclick={() => ($form.type = "service")}
                             >
                                 Service
@@ -117,15 +127,43 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="sku" variant="form"
-                                    >SKU / Barcode</Label
-                                >
+                                <div class="flex items-center justify-between">
+                                    <Label for="sku" variant="form"
+                                        >SKU / Barcode</Label
+                                    >
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-strong transition-colors"
+                                        onclick={() => {
+                                            skuMode =
+                                                skuMode === "auto"
+                                                    ? "manual"
+                                                    : "auto";
+                                            if (skuMode === "auto") {
+                                                $form.sku = nextSku;
+                                            } else {
+                                                $form.sku = "";
+                                            }
+                                        }}
+                                    >
+                                        {#if skuMode === "auto"}
+                                            <PenLine class="size-3" />
+                                            Manual
+                                        {:else}
+                                            <Hash class="size-3" />
+                                            Auto
+                                        {/if}
+                                    </button>
+                                </div>
                                 <Input
                                     id="sku"
                                     name="sku"
                                     bind:value={$form.sku}
-                                    placeholder="e.g. PRD-001"
-                                    class="border-border-strong bg-surface-0 font-mono"
+                                    placeholder={skuMode === "auto"
+                                        ? nextSku
+                                        : "e.g. PRD-001"}
+                                    disabled={skuMode === "auto"}
+                                    class="border-border-strong bg-surface-0 font-mono {skuMode === 'auto' ? 'text-text-muted' : ''}"
                                 />
                             </div>
 

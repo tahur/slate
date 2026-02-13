@@ -1,12 +1,11 @@
-import { db } from '../db';
+import { db, type Tx } from '../db';
 import { number_series } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 export type NumberSeriesModule = 'invoice' | 'payment' | 'expense' | 'journal' | 'credit_note';
 
-// Transaction type for Drizzle
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+// Keep legacy alias for backwards compat within this file
+type DbTransaction = Tx;
 
 const MODULE_PREFIXES: Record<NumberSeriesModule, string> = {
     invoice: 'INV',
@@ -55,17 +54,17 @@ function padNumber(num: number, length: number = 4): string {
  * @param fyYear - Fiscal year (optional, defaults to current)
  * @returns Formatted number like "INV-2025-26-0001"
  */
-export async function getNextNumberTx(
+export function getNextNumberTx(
     tx: DbTransaction,
     orgId: string,
     module: NumberSeriesModule,
     fyYear?: string
-): Promise<string> {
+): string {
     const fy = fyYear || getCurrentFiscalYear();
     const prefix = MODULE_PREFIXES[module];
 
     // Try to get existing series
-    const existing = await tx
+    const existing = tx
         .select()
         .from(number_series)
         .where(
@@ -82,14 +81,14 @@ export async function getNextNumberTx(
     if (existing) {
         // Increment atomically
         nextNumber = (existing.current_number || 0) + 1;
-        await tx
+        tx
             .update(number_series)
             .set({ current_number: nextNumber })
             .where(eq(number_series.id, existing.id));
     } else {
         // Create new series
         nextNumber = 1;
-        await tx.insert(number_series).values({
+        tx.insert(number_series).values({
             id: crypto.randomUUID(),
             org_id: orgId,
             module,
@@ -114,16 +113,16 @@ export async function getNextNumberTx(
  * @param fyYear - Fiscal year (optional, defaults to current)
  * @returns Formatted number like "INV-2025-26-0001"
  */
-export async function getNextNumber(
+export function getNextNumber(
     orgId: string,
     module: NumberSeriesModule,
     fyYear?: string
-): Promise<string> {
+): string {
     const fy = fyYear || getCurrentFiscalYear();
     const prefix = MODULE_PREFIXES[module];
 
     // Try to get existing series
-    const existing = await db
+    const existing = db
         .select()
         .from(number_series)
         .where(
@@ -140,14 +139,14 @@ export async function getNextNumber(
     if (existing) {
         // Increment atomically
         nextNumber = (existing.current_number || 0) + 1;
-        await db
+        db
             .update(number_series)
             .set({ current_number: nextNumber })
             .where(eq(number_series.id, existing.id));
     } else {
         // Create new series
         nextNumber = 1;
-        await db.insert(number_series).values({
+        db.insert(number_series).values({
             id: crypto.randomUUID(),
             org_id: orgId,
             module,
@@ -166,10 +165,10 @@ export async function getNextNumber(
 /**
  * Generate a draft number (not part of official series)
  */
-export async function getDraftNumber(
+export function getDraftNumber(
     orgId: string,
     module: NumberSeriesModule
-): Promise<string> {
+): string {
     const fy = getCurrentFiscalYear();
 
     // Count existing drafts for this module
@@ -182,15 +181,15 @@ export async function getDraftNumber(
 /**
  * Peek at what the next number would be without incrementing
  */
-export async function peekNextNumber(
+export function peekNextNumber(
     orgId: string,
     module: NumberSeriesModule,
     fyYear?: string
-): Promise<string> {
+): string {
     const fy = fyYear || getCurrentFiscalYear();
     const prefix = MODULE_PREFIXES[module];
 
-    const existing = await db
+    const existing = db
         .select()
         .from(number_series)
         .where(
@@ -227,17 +226,19 @@ function parseSeriesNumber(value: string): ParsedSeriesNumber | null {
  * Bump the number series when a manual number is higher than the current counter.
  * Only applies when the manual number matches the standard series format.
  */
-export async function bumpNumberSeriesIfHigher(
+export function bumpNumberSeriesIfHigher(
     orgId: string,
     module: NumberSeriesModule,
-    manualNumber: string
-): Promise<void> {
+    manualNumber: string,
+    tx?: Tx
+): void {
     const parsed = parseSeriesNumber(manualNumber);
     if (!parsed || Number.isNaN(parsed.sequence)) return;
 
     const defaultPrefix = MODULE_PREFIXES[module];
+    const q = tx || db;
 
-    const existing = await db
+    const existing = q
         .select()
         .from(number_series)
         .where(
@@ -256,7 +257,7 @@ export async function bumpNumberSeriesIfHigher(
         if ((existing.current_number || 0) >= parsed.sequence) {
             return;
         }
-        await db
+        q
             .update(number_series)
             .set({ current_number: parsed.sequence })
             .where(eq(number_series.id, existing.id));
@@ -267,7 +268,7 @@ export async function bumpNumberSeriesIfHigher(
         return;
     }
 
-    await db.insert(number_series).values({
+    q.insert(number_series).values({
         id: crypto.randomUUID(),
         org_id: orgId,
         module,

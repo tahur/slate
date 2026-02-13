@@ -1,7 +1,7 @@
-import { db } from '../db';
+import { db, type Tx } from '../db';
 import { journal_entries, journal_lines, accounts } from '../db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
-import { getNextNumber } from './number-series';
+import { getNextNumberTx } from './number-series';
 import { addCurrency, round2, currencyEquals } from '$lib/utils/currency';
 import {
     validateNewEntry,
@@ -38,7 +38,7 @@ interface PostingInput {
     userId?: string;
 }
 
-interface PostingResult {
+export interface PostingResult {
     journalEntryId: string;
     entryNumber: string;
     lines: {
@@ -50,14 +50,14 @@ interface PostingResult {
 }
 
 // Map account codes to their IDs for a given org
-async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<string, string>> {
+function getAccountIdsByCode(tx: Tx, orgId: string, codes: string[]): Map<string, string> {
     const result = new Map<string, string>();
 
     if (codes.length === 0) {
         return result;
     }
 
-    const accountRows = await db
+    const accountRows = tx
         .select({
             id: accounts.id,
             code: accounts.account_code
@@ -68,7 +68,8 @@ async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<
                 eq(accounts.org_id, orgId),
                 inArray(accounts.account_code, codes)
             )
-        );
+        )
+        .all();
 
     for (const row of accountRows) {
         result.set(row.code, row.id);
@@ -78,7 +79,7 @@ async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<
 }
 
 /**
- * Post a journal entry with validation
+ * Post a journal entry with validation — runs inside a transaction.
  *
  * ⚠️ ACCOUNTING INVARIANTS ENFORCED:
  * - Total debits MUST equal total credits
@@ -88,10 +89,11 @@ async function getAccountIdsByCode(orgId: string, codes: string[]): Promise<Map<
  *
  * See docs/ACCOUNTING_INVARIANTS.md for details.
  */
-export async function post(
+function postInTx(
+    tx: Tx,
     orgId: string,
     input: PostingInput
-): Promise<PostingResult> {
+): PostingResult {
     // Convert to JournalLineData format for validation
     const lineData: JournalLineData[] = input.lines.map(l => ({
         debit: l.debit || 0,
@@ -99,7 +101,6 @@ export async function post(
     }));
 
     // ⚠️ INVARIANT CHECK: Validate all accounting rules before posting
-    // This will throw AccountingInvariantError if any rule is violated
     validateNewEntry(lineData);
 
     // Calculate totals using decimal.js for precision
@@ -110,7 +111,7 @@ export async function post(
 
     // Get account IDs
     const codes = input.lines.map(l => l.accountCode);
-    const accountMap = await getAccountIdsByCode(orgId, codes);
+    const accountMap = getAccountIdsByCode(tx, orgId, codes);
 
     // Validate all accounts exist
     for (const code of codes) {
@@ -119,12 +120,12 @@ export async function post(
         }
     }
 
-    // Generate entry number
-    const entryNumber = await getNextNumber(orgId, 'journal');
+    // Generate entry number (transaction-aware so it rolls back on failure)
+    const entryNumber = getNextNumberTx(tx, orgId, 'journal');
     const journalEntryId = crypto.randomUUID();
 
     // Create journal entry
-    await db.insert(journal_entries).values({
+    tx.insert(journal_entries).values({
         id: journalEntryId,
         org_id: orgId,
         entry_number: entryNumber,
@@ -146,7 +147,7 @@ export async function post(
         const debit = round2(line.debit || 0);
         const credit = round2(line.credit || 0);
 
-        await db.insert(journal_lines).values({
+        tx.insert(journal_lines).values({
             id: crypto.randomUUID(),
             journal_entry_id: journalEntryId,
             account_id: accountId,
@@ -158,11 +159,9 @@ export async function post(
         });
 
         // Update account balance
-        // Assets/Expenses: Debit increases, Credit decreases
-        // Liabilities/Equity/Income: Credit increases, Debit decreases
         const balanceChange = round2(debit - credit);
 
-        await db
+        tx
             .update(accounts)
             .set({
                 balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)`
@@ -185,19 +184,35 @@ export async function post(
 }
 
 /**
+ * Post a journal entry.
+ * If a transaction is provided, runs within it. Otherwise wraps in a new transaction.
+ */
+export function post(
+    orgId: string,
+    input: PostingInput,
+    tx?: Tx
+): PostingResult {
+    if (tx) {
+        return postInTx(tx, orgId, input);
+    }
+    return db.transaction((t) => postInTx(t, orgId, input));
+}
+
+/**
  * Reverse a journal entry (creates an opposite entry)
  *
  * ⚠️ ACCOUNTING INVARIANT: Posted entries are IMMUTABLE
  * This is the ONLY way to "undo" a posted entry - by creating a reversal.
  */
-export async function reverse(
+function reverseInTx(
+    tx: Tx,
     orgId: string,
     journalEntryId: string,
     reversalDate: string,
     userId?: string
-): Promise<PostingResult> {
+): PostingResult {
     // Get original entry
-    const original = await db
+    const original = tx
         .select()
         .from(journal_entries)
         .where(eq(journal_entries.id, journalEntryId))
@@ -220,7 +235,7 @@ export async function reverse(
     }
 
     // Get original lines
-    const originalLines = await db
+    const originalLines = tx
         .select({
             accountId: journal_lines.account_id,
             debit: journal_lines.debit,
@@ -230,33 +245,34 @@ export async function reverse(
             narration: journal_lines.narration
         })
         .from(journal_lines)
-        .leftJoin(accounts, eq(journal_lines.account_id, accounts.id))
-        .where(eq(journal_lines.journal_entry_id, journalEntryId));
+        .where(eq(journal_lines.journal_entry_id, journalEntryId))
+        .all();
 
     // Get account codes for these IDs
     const accountIds = originalLines.map(l => l.accountId);
-    const accountRows = await db
+    const accountRows = tx
         .select({
             id: accounts.id,
             code: accounts.account_code
         })
         .from(accounts)
-        .where(sql`${accounts.id} IN (${accountIds.map(id => `'${id}'`).join(',')})`);
+        .where(inArray(accounts.id, accountIds))
+        .all();
 
     const idToCode = new Map(accountRows.map(r => [r.id, r.code]));
 
     // Create reversal lines (swap debit/credit)
     const reversalLines: JournalLineInput[] = originalLines.map(line => ({
         accountCode: idToCode.get(line.accountId)!,
-        debit: line.credit || 0,  // Swap
-        credit: line.debit || 0,  // Swap
+        debit: line.credit || 0,
+        credit: line.debit || 0,
         partyType: line.partyType as 'customer' | 'vendor' | undefined,
         partyId: line.partyId || undefined,
         narration: `Reversal: ${line.narration || ''}`
     }));
 
-    // Post reversal
-    const result = await post(orgId, {
+    // Post reversal in same transaction
+    const result = postInTx(tx, orgId, {
         type: (original.reference_type + '_REVERSED') as PostingType,
         date: reversalDate,
         referenceId: original.reference_id || undefined,
@@ -266,7 +282,7 @@ export async function reverse(
     });
 
     // Mark original as reversed
-    await db
+    tx
         .update(journal_entries)
         .set({
             status: 'reversed',
@@ -275,6 +291,20 @@ export async function reverse(
         .where(eq(journal_entries.id, journalEntryId));
 
     return result;
+}
+
+export function reverse(
+    orgId: string,
+    journalEntryId: string,
+    reversalDate: string,
+    userId?: string,
+    tx?: Tx
+): PostingResult {
+    if (tx) {
+        return reverseInTx(tx, orgId, journalEntryId, reversalDate, userId);
+    }
+
+    return db.transaction((t) => reverseInTx(t, orgId, journalEntryId, reversalDate, userId));
 }
 
 // ============================================================
@@ -296,38 +326,45 @@ interface InvoicePostingInput {
 
 /**
  * Post an invoice issuance
- * 
+ *
  * Debit: Accounts Receivable (1200) - Total amount
  * Credit: Sales Revenue (4000) - Subtotal
  * Credit: Output CGST (2100) - if intra-state
  * Credit: Output SGST (2101) - if intra-state
  * Credit: Output IGST (2102) - if inter-state
  */
-export async function postInvoiceIssuance(
+export function postInvoiceIssuance(
     orgId: string,
-    input: InvoicePostingInput
-): Promise<PostingResult> {
+    input: InvoicePostingInput,
+    tx?: Tx
+): PostingResult {
+    const totalTax = addCurrency(input.cgst || 0, input.sgst || 0, input.igst || 0);
+    // Revenue should always be net of output taxes, regardless of UI pricing mode.
+    // This prevents double-crediting tax when invoice prices include GST.
+    const revenueAmount = addCurrency(input.total || 0, -totalTax);
+
+    if (revenueAmount < 0) {
+        throw new Error('Invalid invoice amounts: taxable value cannot be negative');
+    }
+
     const lines: JournalLineInput[] = [
-        // Debit AR for total
         {
-            accountCode: '1200', // Accounts Receivable
+            accountCode: '1200',
             debit: input.total,
             partyType: 'customer',
             partyId: input.customerId,
             narration: `Invoice ${input.invoiceNumber}`
         },
-        // Credit Sales
         {
-            accountCode: '4000', // Sales Revenue
-            credit: input.subtotal,
+            accountCode: '4000',
+            credit: revenueAmount,
             narration: `Invoice ${input.invoiceNumber}`
         }
     ];
 
-    // Add GST credits
     if (input.cgst > 0) {
         lines.push({
-            accountCode: '2100', // Output CGST
+            accountCode: '2100',
             credit: input.cgst,
             narration: `CGST on Invoice ${input.invoiceNumber}`
         });
@@ -335,7 +372,7 @@ export async function postInvoiceIssuance(
 
     if (input.sgst > 0) {
         lines.push({
-            accountCode: '2101', // Output SGST
+            accountCode: '2101',
             credit: input.sgst,
             narration: `SGST on Invoice ${input.invoiceNumber}`
         });
@@ -343,7 +380,7 @@ export async function postInvoiceIssuance(
 
     if (input.igst > 0) {
         lines.push({
-            accountCode: '2102', // Output IGST
+            accountCode: '2102',
             credit: input.igst,
             narration: `IGST on Invoice ${input.invoiceNumber}`
         });
@@ -356,7 +393,7 @@ export async function postInvoiceIssuance(
         narration: `Invoice issued: ${input.invoiceNumber}`,
         lines,
         userId: input.userId
-    });
+    }, tx);
 }
 
 // ============================================================
@@ -375,26 +412,25 @@ interface PaymentPostingInput {
 
 /**
  * Post a payment receipt
- * 
+ *
  * Debit: Cash (1000) or Bank (1100) - Payment amount
  * Credit: Accounts Receivable (1200) - Payment amount
  */
-export async function postPaymentReceipt(
+export function postPaymentReceipt(
     orgId: string,
-    input: PaymentPostingInput
-): Promise<PostingResult> {
+    input: PaymentPostingInput,
+    tx?: Tx
+): PostingResult {
     const cashAccountCode = input.paymentMode === 'cash' ? '1000' : '1100';
 
     const lines: JournalLineInput[] = [
-        // Debit Cash/Bank
         {
             accountCode: cashAccountCode,
             debit: input.amount,
             narration: `Payment ${input.paymentNumber}`
         },
-        // Credit AR
         {
-            accountCode: '1200', // Accounts Receivable
+            accountCode: '1200',
             credit: input.amount,
             partyType: 'customer',
             partyId: input.customerId,
@@ -409,7 +445,7 @@ export async function postPaymentReceipt(
         narration: `Payment received: ${input.paymentNumber}`,
         lines,
         userId: input.userId
-    });
+    }, tx);
 }
 
 // ============================================================
@@ -431,22 +467,22 @@ interface ExpensePostingInput {
 
 /**
  * Post an expense
- * 
+ *
  * Debit: Expense Account - Net amount
  * Debit: Input CGST (1300) - if applicable
  * Debit: Input SGST (1301) - if applicable
  * Debit: Input IGST (1302) - if applicable
  * Credit: Cash (1000) or Bank (1100) - Total paid
  */
-export async function postExpense(
+export function postExpense(
     orgId: string,
-    input: ExpensePostingInput
-): Promise<PostingResult> {
+    input: ExpensePostingInput,
+    tx?: Tx
+): PostingResult {
     const totalPaid = input.amount + input.inputCgst + input.inputSgst + input.inputIgst;
     const cashAccountCode = input.paidThrough === 'cash' ? '1000' : '1100';
 
     const lines: JournalLineInput[] = [
-        // Debit expense account
         {
             accountCode: input.expenseAccountCode,
             debit: input.amount,
@@ -454,10 +490,9 @@ export async function postExpense(
         }
     ];
 
-    // Add input GST debits
     if (input.inputCgst > 0) {
         lines.push({
-            accountCode: '1300', // Input CGST
+            accountCode: '1300',
             debit: input.inputCgst,
             narration: `CGST: ${input.description}`
         });
@@ -465,7 +500,7 @@ export async function postExpense(
 
     if (input.inputSgst > 0) {
         lines.push({
-            accountCode: '1301', // Input SGST
+            accountCode: '1301',
             debit: input.inputSgst,
             narration: `SGST: ${input.description}`
         });
@@ -473,13 +508,12 @@ export async function postExpense(
 
     if (input.inputIgst > 0) {
         lines.push({
-            accountCode: '1302', // Input IGST
+            accountCode: '1302',
             debit: input.inputIgst,
             narration: `IGST: ${input.description}`
         });
     }
 
-    // Credit cash/bank
     lines.push({
         accountCode: cashAccountCode,
         credit: totalPaid,
@@ -493,7 +527,7 @@ export async function postExpense(
         narration: input.description,
         lines,
         userId: input.userId
-    });
+    }, tx);
 }
 
 // ============================================================
@@ -517,28 +551,27 @@ interface CreditNotePostingInput {
  * Post a credit note issuance (reverse of invoice)
  *
  * Debit: Sales Revenue (4000) - Subtotal (reversing revenue)
- * Debit: Output CGST (2100) - if intra-state (reversing tax liability)
- * Debit: Output SGST (2101) - if intra-state (reversing tax liability)
- * Debit: Output IGST (2102) - if inter-state (reversing tax liability)
+ * Debit: Output CGST (2100) - if intra-state
+ * Debit: Output SGST (2101) - if intra-state
+ * Debit: Output IGST (2102) - if inter-state
  * Credit: Accounts Receivable (1200) - Total (reducing customer balance)
  */
-export async function postCreditNote(
+export function postCreditNote(
     orgId: string,
-    input: CreditNotePostingInput
-): Promise<PostingResult> {
+    input: CreditNotePostingInput,
+    tx?: Tx
+): PostingResult {
     const lines: JournalLineInput[] = [
-        // Debit Sales (reversing revenue)
         {
-            accountCode: '4000', // Sales Revenue
+            accountCode: '4000',
             debit: input.subtotal,
             narration: `Credit Note ${input.creditNoteNumber}`
         }
     ];
 
-    // Add GST debits (reversing tax liability)
     if (input.cgst > 0) {
         lines.push({
-            accountCode: '2100', // Output CGST
+            accountCode: '2100',
             debit: input.cgst,
             narration: `CGST reversal on Credit Note ${input.creditNoteNumber}`
         });
@@ -546,7 +579,7 @@ export async function postCreditNote(
 
     if (input.sgst > 0) {
         lines.push({
-            accountCode: '2101', // Output SGST
+            accountCode: '2101',
             debit: input.sgst,
             narration: `SGST reversal on Credit Note ${input.creditNoteNumber}`
         });
@@ -554,15 +587,14 @@ export async function postCreditNote(
 
     if (input.igst > 0) {
         lines.push({
-            accountCode: '2102', // Output IGST
+            accountCode: '2102',
             debit: input.igst,
             narration: `IGST reversal on Credit Note ${input.creditNoteNumber}`
         });
     }
 
-    // Credit AR (reducing customer balance)
     lines.push({
-        accountCode: '1200', // Accounts Receivable
+        accountCode: '1200',
         credit: input.total,
         partyType: 'customer',
         partyId: input.customerId,
@@ -576,5 +608,5 @@ export async function postCreditNote(
         narration: `Credit Note issued: ${input.creditNoteNumber}`,
         lines,
         userId: input.userId
-    });
+    }, tx);
 }

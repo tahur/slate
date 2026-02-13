@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { items } from '$lib/server/db/schema';
+import { eq, and, count, ne } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from './schema';
@@ -8,13 +9,38 @@ import { setFlash } from '$lib/server/flash';
 import { logActivity } from '$lib/server/services';
 import type { Actions, PageServerLoad } from './$types';
 
+async function generateNextSku(orgId: string): Promise<string> {
+    const [result] = await db
+        .select({ total: count() })
+        .from(items)
+        .where(eq(items.org_id, orgId));
+
+    const next = (result?.total ?? 0) + 1;
+    return `ITEM-${String(next).padStart(4, '0')}`;
+}
+
+async function isSkuTaken(orgId: string, sku: string, excludeItemId?: string): Promise<boolean> {
+    if (!sku) return false;
+    const conditions = [eq(items.org_id, orgId), eq(items.sku, sku)];
+    if (excludeItemId) {
+        conditions.push(ne(items.id, excludeItemId));
+    }
+    const existing = await db
+        .select({ id: items.id })
+        .from(items)
+        .where(and(...conditions))
+        .limit(1);
+    return existing.length > 0;
+}
+
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) {
         redirect(302, '/login');
     }
 
+    const nextSku = await generateNextSku(locals.user.orgId);
     const form = await superValidate(zod(itemSchema));
-    return { form };
+    return { form, nextSku };
 };
 
 export const actions: Actions = {
@@ -31,13 +57,19 @@ export const actions: Actions = {
 
         try {
             const data = form.data;
+            const sku = data.sku || null;
+
+            if (sku && await isSkuTaken(event.locals.user.orgId, sku)) {
+                return fail(400, { form, error: 'An item with this SKU already exists.' });
+            }
+
             const itemId = crypto.randomUUID();
 
             await db.insert(items).values({
                 id: itemId,
                 org_id: event.locals.user.orgId,
                 type: data.type,
-                sku: data.sku || null,
+                sku,
                 name: data.name,
                 description: data.description || null,
                 hsn_code: data.hsn_code || null,

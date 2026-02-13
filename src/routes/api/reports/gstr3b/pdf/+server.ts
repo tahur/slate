@@ -77,8 +77,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
             }
         });
     } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        console.error('PDF Generation Error:', error);
-        return new Response(`PDF Generation Failed: ${message}`, { status: 500 });
+        console.error('PDF generation error:', error);
+        return new Response('Failed to generate GSTR-3B PDF', { status: 500 });
     }
 };

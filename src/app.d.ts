@@ -9,9 +9,9 @@ declare global {
 				email: string;
 				name: string;
 				role: string;
-				orgId: string | null;
+				orgId: string;
 			} | null;
-			session: { id: string; token: string; expiresAt: number } | null;
+			session: { id: string; token: string; expiresAt: Date | number } | null;
 			flash: import('$lib/server/flash').FlashMessage | null;
 		}
 		// interface PageData {}

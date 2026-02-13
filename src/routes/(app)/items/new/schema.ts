@@ -6,7 +6,7 @@ export const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 export const itemSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    type: z.enum(['product', 'service']).default('service'),
+    type: z.enum(['product', 'service']).default('product'),
     sku: z.string().optional().or(z.literal('')),
     description: z.string().optional().or(z.literal('')),
     hsn_code: z.string().optional().or(z.literal('')),

@@ -45,9 +45,9 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 				'Content-Disposition': `attachment; filename="${filename}"`
 			}
 		});
-	} catch (error: any) {
-		console.error('PDF Generation Error:', error);
-		return new Response(`PDF Generation Failed: ${error.message}\n${error.stack}`, {
+	} catch (error: unknown) {
+		console.error('PDF generation error:', error);
+		return new Response('Failed to generate invoice PDF', {
 			status: 500
 		});
 	}

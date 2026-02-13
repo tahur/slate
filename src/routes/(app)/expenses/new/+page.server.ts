@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import { expenses, accounts, vendors } from '$lib/server/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
-import { getNextNumber, postExpense, logActivity } from '$lib/server/services';
+import { getNextNumberTx, postExpense, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
 
@@ -134,64 +134,67 @@ export const actions: Actions = {
 
         const total = amount + gstAmount;
 
+        // Pre-fetch account info (read-only, safe outside transaction)
+        const categoryAccount = await db.query.accounts.findFirst({
+            where: eq(accounts.id, category)
+        });
+
+        if (!categoryAccount) {
+            return fail(400, { error: 'Invalid category' });
+        }
+
+        const paymentAccount = await db.query.accounts.findFirst({
+            where: eq(accounts.id, paid_through)
+        });
+        const paidThrough = paymentAccount?.account_code === '1000' ? 'cash' : 'bank';
+
+        const expenseId = crypto.randomUUID();
+        let expenseNumber = '';
+
         try {
-            // Generate expense number
-            const expenseNumber = await getNextNumber(orgId, 'expense');
-            const expenseId = crypto.randomUUID();
+            db.transaction((tx) => {
+                // Generate expense number
+                expenseNumber = getNextNumberTx(tx, orgId, 'expense');
 
-            // Get category account code
-            const categoryAccount = await db.query.accounts.findFirst({
-                where: eq(accounts.id, category)
+                // Post to journal
+                const postingResult = postExpense(orgId, {
+                    expenseId,
+                    date: expense_date,
+                    expenseAccountCode: categoryAccount.account_code,
+                    amount,
+                    inputCgst: cgst,
+                    inputSgst: sgst,
+                    inputIgst: igst,
+                    paidThrough,
+                    description: description || `Expense: ${categoryAccount.account_name}`,
+                    userId: locals.user!.id
+                }, tx);
+
+                // Create expense record
+                tx.insert(expenses).values({
+                    id: expenseId,
+                    org_id: orgId,
+                    expense_number: expenseNumber,
+                    expense_date,
+                    category,
+                    vendor_id: vendor_id || null,
+                    vendor_name,
+                    description,
+                    amount,
+                    gst_rate,
+                    cgst,
+                    sgst,
+                    igst,
+                    total,
+                    paid_through,
+                    reference,
+                    journal_entry_id: postingResult.journalEntryId,
+                    idempotency_key: idempotencyKey || null,
+                    created_by: locals.user!.id
+                });
             });
 
-            if (!categoryAccount) {
-                return fail(400, { error: 'Invalid category' });
-            }
-
-            // Determine payment mode
-            const paymentAccount = await db.query.accounts.findFirst({
-                where: eq(accounts.id, paid_through)
-            });
-            const paidThrough = paymentAccount?.account_code === '1000' ? 'cash' : 'bank';
-
-            // Post to journal
-            const postingResult = await postExpense(orgId, {
-                expenseId,
-                date: expense_date,
-                expenseAccountCode: categoryAccount.account_code,
-                amount,
-                inputCgst: cgst,
-                inputSgst: sgst,
-                inputIgst: igst,
-                paidThrough,
-                description: description || `Expense: ${categoryAccount.account_name}`,
-                userId: locals.user.id
-            });
-
-            // Create expense record with idempotency key
-            await db.insert(expenses).values({
-                id: expenseId,
-                org_id: orgId,
-                expense_number: expenseNumber,
-                expense_date,
-                category,
-                vendor_id: vendor_id || null,
-                vendor_name,
-                description,
-                amount,
-                gst_rate,
-                cgst,
-                sgst,
-                igst,
-                total,
-                paid_through,
-                reference,
-                journal_entry_id: postingResult.journalEntryId,
-                idempotency_key: idempotencyKey || null,
-                created_by: locals.user.id
-            });
-
-            // Log activity
+            // Log activity (outside transaction — non-critical)
             await logActivity({
                 orgId,
                 userId: locals.user.id,
@@ -207,9 +210,7 @@ export const actions: Actions = {
 
         } catch (error) {
             console.error('Failed to record expense:', error);
-            return fail(500, {
-                error: error instanceof Error ? error.message : 'Failed to record expense'
-            });
+            return fail(500, { error: 'Failed to record expense' });
         }
 
         setFlash(cookies, {

@@ -2,6 +2,7 @@ import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { getFlash, clearFlash } from '$lib/server/flash';
 import type { Handle } from '@sveltejs/kit';
+import { building } from '$app/environment';
 
 export const handle: Handle = async ({ event, resolve }) => {
     const flash = getFlash(event.cookies);
@@ -17,7 +18,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             email: session.user.email,
             name: session.user.name,
             role: (session.user as any).role || 'admin',
-            orgId: (session.user as any).orgId || null
+            orgId: (session.user as any).orgId || ''
         };
         event.locals.session = session.session;
     } else {
@@ -25,5 +26,5 @@ export const handle: Handle = async ({ event, resolve }) => {
         event.locals.session = null;
     }
 
-    return svelteKitHandler({ event, resolve, auth });
+    return svelteKitHandler({ event, resolve, auth, building });
 };

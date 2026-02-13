@@ -1,6 +1,5 @@
-import { db } from './db';
+import { db, type Tx } from './db';
 import { accounts } from './db/schema';
-import { nanoid } from 'nanoid'; // We might need to install this or use crypto.randomUUID
 
 export const INDIAN_COA_TEMPLATE = [
     // Assets
@@ -37,7 +36,7 @@ export const INDIAN_COA_TEMPLATE = [
     { code: '6900', name: 'Miscellaneous', type: 'expense', is_system: true }
 ];
 
-export async function seedChartOfAccounts(orgId: string) {
+export function seedChartOfAccounts(orgId: string, tx?: Tx) {
     const values = INDIAN_COA_TEMPLATE.map((acc) => ({
         id: crypto.randomUUID(),
         org_id: orgId,
@@ -49,5 +48,5 @@ export async function seedChartOfAccounts(orgId: string) {
         balance: 0
     }));
 
-    await db.insert(accounts).values(values);
+    (tx || db).insert(accounts).values(values);
 }

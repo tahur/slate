@@ -10,8 +10,12 @@ import {
 } from '$lib/server/db/schema';
 import { eq, and, ne, sql, inArray } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
-import { getNextNumber, postPaymentReceipt, logActivity } from '$lib/server/services';
+import { getNextNumberTx, postPaymentReceipt, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
+import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
+import { round2 } from '$lib/utils/currency';
+
+const MONEY_EPSILON = 0.01;
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -80,6 +84,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         selectedCustomer: customerId || '',
         preSelectedInvoiceId,
         unpaidInvoices,
+        idempotencyKey: generateIdempotencyKey(),
         defaults: {
             payment_date: new Date().toISOString().split('T')[0]
         }
@@ -95,23 +100,27 @@ export const actions: Actions = {
         const orgId = locals.user.orgId;
         const formData = await request.formData();
 
-        // Parse form data
+        const idempotencyKey = formData.get('idempotency_key') as string;
+        const { isDuplicate } = await checkIdempotency('payments', orgId, idempotencyKey);
+        if (isDuplicate) {
+            redirect(302, '/payments');
+        }
+
         const customer_id = formData.get('customer_id') as string;
         const payment_date = formData.get('payment_date') as string;
-        const amount = parseFloat(formData.get('amount') as string) || 0;
+        const amount = round2(parseFloat(formData.get('amount') as string) || 0);
         const payment_mode = formData.get('payment_mode') as string;
         const deposit_to = formData.get('deposit_to') as string;
-        const reference = formData.get('reference') as string || '';
-        const notes = formData.get('notes') as string || '';
+        const reference = (formData.get('reference') as string) || '';
+        const notes = (formData.get('notes') as string) || '';
 
-        // Validation
         if (!customer_id) {
             return fail(400, { error: 'Customer is required' });
         }
         if (!payment_date) {
             return fail(400, { error: 'Payment date is required' });
         }
-        if (amount <= 0) {
+        if (amount <= MONEY_EPSILON) {
             return fail(400, { error: 'Amount must be positive' });
         }
         if (!payment_mode) {
@@ -121,111 +130,178 @@ export const actions: Actions = {
             return fail(400, { error: 'Deposit account is required' });
         }
 
-        // Parse allocations
         const allocations: { invoice_id: string; amount: number }[] = [];
+        const seenInvoiceIds = new Set<string>();
         let i = 0;
         while (formData.has(`allocations[${i}].invoice_id`)) {
-            const invoiceId = formData.get(`allocations[${i}].invoice_id`) as string;
-            const allocAmount = parseFloat(formData.get(`allocations[${i}].amount`) as string) || 0;
-            if (invoiceId && allocAmount > 0) {
-                allocations.push({ invoice_id: invoiceId, amount: allocAmount });
+            const invoiceId = (formData.get(`allocations[${i}].invoice_id`) as string) || '';
+            const allocAmount = round2(parseFloat(formData.get(`allocations[${i}].amount`) as string) || 0);
+            if (!invoiceId || allocAmount <= MONEY_EPSILON) {
+                i++;
+                continue;
             }
+            if (seenInvoiceIds.has(invoiceId)) {
+                return fail(400, { error: 'Duplicate invoice allocations are not allowed' });
+            }
+            seenInvoiceIds.add(invoiceId);
+            allocations.push({ invoice_id: invoiceId, amount: allocAmount });
             i++;
         }
 
-        // Calculate total allocated
-        const totalAllocated = allocations.reduce((sum, a) => sum + a.amount, 0);
+        const totalAllocated = round2(allocations.reduce((sum, allocation) => sum + allocation.amount, 0));
+        if (totalAllocated > amount + MONEY_EPSILON) {
+            return fail(400, { error: 'Allocated amount cannot exceed payment amount' });
+        }
+
+        const paymentId = crypto.randomUUID();
+        let paymentNumber = '';
 
         try {
-            // Generate payment number
-            const paymentNumber = await getNextNumber(orgId, 'payment');
-            const paymentId = crypto.randomUUID();
+            db.transaction((tx) => {
+                const customer = tx.query.customers.findFirst({
+                    where: and(eq(customers.id, customer_id), eq(customers.org_id, orgId))
+                }).sync();
+                if (!customer) {
+                    throw new Error('Customer not found');
+                }
 
-            // Determine payment mode for posting
-            const paymentModeForPosting = payment_mode === 'cash' ? 'cash' : 'bank';
+                const depositAccount = tx.query.accounts.findFirst({
+                    where: and(eq(accounts.id, deposit_to), eq(accounts.org_id, orgId))
+                }).sync();
+                if (!depositAccount) {
+                    throw new Error('Invalid deposit account');
+                }
 
-            // Post to journal
-            const postingResult = await postPaymentReceipt(orgId, {
-                paymentId,
-                paymentNumber,
-                date: payment_date,
-                customerId: customer_id,
-                amount,
-                paymentMode: paymentModeForPosting,
-                userId: locals.user.id
-            });
+                const invoiceIds = allocations.map((allocation) => allocation.invoice_id);
+                const invoiceMap = new Map<
+                    string,
+                    {
+                        id: string;
+                        total: number;
+                        amount_paid: number | null;
+                        balance_due: number;
+                    }
+                >();
 
-            // Create payment record
-            await db.insert(payments).values({
-                id: paymentId,
-                org_id: orgId,
-                customer_id,
-                payment_number: paymentNumber,
-                payment_date,
-                amount,
-                payment_mode,
-                deposit_to,
-                reference,
-                notes,
-                journal_entry_id: postingResult.journalEntryId,
-                created_by: locals.user.id
-            });
+                if (invoiceIds.length > 0) {
+                    const invoiceRows = tx
+                        .select({
+                            id: invoices.id,
+                            total: invoices.total,
+                            amount_paid: invoices.amount_paid,
+                            balance_due: invoices.balance_due
+                        })
+                        .from(invoices)
+                        .where(
+                            and(
+                                eq(invoices.org_id, orgId),
+                                eq(invoices.customer_id, customer_id),
+                                inArray(invoices.id, invoiceIds),
+                                ne(invoices.status, 'paid'),
+                                ne(invoices.status, 'cancelled'),
+                                ne(invoices.status, 'draft')
+                            )
+                        )
+                        .all();
 
-            // Create allocations and update invoices
-            for (const alloc of allocations) {
-                await db.insert(payment_allocations).values({
-                    id: crypto.randomUUID(),
-                    payment_id: paymentId,
-                    invoice_id: alloc.invoice_id,
-                    amount: alloc.amount
+                    for (const invoice of invoiceRows) {
+                        invoiceMap.set(invoice.id, invoice);
+                    }
+
+                    for (const allocation of allocations) {
+                        const invoice = invoiceMap.get(allocation.invoice_id);
+                        if (!invoice) {
+                            throw new Error('One or more allocations reference invalid invoices');
+                        }
+                        if (allocation.amount > invoice.balance_due + MONEY_EPSILON) {
+                            throw new Error('Allocation amount exceeds invoice balance due');
+                        }
+                    }
+                }
+
+                paymentNumber = getNextNumberTx(tx, orgId, 'payment');
+
+                const paymentModeForPosting = payment_mode === 'cash' ? 'cash' : 'bank';
+                const postingResult = postPaymentReceipt(
+                    orgId,
+                    {
+                        paymentId,
+                        paymentNumber,
+                        date: payment_date,
+                        customerId: customer_id,
+                        amount,
+                        paymentMode: paymentModeForPosting,
+                        userId: locals.user!.id
+                    },
+                    tx
+                );
+
+                tx.insert(payments).values({
+                    id: paymentId,
+                    org_id: orgId,
+                    customer_id,
+                    payment_number: paymentNumber,
+                    payment_date,
+                    amount,
+                    payment_mode,
+                    deposit_to: depositAccount.id,
+                    reference,
+                    notes,
+                    journal_entry_id: postingResult.journalEntryId,
+                    idempotency_key: idempotencyKey || null,
+                    created_by: locals.user!.id
                 });
 
-                // Update invoice
-                const invoice = await db.query.invoices.findFirst({
-                    where: eq(invoices.id, alloc.invoice_id)
-                });
+                for (const allocation of allocations) {
+                    const invoice = invoiceMap.get(allocation.invoice_id);
+                    if (!invoice) {
+                        throw new Error('One or more allocations reference invalid invoices');
+                    }
 
-                if (invoice) {
-                    const newAmountPaid = (invoice.amount_paid || 0) + alloc.amount;
-                    const newBalanceDue = invoice.total - newAmountPaid;
-                    const newStatus = newBalanceDue <= 0 ? 'paid' : 'partially_paid';
+                    tx.insert(payment_allocations).values({
+                        id: crypto.randomUUID(),
+                        payment_id: paymentId,
+                        invoice_id: allocation.invoice_id,
+                        amount: allocation.amount
+                    });
 
-                    await db
+                    const newBalanceDue = round2(Math.max(0, invoice.balance_due - allocation.amount));
+                    const newAmountPaid = round2(invoice.total - newBalanceDue);
+                    const newStatus = newBalanceDue <= MONEY_EPSILON ? 'paid' : 'partially_paid';
+
+                    tx
                         .update(invoices)
                         .set({
                             amount_paid: newAmountPaid,
-                            balance_due: Math.max(0, newBalanceDue),
+                            balance_due: newBalanceDue,
                             status: newStatus,
                             updated_at: new Date().toISOString()
                         })
-                        .where(eq(invoices.id, alloc.invoice_id));
+                        .where(eq(invoices.id, allocation.invoice_id));
                 }
-            }
 
-            // Handle overpayment (excess as advance)
-            const excessAmount = amount - totalAllocated;
-            if (excessAmount > 0.01) {
-                await db.insert(customer_advances).values({
-                    id: crypto.randomUUID(),
-                    org_id: orgId,
-                    customer_id,
-                    payment_id: paymentId,
-                    amount: excessAmount,
-                    balance: excessAmount,
-                    notes: `Advance from payment ${paymentNumber}`
-                });
-            }
+                const excessAmount = round2(amount - totalAllocated);
+                if (excessAmount > MONEY_EPSILON) {
+                    tx.insert(customer_advances).values({
+                        id: crypto.randomUUID(),
+                        org_id: orgId,
+                        customer_id,
+                        payment_id: paymentId,
+                        amount: excessAmount,
+                        balance: excessAmount,
+                        notes: `Advance from payment ${paymentNumber}`
+                    });
+                }
 
-            // Update customer balance
-            await db
-                .update(customers)
-                .set({
-                    balance: sql`${customers.balance} - ${amount}`,
-                    updated_at: new Date().toISOString()
-                })
-                .where(eq(customers.id, customer_id));
+                tx
+                    .update(customers)
+                    .set({
+                        balance: sql`${customers.balance} - ${amount}`,
+                        updated_at: new Date().toISOString()
+                    })
+                    .where(eq(customers.id, customer_id));
+            });
 
-            // Log activity
             await logActivity({
                 orgId,
                 userId: locals.user.id,
@@ -238,12 +314,18 @@ export const actions: Actions = {
                     payment_mode: { new: payment_mode }
                 }
             });
-
         } catch (error) {
             console.error('Failed to record payment:', error);
-            return fail(500, {
-                error: error instanceof Error ? error.message : 'Failed to record payment'
-            });
+            const message = error instanceof Error ? error.message : '';
+            if (
+                message === 'Customer not found'
+                || message === 'Invalid deposit account'
+                || message === 'One or more allocations reference invalid invoices'
+                || message === 'Allocation amount exceeds invoice balance due'
+            ) {
+                return fail(400, { error: message });
+            }
+            return fail(500, { error: 'Failed to record payment' });
         }
 
         setFlash(cookies, {

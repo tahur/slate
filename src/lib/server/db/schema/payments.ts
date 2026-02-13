@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, index, unique } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, real, index, unique, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { customers } from './customers';
@@ -43,21 +43,29 @@ export const payments = sqliteTable(
     (t) => ({
         unq: unique().on(t.org_id, t.payment_number),
         orgIdx: index('idx_payments_org').on(t.org_id),
-        custIdx: index('idx_payments_org_customer').on(t.org_id, t.customer_id)
+        custIdx: index('idx_payments_org_customer').on(t.org_id, t.customer_id),
+        idempotencyIdx: uniqueIndex('idx_payments_org_idempotency').on(t.org_id, t.idempotency_key)
     })
 );
 
-export const payment_allocations = sqliteTable('payment_allocations', {
-    id: text('id').primaryKey(),
-    payment_id: text('payment_id')
-        .notNull()
-        .references(() => payments.id),
-    invoice_id: text('invoice_id')
-        .notNull()
-        .references(() => invoices.id),
-    amount: real('amount').notNull(),
-    created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
-});
+export const payment_allocations = sqliteTable(
+    'payment_allocations',
+    {
+        id: text('id').primaryKey(),
+        payment_id: text('payment_id')
+            .notNull()
+            .references(() => payments.id),
+        invoice_id: text('invoice_id')
+            .notNull()
+            .references(() => invoices.id),
+        amount: real('amount').notNull(),
+        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+    },
+    (t) => ({
+        paymentIdx: index('idx_pa_payment').on(t.payment_id),
+        invoiceIdx: index('idx_pa_invoice').on(t.invoice_id)
+    })
+);
 
 export const customer_advances = sqliteTable(
     'customer_advances',

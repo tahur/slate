@@ -3,6 +3,7 @@ import { auth } from '$lib/server/auth';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from './schema';
+import { forwardAuthCookies } from '$lib/server/utils/cookies';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -25,7 +26,7 @@ export const actions: Actions = {
         const { email, password } = form.data;
 
         const result = await auth.api.signInEmail({
-            body: { email: email.toLowerCase(), password },
+            body: { email: email.trim().toLowerCase(), password },
             asResponse: true
         });
 
@@ -33,37 +34,8 @@ export const actions: Actions = {
             return fail(400, { form, error: 'Incorrect email or password' });
         }
 
-        // Forward set-cookie headers from better-auth response
-        forwardCookies(result, event);
+        forwardAuthCookies(result, event);
 
         redirect(302, '/dashboard');
     }
 };
-
-function forwardCookies(response: Response, event: any) {
-    const setCookieHeaders = response.headers.getSetCookie();
-    for (const cookieStr of setCookieHeaders) {
-        const name = cookieStr.split('=')[0];
-        const rawValue = cookieStr.split('=').slice(1).join('=').split(';')[0];
-        const attrs = parseCookieAttributes(cookieStr);
-        event.cookies.set(name, rawValue, {
-            path: '/',
-            encode: (v: string) => v,
-            ...attrs
-        });
-    }
-}
-
-function parseCookieAttributes(cookie: string): Record<string, any> {
-    const attrs: Record<string, any> = {};
-    const parts = cookie.split(';').slice(1);
-    for (const part of parts) {
-        const trimmed = part.trim().toLowerCase();
-        if (trimmed === 'httponly') attrs.httpOnly = true;
-        else if (trimmed === 'secure') attrs.secure = true;
-        else if (trimmed.startsWith('samesite=')) attrs.sameSite = trimmed.split('=')[1];
-        else if (trimmed.startsWith('max-age=')) attrs.maxAge = parseInt(trimmed.split('=')[1]);
-        else if (trimmed.startsWith('path=')) attrs.path = part.trim().split('=')[1];
-    }
-    return attrs;
-}

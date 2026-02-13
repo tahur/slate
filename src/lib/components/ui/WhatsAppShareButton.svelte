@@ -3,7 +3,7 @@
 
     interface Props {
         url: string;
-        size?: "xs" | "sm" | "default" | "lg" | "icon" | "icon-sm";
+        size?: "sm" | "default" | "lg" | "icon" | "icon-sm" | "icon-lg";
         variant?: "default" | "outline" | "ghost" | "secondary";
         class?: string;
     }

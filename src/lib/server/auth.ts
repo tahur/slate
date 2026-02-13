@@ -17,8 +17,11 @@ function createAuth() {
                 verification: schema.verification
             }
         }),
-        baseURL: env.BETTER_AUTH_URL || 'http://localhost:5173',
+        baseURL: env.ORIGIN || 'http://localhost:5173',
         secret: env.BETTER_AUTH_SECRET,
+        trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS
+            ? env.BETTER_AUTH_TRUSTED_ORIGINS.split(',')
+            : undefined,
         emailAndPassword: {
             enabled: true,
             sendResetPassword: async ({ user, url }) => {
@@ -34,7 +37,11 @@ function createAuth() {
             }
         },
         session: {
-            cookieCache: { enabled: true, maxAge: 300 }
+            cookieCache: {
+                enabled: true,
+                maxAge: 60,
+                version: (_session: any, user: any) => user.orgId || 'no-org'
+            }
         }
     });
 }
