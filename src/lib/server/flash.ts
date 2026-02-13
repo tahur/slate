@@ -5,7 +5,7 @@ export type FlashMessage = {
     message: string;
 };
 
-const FLASH_COOKIE = 'openbill_flash';
+const FLASH_COOKIE = 'slate_flash';
 
 export function setFlash(cookies: Cookies, flash: FlashMessage) {
     cookies.set(FLASH_COOKIE, JSON.stringify(flash), {

@@ -74,7 +74,7 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Users class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider"
+                    <span class="text-xs font-medium uppercase tracking-wide"
                         >Total Vendors</span
                     >
                 </div>
@@ -85,7 +85,7 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Building2 class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider"
+                    <span class="text-xs font-medium uppercase tracking-wide"
                         >Active</span
                     >
                 </div>
@@ -96,7 +96,7 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Wallet class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider"
+                    <span class="text-xs font-medium uppercase tracking-wide"
                         >Total Payable</span
                     >
                 </div>
@@ -230,7 +230,7 @@
                         <!-- Balance -->
                         <div class="text-right shrink-0">
                             <p
-                                class="text-xs text-text-muted uppercase tracking-wider"
+                                class="text-xs text-text-muted uppercase tracking-wide"
                             >
                                 Payable
                             </p>

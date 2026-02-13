@@ -1,22 +1,29 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      target: runner
+    image: slate:local
+    init: true
     ports:
       - "${PORT:-3000}:3000"
     environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
       PORT: 3000
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
-      OPENBILL_DB_PATH: /app/data/openbill.db
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-http://localhost:3000}
+      SLATE_DB_PATH: /app/data/slate.db
     volumes:
-      - openbill_data:/app/data
+      - slate_data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 5s
       start_period: 10s
       retries: 3
 
 volumes:
-  openbill_data:
+  slate_data:

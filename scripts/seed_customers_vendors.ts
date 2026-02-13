@@ -8,7 +8,7 @@ import { users } from '../src/lib/server/db/schema/users';
 import { eq } from 'drizzle-orm';
 import path from 'path';
 
-const dbPath = path.resolve('data/openbill.db');
+const dbPath = path.resolve('data/slate.db');
 const sqlite = new Database(dbPath);
 const db = drizzle(sqlite);
 

@@ -65,7 +65,7 @@ npm run check      # ✓ No TypeScript errors
 **Validation**:
 ```bash
 npm run db:push    # ✓ Tables created in SQLite
-# Check: data/openbill.db exists
+# Check: data/slate.db exists
 # Check: All tables visible in DB browser
 ```
 

@@ -3,6 +3,7 @@ import type { Transporter } from 'nodemailer';
 import { db } from '$lib/server/db';
 import { app_settings } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '$lib/server/platform/observability';
 
 export interface EmailOptions {
     to: string;
@@ -86,10 +87,10 @@ export async function sendEmail(orgId: string, options: EmailOptions): Promise<{
 
         return { success: true };
     } catch (error) {
-        console.error('Failed to send email:', error);
+        logger.warn('email_send_failed', { orgId, to: options.to, subject: options.subject }, error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Failed to send email'
+            error: 'Failed to send email. Please verify SMTP settings.'
         };
     }
 }
@@ -103,10 +104,14 @@ export async function testSmtpConnection(config: SmtpConfig): Promise<{ success:
         await transporter.verify();
         return { success: true };
     } catch (error) {
-        console.error('SMTP connection test failed:', error);
+        logger.warn('smtp_test_failed', {
+            host: config.host,
+            port: config.port,
+            secure: config.secure
+        }, error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Connection failed'
+            error: 'Unable to connect to SMTP server with the provided settings.'
         };
     }
 }
@@ -173,10 +178,10 @@ export async function sendPasswordResetEmail(
 
         return { success: true };
     } catch (error) {
-        console.error('Failed to send password reset email:', error);
+        logger.warn('password_reset_email_failed', { to: email }, error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Failed to send email'
+            error: 'Failed to send password reset email.'
         };
     }
 }

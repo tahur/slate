@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { BookOpen } from "lucide-svelte";
+    import { BookOpen, ArrowLeft } from "lucide-svelte";
     import { Badge } from "$lib/components/ui/badge";
+    import { Button } from "$lib/components/ui/button";
     import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import { formatINR } from "$lib/utils/currency";
 
@@ -35,6 +36,9 @@
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
     >
         <div class="flex items-center gap-4">
+            <Button variant="ghost" href="/reports" size="icon" class="h-8 w-8">
+                <ArrowLeft class="size-4" />
+            </Button>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Chart of Accounts
             </h1>
@@ -60,7 +64,7 @@
                 {#each grouped as group}
                     <div>
                         <h2
-                            class="text-xs font-bold uppercase tracking-wider text-text-muted mb-2 px-1"
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted mb-2 px-1"
                         >
                             {group.label}
                         </h2>

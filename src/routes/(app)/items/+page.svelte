@@ -55,7 +55,7 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Layers class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider"
+                    <span class="text-xs font-medium uppercase tracking-wide"
                         >Total Items</span
                     >
                 </div>
@@ -66,7 +66,7 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Package class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider"
+                    <span class="text-xs font-medium uppercase tracking-wide"
                         >Products</span
                     >
                 </div>
@@ -77,7 +77,7 @@
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Briefcase class="size-4" />
-                    <span class="text-xs font-medium uppercase tracking-wider"
+                    <span class="text-xs font-medium uppercase tracking-wide"
                         >Services</span
                     >
                 </div>
@@ -221,7 +221,7 @@
                         <!-- Rate -->
                         <div class="text-right shrink-0">
                             <p
-                                class="text-xs text-text-muted uppercase tracking-wider"
+                                class="text-xs text-text-muted uppercase tracking-wide"
                             >
                                 Rate
                             </p>

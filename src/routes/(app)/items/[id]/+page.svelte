@@ -14,7 +14,7 @@
     import StatusBadge from "$lib/components/ui/badge/StatusBadge.svelte";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
-    import { UNITS, GST_RATES } from "../new/schema";
+    import { UNIT_SUGGESTIONS, GST_RATES } from "../new/schema";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
     import {
@@ -140,7 +140,7 @@
                     >
                         <ReceiptText class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Times Used</span
                         >
                     </div>
@@ -159,7 +159,7 @@
                     >
                         <Hash class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Qty Sold</span
                         >
                     </div>
@@ -180,7 +180,7 @@
                     >
                         <TrendingUp class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Revenue</span
                         >
                     </div>
@@ -202,7 +202,7 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        class="text-xs font-semibold uppercase tracking-wide text-text-muted"
                     >
                         Details
                     </h3>
@@ -251,7 +251,7 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        class="text-xs font-semibold uppercase tracking-wide text-text-muted"
                     >
                         Pricing & Tax
                     </h3>
@@ -263,6 +263,15 @@
                             >
                             <span class="text-text-muted">
                                 / {data.item.unit || "nos"}</span
+                            >
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-text-muted">Min Qty:</span>
+                            <span class="font-mono ml-2"
+                                >{data.item.min_quantity ?? 1}</span
+                            >
+                            <span class="text-text-muted">
+                                {data.item.unit || "nos"}</span
                             >
                         </div>
                         <div class="text-sm">
@@ -387,7 +396,7 @@
                             {#if data.item.description}
                                 <div>
                                     <span
-                                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                                        class="text-xs font-semibold uppercase tracking-wide text-text-muted"
                                         >Description</span
                                     >
                                     <p class="mt-1 text-text-strong">
@@ -398,7 +407,7 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <span
-                                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                                        class="text-xs font-semibold uppercase tracking-wide text-text-muted"
                                         >Created</span
                                     >
                                     <p class="mt-1 text-text-strong">
@@ -407,7 +416,7 @@
                                 </div>
                                 <div>
                                     <span
-                                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                                        class="text-xs font-semibold uppercase tracking-wide text-text-muted"
                                         >Last Updated</span
                                     >
                                     <p class="mt-1 text-text-strong">
@@ -563,22 +572,30 @@
                         </div>
                         <div class="space-y-2">
                             <Label for="unit">Unit</Label>
-                            <Select.Root
-                                type="single"
+                            <Input
+                                id="unit"
                                 name="unit"
                                 bind:value={$form.unit}
-                            >
-                                <Select.Trigger id="unit">
-                                    {$form.unit || "nos"}
-                                </Select.Trigger>
-                                <Select.Content>
-                                    {#each UNITS as unit}
-                                        <Select.Item value={unit}
-                                            >{unit}</Select.Item
-                                        >
-                                    {/each}
-                                </Select.Content>
-                            </Select.Root>
+                                list="unit-suggestions-edit"
+                                placeholder="e.g. nos, kg, hrs"
+                            />
+                            <datalist id="unit-suggestions-edit">
+                                {#each UNIT_SUGGESTIONS as u}
+                                    <option value={u} />
+                                {/each}
+                            </datalist>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="min_quantity">Min Quantity</Label>
+                            <Input
+                                id="min_quantity"
+                                name="min_quantity"
+                                type="number"
+                                bind:value={$form.min_quantity}
+                                min="0"
+                                step="0.01"
+                                class="font-mono"
+                            />
                         </div>
                     </div>
                 </div>

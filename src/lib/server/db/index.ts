@@ -2,19 +2,21 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
 import { env } from '$env/dynamic/private';
+import { logger } from '$lib/server/platform/observability';
 
 // Ensure data directory exists
 import fs from 'node:fs';
 import path from 'node:path';
 
-const dbPath = env.OPENBILL_DB_PATH || 'data/openbill.db';
+const dbPath = env.SLATE_DB_PATH || 'data/slate.db';
 const dbDir = path.dirname(dbPath);
 
 if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const sqlite = new Database(dbPath);
+export const SLATE_DB_PATH = dbPath;
+export const sqlite = new Database(dbPath);
 
 // ⚠️ ACID COMPLIANCE: Enable WAL mode for better concurrency and crash recovery
 // WAL (Write-Ahead Logging) provides:
@@ -35,6 +37,50 @@ sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('busy_timeout = 5000');
 
 export const db = drizzle(sqlite, { schema });
+
+export interface StartupCheckSnapshot {
+    checkedAt: string;
+    dbPath: string;
+    journalMode: string;
+    foreignKeysEnabled: boolean;
+    quickCheck: string;
+    busyTimeoutMs: number;
+}
+
+function runStartupChecks(): StartupCheckSnapshot {
+    const journalMode = String(sqlite.pragma('journal_mode', { simple: true }) || '').toLowerCase();
+    const foreignKeysEnabled = Number(sqlite.pragma('foreign_keys', { simple: true })) === 1;
+    const quickCheck = String(sqlite.pragma('quick_check', { simple: true }) || '');
+    const busyTimeoutMs = Number(sqlite.pragma('busy_timeout', { simple: true }) || 0);
+
+    sqlite.prepare('SELECT 1').get();
+
+    if (journalMode !== 'wal') {
+        throw new Error(`Startup check failed: journal_mode must be WAL, got "${journalMode}"`);
+    }
+    if (!foreignKeysEnabled) {
+        throw new Error('Startup check failed: foreign_keys pragma is disabled');
+    }
+    if (quickCheck.toLowerCase() !== 'ok') {
+        throw new Error(`Startup check failed: quick_check returned "${quickCheck}"`);
+    }
+
+    return {
+        checkedAt: new Date().toISOString(),
+        dbPath,
+        journalMode,
+        foreignKeysEnabled,
+        quickCheck,
+        busyTimeoutMs
+    };
+}
+
+const startupCheckSnapshot = runStartupChecks();
+logger.info('startup_checks_passed', { ...startupCheckSnapshot });
+
+export function getStartupCheckSnapshot(): StartupCheckSnapshot {
+    return startupCheckSnapshot;
+}
 
 /** Drizzle transaction type for passing transactions through service layers */
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

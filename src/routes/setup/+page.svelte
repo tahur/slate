@@ -17,14 +17,7 @@
         constraints,
         enhance,
         delayed,
-    } = superForm(initialForm, {
-        onUpdated: ({ form }) => {
-            // If form submission was successful, redirect to dashboard
-            if (form.valid) {
-                window.location.href = "/dashboard";
-            }
-        },
-    });
+    } = superForm(initialForm);
 
     // Indian States for Dropdown
     const states = [

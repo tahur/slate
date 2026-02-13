@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, unique, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, real, index, unique, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { customers } from './customers';
@@ -46,6 +46,7 @@ export const credit_notes = sqliteTable(
     },
     (t) => ({
         unq: unique().on(t.org_id, t.credit_note_number),
+        invoiceIdx: index('idx_credit_notes_invoice').on(t.invoice_id),
         idempotencyIdx: uniqueIndex('idx_credit_notes_org_idempotency').on(t.org_id, t.idempotency_key)
     })
 );

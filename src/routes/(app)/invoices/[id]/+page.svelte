@@ -21,8 +21,15 @@
     import WhatsAppShareButton from "$lib/components/ui/WhatsAppShareButton.svelte";
     import { getInvoiceWhatsAppUrl } from "$lib/utils/whatsapp";
     import { page } from "$app/stores";
-    import { formatINR } from "$lib/utils/currency";
-    import { formatDate } from "$lib/utils/date";
+    import { formatINR, numberToWords } from "$lib/utils/currency";
+    import { formatDate, localDateStr } from "$lib/utils/date";
+    import { INDIAN_STATES } from "../../customers/new/schema";
+
+    function stateName(code: string | null | undefined): string {
+        if (!code) return "";
+        const state = INDIAN_STATES.find((s) => s.code === code);
+        return state ? `${state.name} (${code})` : code;
+    }
 
     let { data, form } = $props();
 
@@ -58,7 +65,7 @@
     // Payment Form State
     let paymentAmount = $state(0);
     let paymentMode = $state("bank");
-    let paymentDate = $state(new Date().toISOString().split("T")[0]);
+    let paymentDate = $state(localDateStr());
     let paymentReference = $state("");
 
     // Auto-update payment amount when credits change
@@ -73,7 +80,7 @@
         }
         selectedCredits = [];
         paymentAmount = data.invoice.balance_due;
-        paymentDate = new Date().toISOString().split("T")[0];
+        paymentDate = localDateStr();
         paymentReference = "";
         showSettleModal = true;
     }
@@ -280,293 +287,307 @@
         </div>
     {/if}
 
-    <!-- Content: Paper View -->
+    <!-- Content: Paper View (PDF-like) -->
     <main
-        class="flex-1 overflow-y-auto px-6 py-8 bg-surface-2/30 print-bg-white"
+        class="flex-1 overflow-y-auto px-6 py-8 bg-surface-1 print-bg-white"
     >
         <div class="mx-auto max-w-4xl">
             <!-- Main Paper Sheet -->
             <div
-                class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet"
+                class="bg-surface-0 border border-border-strong rounded-lg shadow-sm print-sheet"
             >
-                <!-- Top Meta Band -->
-                <div class="flex flex-col gap-6">
-                    {#if data.org && data.org.logo_url}
-                        <img
-                            src={data.org.logo_url}
-                            alt={data.org.name}
-                            class="h-16 w-auto object-contain self-start"
-                        />
-                    {/if}
+                <!-- ═══ Header: Company Info + TAX INVOICE ═══ -->
+                <div class="p-6 pb-0">
                     <div class="flex justify-between items-start">
                         <div class="space-y-1">
-                            <p
-                                class="text-xs font-semibold uppercase tracking-wide text-text-subtle"
-                            >
-                                Bill To
-                            </p>
-                            <h3 class="text-lg font-bold text-text-strong">
-                                {data.customer?.name}
-                            </h3>
-                            {#if data.customer?.billing_address}
-                                <p
-                                    class="text-sm text-text-subtle whitespace-pre-line max-w-xs"
-                                >
-                                    {data.customer.billing_address}
+                            {#if data.org?.logo_url}
+                                <img
+                                    src={data.org.logo_url}
+                                    alt={data.org.name}
+                                    class="h-14 w-auto object-contain mb-2"
+                                />
+                            {/if}
+                            <h2 class="text-base font-bold text-text-strong uppercase tracking-wide">
+                                {data.org?.name || "COMPANY NAME"}
+                            </h2>
+                            {#if data.org?.address}
+                                <p class="text-xs text-text-muted uppercase">{data.org.address}</p>
+                            {/if}
+                            {#if data.org?.city || data.org?.pincode}
+                                <p class="text-xs text-text-muted uppercase">
+                                    {[data.org?.city, data.org?.pincode].filter(Boolean).join(" - ")}
                                 </p>
                             {/if}
+                            {#if data.org?.state_code}
+                                <p class="text-xs text-text-muted">
+                                    State: {stateName(data.org.state_code)}
+                                </p>
+                            {/if}
+                            {#if data.org?.gstin}
+                                <p class="text-xs font-semibold text-text-strong font-mono">GSTIN: {data.org.gstin}</p>
+                            {/if}
+                            {#if data.org?.email}
+                                <p class="text-xs text-text-muted">Email: {data.org.email}</p>
+                            {/if}
+                            {#if data.org?.phone}
+                                <p class="text-xs text-text-muted">Phone: {data.org.phone}</p>
+                            {/if}
                         </div>
-
-                        <div
-                            class="grid grid-cols-2 gap-x-8 gap-y-4 text-right"
-                        >
-                            <div>
-                                <p
-                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
-                                >
-                                    Invoice Date
-                                </p>
-                                <p
-                                    class="text-sm font-mono font-medium text-text-strong"
-                                >
-                                    {formatDate(data.invoice.invoice_date)}
-                                </p>
-                            </div>
-                            <div>
-                                <p
-                                    class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
-                                >
-                                    Due Date
-                                </p>
-                                <p
-                                    class="text-sm font-mono font-medium text-text-strong"
-                                >
-                                    {formatDate(data.invoice.due_date)}
-                                </p>
-                            </div>
-                            {#if data.invoice.order_number}
+                        <div class="text-right space-y-1">
+                            <h1 class="text-2xl font-bold text-text-strong tracking-tight">TAX INVOICE</h1>
+                            {#if data.invoice.balance_due <= 0.01 && data.invoice.amount_paid && data.invoice.amount_paid > 0}
+                                <span class="inline-block text-sm font-bold text-green-600 border border-green-300 bg-green-50 px-3 py-0.5 rounded">PAID</span>
+                            {/if}
+                            {#if data.invoice.prices_include_gst}
                                 <div>
-                                    <p
-                                        class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
-                                    >
-                                        Reference #
-                                    </p>
-                                    <p
-                                        class="text-sm font-mono font-medium text-text-strong"
-                                    >
-                                        {data.invoice.order_number}
-                                    </p>
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">
+                                        Prices include GST
+                                    </span>
                                 </div>
                             {/if}
                         </div>
                     </div>
                 </div>
 
-                <!-- GST Pricing Indicator -->
-                {#if data.invoice.prices_include_gst}
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">
-                            Prices include GST
-                        </span>
-                    </div>
-                {/if}
+                <!-- ═══ Separator ═══ -->
+                <div class="mx-6 my-4 border-t border-border-strong"></div>
 
-                <!-- Items Table -->
-                <div class="border rounded-md overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr
-                                class="bg-surface-2/50 border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-subtle"
-                            >
-                                <th class="px-4 py-3 text-left">Item</th>
-                                <th class="px-4 py-3 text-right">Qty</th>
-                                <th class="px-4 py-3 text-right">Rate</th>
-                                <th class="px-4 py-3 text-right">Tax</th>
-                                <th class="px-4 py-3 text-right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border-subtle">
-                            {#each data.items as item}
-                                <tr>
-                                    <td class="px-4 py-3">
-                                        <div
-                                            class="font-medium text-text-strong"
-                                        >
-                                            {item.description}
-                                        </div>
-                                        {#if item.hsn_code}
-                                            <div
-                                                class="text-[10px] font-mono text-text-muted"
-                                            >
-                                                HSN: {item.hsn_code}
-                                            </div>
-                                        {/if}
-                                    </td>
-                                    <td
-                                        class="px-4 py-3 text-right font-mono text-text-subtle"
-                                        >{item.quantity} {item.unit}</td
-                                    >
-                                    <td
-                                        class="px-4 py-3 text-right font-mono text-text-subtle"
-                                        >{formatINR(item.rate)}</td
-                                    >
-                                    <td
-                                        class="px-4 py-3 text-right font-mono text-text-subtle"
-                                        >{item.gst_rate}%</td
-                                    >
-                                    <td
-                                        class="px-4 py-3 text-right font-mono font-medium text-text-strong"
-                                        >{formatINR(item.amount)}</td
-                                    >
-                                </tr>
-                            {/each}
-                        </tbody>
-                    </table>
+                <!-- ═══ Bill To + Invoice Meta ═══ -->
+                <div class="px-6 pb-4">
+                    <div class="flex justify-between items-start gap-8">
+                        <!-- Bill To -->
+                        <div class="space-y-1 flex-1">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">Bill To</p>
+                            <h3 class="text-sm font-bold text-text-strong uppercase">
+                                {data.customer?.name || "UNKNOWN"}
+                            </h3>
+                            {#if data.customer?.company_name}
+                                <p class="text-xs text-text-muted uppercase">{data.customer.company_name}</p>
+                            {/if}
+                            {#if data.customer?.billing_address}
+                                <p class="text-xs text-text-muted uppercase">{data.customer.billing_address}</p>
+                            {/if}
+                            {#if data.customer?.city || data.customer?.pincode}
+                                <p class="text-xs text-text-muted uppercase">
+                                    {[data.customer?.city, data.customer?.pincode].filter(Boolean).join(" - ")}
+                                </p>
+                            {/if}
+                            {#if data.customer?.state_code}
+                                <p class="text-xs text-text-muted">
+                                    State: {stateName(data.customer.state_code)}
+                                </p>
+                            {/if}
+                            {#if data.customer?.gstin}
+                                <p class="text-xs font-semibold text-text-strong font-mono mt-1">GSTIN: {data.customer.gstin}</p>
+                            {/if}
+                        </div>
+
+                        <!-- Invoice Details -->
+                        <div class="text-right space-y-2">
+                            <div>
+                                <span class="text-xs text-text-muted">Invoice No: </span>
+                                <span class="text-sm font-bold font-mono text-text-strong">{data.invoice.invoice_number}</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-text-muted">Date: </span>
+                                <span class="text-xs font-semibold text-text-strong">{formatDate(data.invoice.invoice_date)}</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-text-muted">Due Date: </span>
+                                <span class="text-xs font-semibold text-text-strong">{formatDate(data.invoice.due_date)}</span>
+                            </div>
+                            {#if data.customer?.state_code}
+                                <div>
+                                    <span class="text-xs text-text-muted">Place of Supply: </span>
+                                    <span class="text-xs font-semibold text-text-strong">{stateName(data.customer.state_code)}</span>
+                                </div>
+                            {/if}
+                            {#if data.invoice.order_number}
+                                <div>
+                                    <span class="text-xs text-text-muted">Order No: </span>
+                                    <span class="text-xs font-mono text-text-strong">{data.invoice.order_number}</span>
+                                </div>
+                            {/if}
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Notes -->
-                {#if data.invoice.notes}
-                    <div class="border-t border-border pt-6">
-                        <p
-                            class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2"
-                        >
-                            Notes
-                        </p>
-                        <p class="text-sm text-text-subtle whitespace-pre-wrap">
-                            {data.invoice.notes}
-                        </p>
-                    </div>
-                {/if}
+                <!-- ═══ Separator ═══ -->
+                <div class="mx-6 border-t border-border"></div>
 
-                <!-- Bottom Section: Terms & Summary -->
-                <div
-                    class="border-t border-border pt-6 flex flex-col md:flex-row gap-8"
-                >
-                    <!-- Left: Terms -->
-                    <div class="flex-1 space-y-2">
-                        {#if data.invoice.terms}
-                            <p
-                                class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
-                            >
-                                Terms & Conditions
-                            </p>
-                            <p
-                                class="text-xs text-text-muted whitespace-pre-wrap leading-relaxed"
-                            >
-                                {data.invoice.terms}
-                            </p>
-                        {/if}
-                    </div>
-
-                    <!-- Right: Summary -->
-                    <div class="w-full md:w-80 space-y-3 text-sm">
-                        <!-- Available Credits Widget Removed (Moved to Bottom Bar) -->
-
-                        <div class="flex justify-between text-text-subtle">
-                            <span>Sub Total</span>
-                            <span class="font-mono font-medium text-text-strong"
-                                >{formatINR(data.invoice.subtotal)}</span
-                            >
-                        </div>
-
-                        {#if data.invoice.is_inter_state}
-                            <div class="flex justify-between text-text-subtle">
-                                <span>IGST</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(data.invoice.igst)}</span
-                                >
-                            </div>
-                        {:else}
-                            <div class="flex justify-between text-text-subtle">
-                                <span>CGST</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(data.invoice.cgst)}</span
-                                >
-                            </div>
-                            <div class="flex justify-between text-text-subtle">
-                                <span>SGST</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(data.invoice.sgst)}</span
-                                >
-                            </div>
-                        {/if}
-
-                        <div
-                            class="border-t border-border pt-3 flex justify-between items-center"
-                        >
-                            <span class="font-bold text-base text-text-strong"
-                                >Total</span
-                            >
-                            <span
-                                class="font-mono text-xl font-bold text-text-strong"
-                                >{formatINR(data.invoice.total)}</span
-                            >
-                        </div>
-
-                        {#if data.paymentHistory && data.paymentHistory.length > 0}
-                            <!-- Show each adjustment as a line item -->
-                            <div
-                                class="mt-2 space-y-1.5 border-t border-border-dashed pt-3"
-                            >
-                                {#each data.paymentHistory as txn}
-                                    <div class="flex justify-between text-sm">
-                                        <span class="text-text-subtle">
-                                            {#if txn.type === "credit_note"}
-                                                <span class="text-blue-600"
-                                                    >Adjusted</span
-                                                >
-                                                <span class="font-mono text-xs"
-                                                    >({txn.reference})</span
-                                                >
-                                            {:else if txn.type === "advance"}
-                                                <span class="text-purple-600"
-                                                    >Advance</span
-                                                >
-                                                <span class="font-mono text-xs"
-                                                    >({txn.reference})</span
-                                                >
-                                            {:else}
-                                                <span class="text-green-600"
-                                                    >Payment</span
-                                                >
-                                                <span class="font-mono text-xs"
-                                                    >({txn.reference})</span
-                                                >
-                                            {/if}
-                                        </span>
-                                        <span class="font-mono text-green-600">
-                                            (-) {formatINR(txn.amount)}
-                                        </span>
-                                    </div>
+                <!-- ═══ Items Table ═══ -->
+                <div class="px-6 py-4">
+                    <div class="border border-border rounded overflow-hidden">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-surface-2/60 border-b border-border text-[10px] uppercase tracking-wider font-bold text-text-muted">
+                                    <th class="px-3 py-2.5 text-center w-8">#</th>
+                                    <th class="px-3 py-2.5 text-left">Description</th>
+                                    <th class="px-3 py-2.5 text-center">HSN/SAC</th>
+                                    <th class="px-3 py-2.5 text-center">Qty</th>
+                                    <th class="px-3 py-2.5 text-right">Rate</th>
+                                    {#if data.invoice.is_inter_state}
+                                        <th class="px-3 py-2.5 text-right">IGST</th>
+                                    {:else}
+                                        <th class="px-3 py-2.5 text-right">CGST</th>
+                                        <th class="px-3 py-2.5 text-right">SGST</th>
+                                    {/if}
+                                    <th class="px-3 py-2.5 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border/50">
+                                {#each data.items as item, i}
+                                    {@const halfRate = (item.gst_rate || 0) / 2}
+                                    {@const taxOnAmount = (item.amount * (item.gst_rate || 0)) / 100}
+                                    <tr class="hover:bg-surface-2/30">
+                                        <td class="px-3 py-2.5 text-center text-xs text-text-muted">{i + 1}</td>
+                                        <td class="px-3 py-2.5">
+                                            <div class="font-medium text-text-strong text-xs">{item.description}</div>
+                                        </td>
+                                        <td class="px-3 py-2.5 text-center font-mono text-xs text-text-muted">{item.hsn_code || "—"}</td>
+                                        <td class="px-3 py-2.5 text-center font-mono text-xs text-text-muted">{item.quantity} {item.unit || ""}</td>
+                                        <td class="px-3 py-2.5 text-right font-mono text-xs text-text-muted">{formatINR(item.rate)}</td>
+                                        {#if data.invoice.is_inter_state}
+                                            <td class="px-3 py-2.5 text-right">
+                                                <div class="text-[10px] text-text-muted">{item.gst_rate}%</div>
+                                                <div class="font-mono text-xs">{formatINR(taxOnAmount)}</div>
+                                            </td>
+                                        {:else}
+                                            <td class="px-3 py-2.5 text-right">
+                                                <div class="text-[10px] text-text-muted">{halfRate}%</div>
+                                                <div class="font-mono text-xs">{formatINR(taxOnAmount / 2)}</div>
+                                            </td>
+                                            <td class="px-3 py-2.5 text-right">
+                                                <div class="text-[10px] text-text-muted">{halfRate}%</div>
+                                                <div class="font-mono text-xs">{formatINR(taxOnAmount / 2)}</div>
+                                            </td>
+                                        {/if}
+                                        <td class="px-3 py-2.5 text-right font-mono text-xs font-bold text-text-strong">{formatINR(item.amount)}</td>
+                                    </tr>
                                 {/each}
-                            </div>
-                        {/if}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                        {#if data.invoice.balance_due > 0.01 || (data.invoice.amount_paid && data.invoice.amount_paid > 0)}
-                            <div
-                                class="flex justify-between font-bold text-lg mt-3 pt-3 border-t border-border-strong"
-                            >
-                                <span
-                                    >{data.invoice.balance_due <= 0.01
-                                        ? "Paid"
-                                        : "Balance Due"}</span
-                                >
-                                <span
-                                    class="font-mono {data.invoice
-                                        .balance_due <= 0.01
-                                        ? 'text-green-600'
-                                        : 'text-primary'}"
-                                >
-                                    {formatINR(data.invoice.balance_due)}
-                                </span>
+                <!-- ═══ Footer: Words + Bank + Notes | Summary + Signature ═══ -->
+                <div class="px-6 pb-6">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- Left column: Total in words, Bank, Notes, Terms -->
+                        <div class="flex-1 space-y-4">
+                            <!-- Total in words -->
+                            <div>
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">Total In Words</p>
+                                <p class="text-xs font-semibold italic text-text-strong">{numberToWords(data.invoice.total || 0)}</p>
                             </div>
-                        {/if}
+
+                            <!-- Bank details -->
+                            {#if data.org?.bank_name || data.org?.account_number}
+                                <div>
+                                    <p class="text-xs font-bold text-text-strong mb-1">Bank Details</p>
+                                    <div class="text-xs text-text-muted space-y-0.5 leading-relaxed">
+                                        {#if data.org?.bank_name}<p>Bank: {data.org.bank_name}</p>{/if}
+                                        {#if data.org?.account_number}<p>A/c No: <span class="font-mono">{data.org.account_number}</span></p>{/if}
+                                        {#if data.org?.ifsc}<p>IFSC: <span class="font-mono">{data.org.ifsc}</span></p>{/if}
+                                        {#if data.org?.branch}<p>Branch: {data.org.branch}</p>{/if}
+                                    </div>
+                                </div>
+                            {/if}
+
+                            <!-- Notes -->
+                            {#if data.invoice.notes}
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">Notes</p>
+                                    <p class="text-xs text-text-subtle whitespace-pre-wrap">{data.invoice.notes}</p>
+                                </div>
+                            {/if}
+
+                            <!-- Terms -->
+                            {#if data.invoice.terms}
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1">Terms & Conditions</p>
+                                    <p class="text-xs text-text-subtle whitespace-pre-wrap leading-relaxed">{data.invoice.terms}</p>
+                                </div>
+                            {/if}
+                        </div>
+
+                        <!-- Right column: Tax summary + Signature -->
+                        <div class="w-full md:w-72 space-y-4">
+                            <!-- Tax Summary -->
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between text-text-muted">
+                                    <span class="text-xs">Sub Total</span>
+                                    <span class="font-mono text-xs text-text-strong">{formatINR(data.invoice.subtotal)}</span>
+                                </div>
+
+                                {#if data.invoice.is_inter_state}
+                                    <div class="flex justify-between text-text-muted">
+                                        <span class="text-xs">IGST</span>
+                                        <span class="font-mono text-xs text-text-strong">{formatINR(data.invoice.igst)}</span>
+                                    </div>
+                                {:else}
+                                    <div class="flex justify-between text-text-muted">
+                                        <span class="text-xs">CGST</span>
+                                        <span class="font-mono text-xs text-text-strong">{formatINR(data.invoice.cgst)}</span>
+                                    </div>
+                                    <div class="flex justify-between text-text-muted">
+                                        <span class="text-xs">SGST</span>
+                                        <span class="font-mono text-xs text-text-strong">{formatINR(data.invoice.sgst)}</span>
+                                    </div>
+                                {/if}
+
+                                <div class="border-t border-border-strong pt-2 flex justify-between items-center bg-surface-2/50 -mx-2 px-2 py-1.5 rounded">
+                                    <span class="font-bold text-sm text-text-strong">TOTAL</span>
+                                    <span class="font-mono text-base font-bold text-text-strong">{formatINR(data.invoice.total)}</span>
+                                </div>
+
+                                {#if data.paymentHistory && data.paymentHistory.length > 0}
+                                    <div class="space-y-1.5 border-t border-dashed border-border pt-2">
+                                        {#each data.paymentHistory as txn}
+                                            <div class="flex justify-between text-xs">
+                                                <span class="text-text-muted">
+                                                    {#if txn.type === "credit_note"}
+                                                        <span class="text-blue-600">Adjusted</span>
+                                                        <span class="font-mono text-[10px]">({txn.reference})</span>
+                                                    {:else if txn.type === "advance"}
+                                                        <span class="text-purple-600">Advance</span>
+                                                        <span class="font-mono text-[10px]">({txn.reference})</span>
+                                                    {:else}
+                                                        <span class="text-green-600">Payment</span>
+                                                        <span class="font-mono text-[10px]">({txn.reference})</span>
+                                                    {/if}
+                                                </span>
+                                                <span class="font-mono text-green-600">(-) {formatINR(txn.amount)}</span>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                {/if}
+
+                                {#if data.invoice.balance_due > 0.01}
+                                    <div class="flex justify-between font-bold text-sm pt-2 border-t border-border-strong">
+                                        <span class="text-red-600">BALANCE DUE</span>
+                                        <span class="font-mono text-red-600">{formatINR(data.invoice.balance_due)}</span>
+                                    </div>
+                                {/if}
+                            </div>
+
+                            <!-- Signature Block -->
+                            <div class="pt-8 text-center">
+                                <div class="border-t border-border-strong w-40 mx-auto"></div>
+                                <p class="text-xs font-bold text-text-strong mt-2 uppercase">
+                                    For {data.org?.name || "Company"}
+                                </p>
+                                <p class="text-[10px] text-text-muted mt-0.5">Authorized Signatory</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Computer-generated disclaimer -->
+            <p class="text-center text-[10px] text-text-muted mt-3">
+                This is a computer-generated invoice and does not require a physical signature.
+            </p>
         </div>
     </main>
 
@@ -584,7 +605,7 @@
                     {/if}
                     <div class="flex flex-col items-end">
                         <span
-                            class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                            class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
                             >Balance Due</span
                         >
                         <span

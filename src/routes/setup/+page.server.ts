@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { db, type Tx } from '$lib/server/db';
+import { db } from '$lib/server/db';
 import { organizations, users, fiscal_years } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
@@ -7,6 +7,8 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { setupSchema } from './schema';
 import { seedChartOfAccounts } from '$lib/server/seed';
 import { setFlash } from '$lib/server/flash';
+import { runInTx } from '$lib/server/platform/db/tx';
+import { failActionFromError, InvariantError } from '$lib/server/platform/errors';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -15,10 +17,17 @@ export const load: PageServerLoad = async (event) => {
         redirect(302, '/login');
     }
 
+    // Resolve orgId from DB as source of truth to avoid setup-loop on stale session cache.
+    const persistedUser = await db.query.users.findFirst({
+        where: eq(users.id, event.locals.user.id),
+        columns: { orgId: true }
+    });
+    const effectiveOrgId = event.locals.user.orgId || persistedUser?.orgId || '';
+
     // Check if already has an org
-    if (event.locals.user.orgId) {
+    if (effectiveOrgId) {
         const org = await db.query.organizations.findFirst({
-            where: eq(organizations.id, event.locals.user.orgId)
+            where: eq(organizations.id, effectiveOrgId)
         });
         // If org exists and setup is basically done (has name), redirect to dashboard
         if (org && org.name) {
@@ -43,13 +52,28 @@ export const actions: Actions = {
         }
         const userId = event.locals.user.id;
 
+        // Prevent duplicate org creation when setup is re-submitted with stale client session.
+        const persistedUser = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { orgId: true }
+        });
+        if (persistedUser?.orgId) {
+            const existingOrg = await db.query.organizations.findFirst({
+                where: eq(organizations.id, persistedUser.orgId),
+                columns: { id: true }
+            });
+            if (existingOrg) {
+                redirect(302, '/dashboard');
+            }
+        }
+
         try {
             const data = form.data;
             const orgId = crypto.randomUUID();
             const fyStartYear = new Date().getFullYear();
             const fyEndYear = fyStartYear + 1;
 
-            db.transaction((tx) => {
+            runInTx((tx) => {
                 // 1. Create Organization
                 tx.insert(organizations).values({
                     id: orgId,
@@ -61,13 +85,14 @@ export const actions: Actions = {
                     pincode: data.pincode,
                     gstin: data.gstin || null,
                     fy_start_month: data.fy_start_month
-                });
+                }).run();
 
                 // 2. Link User to Org
                 tx
                     .update(users)
                     .set({ orgId: orgId, role: 'admin' })
-                    .where(eq(users.id, userId));
+                    .where(eq(users.id, userId))
+                    .run();
 
                 // 3. Create Fiscal Year
                 tx.insert(fiscal_years).values({
@@ -77,19 +102,34 @@ export const actions: Actions = {
                     start_date: `${fyStartYear}-04-01`,
                     end_date: `${fyEndYear}-03-31`,
                     is_locked: false
-                });
+                }).run();
 
                 // 4. Seed Chart of Accounts
                 seedChartOfAccounts(orgId, tx);
             });
 
+            const linkedUser = await db.query.users.findFirst({
+                where: eq(users.id, userId),
+                columns: { orgId: true }
+            });
+            if (!linkedUser?.orgId || linkedUser.orgId !== orgId) {
+                throw new InvariantError('Organization setup failed to link the user');
+            }
+
+            const createdOrg = await db.query.organizations.findFirst({
+                where: eq(organizations.id, orgId),
+                columns: { id: true }
+            });
+            if (!createdOrg) {
+                throw new InvariantError('Organization setup failed to persist organization');
+            }
+
             // 5. Delete Better Auth cookie cache so next request reads fresh user from DB
             //    Without this, the cached session still has orgId=null for up to 5 minutes
             event.cookies.delete('better-auth.session_data', { path: '/' });
             event.cookies.delete('__Secure-better-auth.session_data', { path: '/' });
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to setup organization' });
+        } catch (error) {
+            return failActionFromError(error, 'Organization setup failed', { form });
         }
 
         setFlash(event.cookies, {

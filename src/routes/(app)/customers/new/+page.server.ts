@@ -5,6 +5,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { customerSchema } from './schema';
 import { setFlash } from '$lib/server/flash';
+import { failActionFromError } from '$lib/server/platform/errors';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -32,7 +33,7 @@ export const actions: Actions = {
             const data = form.data;
             const customerId = crypto.randomUUID();
 
-            await db.insert(customers).values({
+            db.insert(customers).values({
                 id: customerId,
                 org_id: event.locals.user.orgId,
                 name: data.name,
@@ -51,11 +52,10 @@ export const actions: Actions = {
                 status: 'active',
                 created_by: event.locals.user.id,
                 updated_by: event.locals.user.id,
-            });
+            }).run();
 
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to create customer' });
+        } catch (error) {
+            return failActionFromError(error, 'Customer creation failed', { form });
         }
 
         setFlash(event.cookies, {

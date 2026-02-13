@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { accounts, invoices, expenses, audit_log, customers, payments, vendors } from '$lib/server/db/schema';
 import { eq, and, ne, sql, gte, lte, lt, desc, or, gt, inArray } from 'drizzle-orm';
+import { localDateStr } from '$lib/utils/date';
 
 export interface MoneyPosition {
     cash: number;
@@ -164,8 +165,8 @@ async function getMonthlyStats(orgId: string): Promise<MonthlyStats> {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const startDate = firstDayOfMonth.toISOString().split('T')[0];
-    const endDate = lastDayOfMonth.toISOString().split('T')[0];
+    const startDate = localDateStr(firstDayOfMonth);
+    const endDate = localDateStr(lastDayOfMonth);
 
     // Sales this month (non-draft, non-cancelled invoices)
     const salesResult = await db
@@ -209,11 +210,11 @@ async function getMonthlyStats(orgId: string): Promise<MonthlyStats> {
 
 async function getAlerts(orgId: string): Promise<{ overdue: Alert; dueSoon: Alert }> {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = localDateStr(today);
 
     const nextWeek = new Date(today);
     nextWeek.setDate(today.getDate() + 7);
-    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    const nextWeekStr = localDateStr(nextWeek);
 
     // Overdue invoices: due_date < today, balance_due > 0
     const overdueResult = await db
@@ -387,7 +388,7 @@ function formatActionVerb(action: string): string {
 }
 
 async function getDueInvoices(orgId: string): Promise<DueInvoice[]> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
 
     const results = await db
         .select({

@@ -43,7 +43,7 @@ export function buildGSTR1DocDefinition(pdfData: GSTR1PdfData): TDocumentDefinit
                                         {
                                             width: '*',
                                             stack: [
-                                                { text: orgName || 'OpenBill', fontSize: 14, bold: true },
+                                                { text: orgName || 'Slate', fontSize: 14, bold: true },
                                                 { text: `GSTIN: ${gstin || 'N/A'}`, fontSize: 9, margin: [0, 2, 0, 0] }
                                             ]
                                         },

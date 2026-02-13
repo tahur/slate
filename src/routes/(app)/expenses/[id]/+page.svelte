@@ -50,7 +50,7 @@
     </header>
 
     <!-- Content: Paper View -->
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-2/30 print-bg-white">
+    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
         <div class="mx-auto max-w-4xl">
             <div
                 class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet"
@@ -100,7 +100,7 @@
                     <div class="space-y-2">
                         {#if data.expense.vendor_name}
                             <p
-                                class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                                class="text-xs font-bold uppercase tracking-wide text-text-muted"
                             >
                                 Paid To
                             </p>
@@ -112,7 +112,7 @@
                     <div class="text-right space-y-4">
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
                                 Expense Date
                             </p>
@@ -122,7 +122,7 @@
                         </div>
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
                                 Category
                             </p>
@@ -132,7 +132,7 @@
                         </div>
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
                                 Paid Through
                             </p>
@@ -143,7 +143,7 @@
                         {#if data.expense.reference}
                             <div class="space-y-1">
                                 <p
-                                    class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                    class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                                 >
                                     Reference
                                 </p>

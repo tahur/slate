@@ -1,9 +1,13 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+import { organizations } from './organizations';
+import { users } from './users';
 
 export const vendors = sqliteTable('vendors', {
     id: text('id').primaryKey(),
-    org_id: text('org_id').notNull(),
+    org_id: text('org_id')
+        .notNull()
+        .references(() => organizations.id),
 
     // Basic Info
     name: text('name').notNull(),
@@ -44,9 +48,13 @@ export const vendors = sqliteTable('vendors', {
     notes: text('notes'),
     created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
-    created_by: text('created_by'),
-    updated_by: text('updated_by')
-});
+    created_by: text('created_by').references(() => users.id),
+    updated_by: text('updated_by').references(() => users.id)
+}, (t) => ({
+    orgIdx: index('idx_vendors_org').on(t.org_id),
+    orgNameIdx: index('idx_vendors_org_name').on(t.org_id, t.name),
+    orgActiveIdx: index('idx_vendors_org_active').on(t.org_id, t.is_active)
+}));
 
 export type Vendor = typeof vendors.$inferSelect;
 export type NewVendor = typeof vendors.$inferInsert;

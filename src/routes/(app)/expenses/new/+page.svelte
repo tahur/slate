@@ -223,7 +223,7 @@
 
             <!-- RIGHT COLUMN: Financials -->
             <div
-                class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
+                class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto"
             >
                 <div class="space-y-6">
                     <h3

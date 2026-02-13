@@ -17,6 +17,7 @@
 import { db } from '../db';
 import { invoices, payments, expenses, credit_notes } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logger } from '$lib/server/platform/observability';
 
 export type IdempotentTable = 'invoices' | 'payments' | 'expenses' | 'credit_notes';
 
@@ -79,7 +80,10 @@ export async function checkIdempotency<T>(
     }
 
     if (existingRecord) {
-        console.log(`[Idempotency] Duplicate submission detected for ${table}, key: ${idempotencyKey}`);
+        logger.info('idempotency_duplicate_detected', {
+            table,
+            idempotencyKey
+        });
         return { isDuplicate: true, existingRecord: existingRecord as T };
     }
 

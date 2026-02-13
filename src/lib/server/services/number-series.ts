@@ -84,7 +84,8 @@ export function getNextNumberTx(
         tx
             .update(number_series)
             .set({ current_number: nextNumber })
-            .where(eq(number_series.id, existing.id));
+            .where(eq(number_series.id, existing.id))
+            .run();
     } else {
         // Create new series
         nextNumber = 1;
@@ -96,7 +97,7 @@ export function getNextNumberTx(
             fy_year: fy,
             current_number: nextNumber,
             reset_on_fy: true
-        });
+        }).run();
     }
 
     const finalPrefix = existing?.prefix || prefix;
@@ -107,7 +108,7 @@ export function getNextNumberTx(
  * Get the next number in a series with atomic increment.
  * Creates the series record if it doesn't exist.
  * NOTE: Use getNextNumberTx if you need rollback on failure.
- * 
+ *
  * @param orgId - Organization ID
  * @param module - Type of document (invoice, payment, etc.)
  * @param fyYear - Fiscal year (optional, defaults to current)
@@ -142,7 +143,8 @@ export function getNextNumber(
         db
             .update(number_series)
             .set({ current_number: nextNumber })
-            .where(eq(number_series.id, existing.id));
+            .where(eq(number_series.id, existing.id))
+            .run();
     } else {
         // Create new series
         nextNumber = 1;
@@ -154,7 +156,7 @@ export function getNextNumber(
             fy_year: fy,
             current_number: nextNumber,
             reset_on_fy: true
-        });
+        }).run();
     }
 
     const finalPrefix = existing?.prefix || prefix;
@@ -260,7 +262,8 @@ export function bumpNumberSeriesIfHigher(
         q
             .update(number_series)
             .set({ current_number: parsed.sequence })
-            .where(eq(number_series.id, existing.id));
+            .where(eq(number_series.id, existing.id))
+            .run();
         return;
     }
 
@@ -276,5 +279,5 @@ export function bumpNumberSeriesIfHigher(
         fy_year: parsed.fy,
         current_number: parsed.sequence,
         reset_on_fy: true
-    });
+    }).run();
 }

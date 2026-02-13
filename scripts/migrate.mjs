@@ -4,7 +4,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 
-const dbPath = process.env.OPENBILL_DB_PATH || 'data/openbill.db';
+const dbPath = process.env.SLATE_DB_PATH || 'data/slate.db';
 const dbDir = path.dirname(dbPath);
 
 if (!fs.existsSync(dbDir)) {

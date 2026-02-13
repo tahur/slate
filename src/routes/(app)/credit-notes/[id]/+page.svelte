@@ -66,7 +66,7 @@
     </header>
 
     <!-- Content: Paper View -->
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-2/30 print-bg-white">
+    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
         <div class="mx-auto max-w-4xl">
             <div
                 class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 min-h-[600px] print-sheet"
@@ -115,7 +115,7 @@
                 <div class="flex justify-between items-start">
                     <div class="space-y-2">
                         <p
-                            class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
                         >
                             Credit To
                         </p>
@@ -142,7 +142,7 @@
                     </div>
                     <div class="text-right space-y-1">
                         <p
-                            class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                            class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                         >
                             Date
                         </p>

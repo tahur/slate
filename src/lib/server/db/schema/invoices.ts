@@ -85,6 +85,7 @@ export const invoices = sqliteTable(
         custIdx: index('idx_invoices_org_customer').on(t.org_id, t.customer_id),
         statusIdx: index('idx_invoices_org_status').on(t.org_id, t.status),
         dateIdx: index('idx_invoices_org_date').on(t.org_id, t.invoice_date),
+        journalEntryIdx: index('idx_invoices_journal_entry').on(t.journal_entry_id),
         idempotencyIdx: uniqueIndex('idx_invoices_org_idempotency').on(t.org_id, t.idempotency_key)
     })
 );

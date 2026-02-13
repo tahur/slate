@@ -264,7 +264,7 @@
         {#if filteredItems.length > 0}
             <div class="px-2 pt-2 pb-1">
                 <span
-                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
                 >
                     Catalog Items
                 </span>

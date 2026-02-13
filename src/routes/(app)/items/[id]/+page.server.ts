@@ -7,6 +7,7 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from '../new/schema';
 import { setFlash } from '$lib/server/flash';
 import { logActivity } from '$lib/server/services';
+import { failActionFromError } from '$lib/server/platform/errors';
 import type { Actions, PageServerLoad } from './$types';
 
 async function isSkuTaken(orgId: string, sku: string, excludeItemId?: string): Promise<boolean> {
@@ -97,6 +98,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         hsn_code: item.hsn_code || '',
         rate: item.rate,
         unit: item.unit || 'nos',
+        min_quantity: item.min_quantity ?? 1,
         gst_rate: item.gst_rate,
     }, zod(itemSchema));
 
@@ -129,7 +131,7 @@ export const actions: Actions = {
                 return fail(400, { form, error: 'An item with this SKU already exists.' });
             }
 
-            await db.update(items)
+            db.update(items)
                 .set({
                     type: data.type,
                     sku,
@@ -138,6 +140,7 @@ export const actions: Actions = {
                     hsn_code: data.hsn_code || null,
                     rate: data.rate,
                     unit: data.unit,
+                    min_quantity: data.min_quantity,
                     gst_rate: data.gst_rate,
                     updated_by: event.locals.user.id,
                     updated_at: new Date().toISOString(),
@@ -145,7 +148,8 @@ export const actions: Actions = {
                 .where(and(
                     eq(items.id, event.params.id),
                     eq(items.org_id, event.locals.user.orgId)
-                ));
+                ))
+                .run();
 
             await logActivity({
                 orgId: event.locals.user.orgId,
@@ -160,9 +164,8 @@ export const actions: Actions = {
             });
 
             return { form, success: true };
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to update item' });
+        } catch (error) {
+            return failActionFromError(error, 'Item update failed', { form });
         }
     },
 
@@ -174,7 +177,7 @@ export const actions: Actions = {
         const formData = await event.request.formData();
         const newStatus = formData.get('is_active') === 'true';
 
-        await db.update(items)
+        db.update(items)
             .set({
                 is_active: newStatus,
                 updated_by: event.locals.user.id,
@@ -183,7 +186,8 @@ export const actions: Actions = {
             .where(and(
                 eq(items.id, event.params.id),
                 eq(items.org_id, event.locals.user.orgId)
-            ));
+            ))
+            .run();
 
         await logActivity({
             orgId: event.locals.user.orgId,
@@ -215,11 +219,12 @@ export const actions: Actions = {
             return fail(400, { error: 'Cannot delete item that is used in invoices. Deactivate it instead.' });
         }
 
-        await db.delete(items)
+        db.delete(items)
             .where(and(
                 eq(items.id, event.params.id),
                 eq(items.org_id, event.locals.user.orgId)
-            ));
+            ))
+            .run();
 
         await logActivity({
             orgId: event.locals.user.orgId,

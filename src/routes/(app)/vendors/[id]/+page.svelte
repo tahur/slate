@@ -103,7 +103,7 @@
                     <div class="flex items-center gap-2 text-text-muted mb-1">
                         <Receipt class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Expenses</span
                         >
                     </div>
@@ -115,7 +115,7 @@
                     <div class="flex items-center gap-2 text-text-muted mb-1">
                         <TrendingDown class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Total Spent</span
                         >
                     </div>
@@ -127,7 +127,7 @@
                     <div class="flex items-center gap-2 text-text-muted mb-1">
                         <FileText class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Input GST</span
                         >
                     </div>
@@ -139,7 +139,7 @@
                     <div class="flex items-center gap-2 text-text-muted mb-1">
                         <Wallet class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Payable</span
                         >
                     </div>
@@ -161,7 +161,7 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                        class="text-xs font-bold uppercase tracking-wide text-text-muted"
                     >
                         Contact
                     </h3>
@@ -210,7 +210,7 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                        class="text-xs font-bold uppercase tracking-wide text-text-muted"
                     >
                         GST & Tax
                     </h3>
@@ -256,7 +256,7 @@
                     class="bg-surface-0 rounded-lg border border-border p-4 space-y-3"
                 >
                     <h3
-                        class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                        class="text-xs font-bold uppercase tracking-wide text-text-muted"
                     >
                         Quick Actions
                     </h3>
@@ -319,7 +319,7 @@
                         <table class="w-full text-sm">
                             <thead>
                                 <tr
-                                    class="text-left text-xs uppercase tracking-wider text-text-muted border-b border-border"
+                                    class="text-left text-xs uppercase tracking-wide text-text-muted border-b border-border"
                                 >
                                     <th class="pb-3 pr-4">Date</th>
                                     <th class="pb-3 pr-4">Expense #</th>

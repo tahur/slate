@@ -2,7 +2,11 @@
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
+		interface Error {
+			message: string;
+			code?: string;
+			traceId?: string;
+		}
 		interface Locals {
 			user: {
 				id: string;
@@ -13,6 +17,7 @@ declare global {
 			} | null;
 			session: { id: string; token: string; expiresAt: Date | number } | null;
 			flash: import('$lib/server/flash').FlashMessage | null;
+			requestId: string;
 		}
 		// interface PageData {}
 		// interface PageState {}

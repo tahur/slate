@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - refactor/**
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Money Math Guardrail
+        run: npm run check:money
+
+      - name: Phase 1 Regression Guardrail
+        run: npm run check:phase1
+
+      - name: Phase 2 Tax Consolidation Guardrail
+        run: npm run check:phase2
+
+      - name: Phase 3 Domain Extraction Guardrail
+        run: npm run check:phase3
+
+      - name: Phase 4 Transaction Model Guardrail
+        run: npm run check:phase4
+
+      - name: Phase 6 Contract Guardrail
+        run: npm run check:phase6
+
+      - name: Phase 7 Critical Test Guardrail
+        run: npm run check:phase7
+
+      - name: Phase 8 Observability/Ops Guardrail
+        run: npm run check:phase8
+
+      - name: Phase 9 Performance Guardrail
+        run: npm run check:phase9

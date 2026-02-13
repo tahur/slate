@@ -34,7 +34,7 @@ export function buildGSTR3BDocDefinition(pdfData: GSTR3BPdfData): TDocumentDefin
                                         {
                                             width: '*',
                                             stack: [
-                                                { text: orgName || 'OpenBill', fontSize: 14, bold: true },
+                                                { text: orgName || 'Slate', fontSize: 14, bold: true },
                                                 { text: `GSTIN: ${gstin || 'N/A'}`, fontSize: 9, margin: [0, 2, 0, 0] }
                                             ]
                                         },

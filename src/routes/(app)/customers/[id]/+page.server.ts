@@ -7,6 +7,7 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { customerSchema } from '../new/schema';
 import type { Actions, PageServerLoad } from './$types';
 import { addCurrency } from '$lib/utils/currency';
+import { failActionFromError } from '$lib/server/platform/errors';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
     if (!locals.user) {
@@ -239,7 +240,7 @@ export const actions: Actions = {
         try {
             const data = form.data;
 
-            await db.update(customers)
+            db.update(customers)
                 .set({
                     name: data.name,
                     company_name: data.company_name || null,
@@ -259,12 +260,12 @@ export const actions: Actions = {
                 .where(and(
                     eq(customers.id, event.params.id),
                     eq(customers.org_id, event.locals.user.orgId)
-                ));
+                ))
+                .run();
 
             return { form, success: true };
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to update customer' });
+        } catch (error) {
+            return failActionFromError(error, 'Customer update failed', { form });
         }
     }
 };

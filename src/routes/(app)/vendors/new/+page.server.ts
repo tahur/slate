@@ -4,6 +4,7 @@ import { vendors } from '$lib/server/db/schema';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { vendorSchema } from './schema';
+import { failActionFromError } from '$lib/server/platform/errors';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -32,7 +33,7 @@ export const actions: Actions = {
         const id = crypto.randomUUID();
 
         try {
-            await db.insert(vendors).values({
+            db.insert(vendors).values({
                 id,
                 org_id: event.locals.user.orgId,
                 name: data.name,
@@ -53,10 +54,9 @@ export const actions: Actions = {
                 tds_section: data.tds_section || null,
                 notes: data.notes || null,
                 created_by: event.locals.user.id,
-            });
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to create vendor' });
+            }).run();
+        } catch (error) {
+            return failActionFromError(error, 'Vendor creation failed', { form });
         }
 
         redirect(302, '/vendors');

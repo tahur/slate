@@ -56,7 +56,7 @@ export function buildStatementDocDefinition(data: StatementData): TDocumentDefin
 											width: '*',
 											stack: [
 												{
-													text: org?.name || 'OpenBill',
+													text: org?.name || 'Slate',
 													fontSize: 14,
 													bold: true
 												},

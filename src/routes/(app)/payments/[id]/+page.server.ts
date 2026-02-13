@@ -39,7 +39,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
     // Get customer
     const customer = await db.query.customers.findFirst({
-        where: eq(customers.id, payment.customer_id)
+        where: and(
+            eq(customers.id, payment.customer_id),
+            eq(customers.org_id, orgId)
+        )
     });
 
     // Get allocations with invoice details

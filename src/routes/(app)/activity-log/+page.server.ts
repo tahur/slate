@@ -2,6 +2,8 @@ import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { audit_log, users } from '$lib/server/db/schema';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
+import { parsePagination } from '$lib/server/platform/db/pagination';
+import { localDateStr } from '$lib/utils/date';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -20,8 +22,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const toParam = url.searchParams.get('to');
     const entityTypeParam = url.searchParams.get('type');
 
-    const startDate = fromParam || thirtyDaysAgo.toISOString().split('T')[0];
-    const endDate = toParam || today.toISOString().split('T')[0];
+    const startDate = fromParam || localDateStr(thirtyDaysAgo);
+    const endDate = toParam || localDateStr(today);
+    const pagination = parsePagination(url.searchParams, { defaultPageSize: 200, maxPageSize: 500 });
 
     // Build where conditions
     const conditions = [
@@ -51,12 +54,15 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         .leftJoin(users, eq(audit_log.user_id, users.id))
         .where(and(...conditions))
         .orderBy(desc(audit_log.created_at))
-        .limit(200);
+        .limit(pagination.pageSize)
+        .offset(pagination.offset);
 
     return {
         logs,
         startDate,
         endDate,
-        entityType: entityTypeParam || 'all'
+        entityType: entityTypeParam || 'all',
+        page: pagination.page,
+        pageSize: pagination.pageSize
     };
 };

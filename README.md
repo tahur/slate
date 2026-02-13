@@ -177,14 +177,13 @@ npm run dev
 
 Open **http://localhost:5173** and complete the setup wizard!
 
-### Docker (Dev)
+### Docker (Container Run)
 
 ```bash
 docker compose up --build
 ```
 
-This runs the dev server on **http://localhost:5173** and creates a **fresh SQLite DB** on each container start.  
-To persist data, set `FRESH_DB=0` and remove the `tmpfs` entry in `docker-compose.yml`.
+This runs the production container on **http://localhost:3000** and persists SQLite data in `slate_data`.
 
 ### First-Time Setup
 
@@ -200,8 +199,13 @@ To persist data, set `FRESH_DB=0` and remove the `tmpfs` entry in `docker-compos
 Create a `.env` file in the root directory:
 
 ```bash
-# Database path (default: data/openbill.db)
-OPENBILL_DB_PATH=data/openbill.db
+# Better Auth (required)
+BETTER_AUTH_SECRET=change-me-to-a-random-64-char-hex
+ORIGIN=http://localhost:3000
+BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000
+
+# Database path (default: data/slate.db)
+SLATE_DB_PATH=data/slate.db
 
 # SMTP (optional, only needed for email)
 SMTP_HOST=
@@ -249,10 +253,20 @@ slate/
 
 Comprehensive documentation is available in the [`/docs`](./docs) folder:
 
-- **[System Architecture](./docs/ARCHITECTURE.md)** - Complete system architecture, design tokens, and technical deep dive
+- **[Docs Hub](./docs/README.md)** - Starting point for contributors and LLM agents
+- **[FOSS Contributor Playbook](./docs/FOSS_CONTRIBUTOR_PLAYBOOK.md)** - Architecture, philosophy, governance, and contribution workflow
+- **[Testing & Safety Guardrails](./docs/TESTING_AND_SAFETY_GUARDRAILS.md)** - All required checks and when to run them
+- **[Health & Operations](./docs/HEALTH_AND_OPERATIONS.md)** - Health endpoint, startup checks, observability, and runbooks
+- **[Revamp Implementation Summary](./docs/REVAMP_IMPLEMENTATION_SUMMARY.md)** - What was added in phases 0-9
+- **[System Architecture](./docs/ARCHITECTURE.md)** - Complete runtime architecture and critical workflow design
 - **[Roadmap](./docs/ROADMAP.md)** - Feature roadmap and development plans
 - **[Style Guide](./docs/STYLE_GUIDE.md)** - Detailed UI component rules
 - **[Accounting Invariants](./docs/ACCOUNTING_INVARIANTS.md)** - Double-entry accounting rules enforced by Slate
+
+Community and governance docs:
+- **[Contributing](./CONTRIBUTING.md)** - PR workflow, coding standards, and required checks
+- **[Security Policy](./SECURITY.md)** - Responsible disclosure and severity policy
+- **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Community behavior expectations
 
 ---
 
@@ -294,45 +308,17 @@ npm run preview
 
 ### Docker (Production)
 
-```dockerfile
-FROM node:20-bookworm-slim AS build
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-FROM node:20-bookworm-slim AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV OPENBILL_DB_PATH=/app/data/openbill.db
-
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
-COPY --from=build /app/build ./build
-COPY --from=build /app/static ./static
-
-RUN mkdir -p /app/data
-
-EXPOSE 3000
-CMD ["node", "build"]
-```
-
-**Notes**
-- PDF generation uses **pdfmake**, no Chromium/Puppeteer required.
-- For persistence, mount `/app/data` as a volume.
-
-### Docker Compose (Production)
-
 ```bash
-docker compose -f docker-compose.prod.yml up --build -d
+docker compose up --build -d
 ```
 
-This runs on **http://localhost:3000** and persists data via the `openbill_data` volume.
+This runs on **http://localhost:3000** and persists data via the `slate_data` volume.
+
+Container hardening:
+1. Multi-stage build with production dependency pruning.
+2. Non-root runtime user (`appuser`).
+3. Healthcheck on `/api/health`.
+4. Startup migration execution in entrypoint.
 
 ### VPS / Bare Metal
 
@@ -353,8 +339,8 @@ Slate takes security seriously:
 - **SQL injection protection** - Drizzle ORM uses parameterized queries
 - **Multi-tenancy isolation** - Every query filters by `org_id`
 - **Audit logging** - Complete trail of financial transactions
-
-
+ 
+Security reporting policy: [`SECURITY.md`](./SECURITY.md).
 
 ---
 
@@ -364,13 +350,14 @@ Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTIN
 
 ### Development Guidelines
 
-1. **Follow accounting principles** - Never bypass the posting engine
-2. **Use Decimal.js** for all currency operations (never use JavaScript's `Number` for money)
-3. **Write tests** for critical financial logic
-4. **Add audit logs** for sensitive operations
+1. **Follow accounting principles** - Never bypass posting/reversal primitives
+2. **Use shared money helpers** - Reuse `round2`/epsilon/tax helpers, avoid ad-hoc arithmetic
+3. **Write tests and run guardrails** - `npm run ci` before PR
+4. **Add audit/observability events** for sensitive operations
 5. **Respect immutability** - Posted journal entries cannot be edited, only reversed
 
 See [`docs/STYLE_GUIDE.md`](./docs/STYLE_GUIDE.md) for detailed code style guidelines.
+Community conduct: [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).
 
 ---
 
@@ -400,11 +387,11 @@ Transactions are **all-or-nothing**. If creating an invoice fails halfway throug
 
 ```typescript
 // Either ALL of these happen, or NONE of them happen:
-db.transaction(async (tx) => {
-    await tx.insert(invoices).values(invoiceData);      // 1. Insert invoice
-    await tx.insert(invoice_items).values(lineItems);   // 2. Insert line items
-    await tx.insert(journal_entries).values(journal);   // 3. Create journal entry
-    await tx.update(accounts).set({ balance: ... });    // 4. Update account balances
+runInTx((tx) => {
+    tx.insert(invoices).values(invoiceData);      // 1. Insert invoice
+    tx.insert(invoice_items).values(lineItems);   // 2. Insert line items
+    tx.insert(journal_entries).values(journal);   // 3. Create journal entry
+    tx.update(accounts).set({ balance: ... });    // 4. Update account balances
 });
 ```
 

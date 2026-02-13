@@ -3,6 +3,8 @@ import { journal_entries, journal_lines, accounts } from '../db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { getNextNumberTx } from './number-series';
 import { addCurrency, round2, currencyEquals } from '$lib/utils/currency';
+import { runInExistingOrNewTx } from '$lib/server/platform/db/tx';
+import { logDomainEvent } from '$lib/server/platform/observability';
 import {
     validateNewEntry,
     assertEntryMutable,
@@ -137,7 +139,7 @@ function postInTx(
         total_credit: totalCredit,
         status: 'posted',
         created_by: input.userId
-    });
+    }).run();
 
     // Create journal lines and update account balances
     const lineResults: PostingResult['lines'] = [];
@@ -156,7 +158,7 @@ function postInTx(
             party_type: line.partyType,
             party_id: line.partyId,
             narration: line.narration
-        });
+        }).run();
 
         // Update account balance
         const balanceChange = round2(debit - credit);
@@ -166,7 +168,8 @@ function postInTx(
             .set({
                 balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)`
             })
-            .where(eq(accounts.id, accountId));
+            .where(eq(accounts.id, accountId))
+            .run();
 
         lineResults.push({
             accountId,
@@ -175,6 +178,17 @@ function postInTx(
             credit
         });
     }
+
+    logDomainEvent('ledger.entry.posted', {
+        orgId,
+        postingType: input.type,
+        journalEntryId,
+        entryNumber,
+        referenceId: input.referenceId || null,
+        totalDebit,
+        totalCredit,
+        lineCount: input.lines.length
+    });
 
     return {
         journalEntryId,
@@ -192,10 +206,7 @@ export function post(
     input: PostingInput,
     tx?: Tx
 ): PostingResult {
-    if (tx) {
-        return postInTx(tx, orgId, input);
-    }
-    return db.transaction((t) => postInTx(t, orgId, input));
+    return runInExistingOrNewTx(tx, (t) => postInTx(t, orgId, input));
 }
 
 /**
@@ -288,7 +299,16 @@ function reverseInTx(
             status: 'reversed',
             reversed_by: result.journalEntryId
         })
-        .where(eq(journal_entries.id, journalEntryId));
+        .where(eq(journal_entries.id, journalEntryId))
+        .run();
+
+    logDomainEvent('ledger.entry.reversed', {
+        orgId,
+        originalJournalEntryId: journalEntryId,
+        reversalJournalEntryId: result.journalEntryId,
+        reversalEntryNumber: result.entryNumber,
+        reversalDate
+    });
 
     return result;
 }
@@ -300,11 +320,7 @@ export function reverse(
     userId?: string,
     tx?: Tx
 ): PostingResult {
-    if (tx) {
-        return reverseInTx(tx, orgId, journalEntryId, reversalDate, userId);
-    }
-
-    return db.transaction((t) => reverseInTx(t, orgId, journalEntryId, reversalDate, userId));
+    return runInExistingOrNewTx(tx, (t) => reverseInTx(t, orgId, journalEntryId, reversalDate, userId));
 }
 
 // ============================================================
@@ -479,7 +495,7 @@ export function postExpense(
     input: ExpensePostingInput,
     tx?: Tx
 ): PostingResult {
-    const totalPaid = input.amount + input.inputCgst + input.inputSgst + input.inputIgst;
+    const totalPaid = round2(input.amount + input.inputCgst + input.inputSgst + input.inputIgst);
     const cashAccountCode = input.paidThrough === 'cash' ? '1000' : '1100';
 
     const lines: JournalLineInput[] = [

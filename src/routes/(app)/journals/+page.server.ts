@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { journal_entries } from '$lib/server/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { localDateStr } from '$lib/utils/date';
 import type { PageServerLoad } from './$types';
 
 function getMonthRange(): { startDate: string; endDate: string } {
@@ -8,8 +9,8 @@ function getMonthRange(): { startDate: string; endDate: string } {
     const year = now.getFullYear();
     const month = now.getMonth();
 
-    const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-    const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    const startDate = localDateStr(new Date(year, month, 1));
+    const endDate = localDateStr(new Date(year, month + 1, 0));
 
     return { startDate, endDate };
 }

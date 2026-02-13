@@ -1,108 +1,34 @@
-import { db } from '$lib/server/db';
-import { invoices, invoice_items, customers, credit_notes, organizations } from '$lib/server/db/schema';
-import { eq, and, ne, gte, lte } from 'drizzle-orm';
 import {
-    categorizeForGSTR1,
-    type GSTR1Invoice,
-    type GSTR1CreditNote
-} from '$lib/server/utils/gst-export';
+    buildGstr1Report,
+    parseDateRangeQueryFromUrl
+} from '$lib/server/modules/reporting/application/gst-reports';
 import { buildGSTR1DocDefinition } from '$lib/pdf/gstr1-template';
 import { generatePdfBuffer } from '$lib/pdf/generate';
+import {
+    UnauthorizedError,
+    jsonFromError
+} from '$lib/server/platform/errors';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals, url }) => {
-    if (!locals.user) {
-        return new Response('Unauthorized', { status: 401 });
-    }
-
-    const orgId = locals.user.orgId;
-
-    const now = new Date();
-    const defaultStartDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-
-    const startDate = url.searchParams.get('from') || defaultStartDate;
-    const endDate = url.searchParams.get('to') || defaultEndDate;
-
-    const org = await db.query.organizations.findFirst({
-        where: eq(organizations.id, orgId)
-    });
-
-    const orgStateCode = org?.state_code || '29';
-
-    // Get invoices
-    const invoiceRows = await db
-        .select()
-        .from(invoices)
-        .where(
-            and(
-                eq(invoices.org_id, orgId),
-                ne(invoices.status, 'draft'),
-                ne(invoices.status, 'cancelled'),
-                gte(invoices.invoice_date, startDate),
-                lte(invoices.invoice_date, endDate)
-            )
-        );
-
-    const customerIds = [...new Set(invoiceRows.map(inv => inv.customer_id))];
-    const customerRows = customerIds.length > 0
-        ? await db.select().from(customers).where(eq(customers.org_id, orgId))
-        : [];
-    const customerMap = new Map(customerRows.map(c => [c.id, c]));
-
-    const invoiceIds = invoiceRows.map(inv => inv.id);
-    const itemRows = invoiceIds.length > 0
-        ? await db.select().from(invoice_items)
-        : [];
-    const itemsByInvoice = new Map<string, typeof itemRows>();
-    for (const item of itemRows) {
-        if (!invoiceIds.includes(item.invoice_id)) continue;
-        const existing = itemsByInvoice.get(item.invoice_id) || [];
-        existing.push(item);
-        itemsByInvoice.set(item.invoice_id, existing);
-    }
-
-    const invoicesWithCustomers: GSTR1Invoice[] = invoiceRows.map(inv => ({
-        ...inv,
-        customer: customerMap.get(inv.customer_id) || null,
-        items: itemsByInvoice.get(inv.id) || []
-    }));
-
-    const creditNoteRows = await db
-        .select()
-        .from(credit_notes)
-        .where(
-            and(
-                eq(credit_notes.org_id, orgId),
-                ne(credit_notes.status, 'cancelled'),
-                gte(credit_notes.credit_note_date, startDate),
-                lte(credit_notes.credit_note_date, endDate)
-            )
-        );
-
-    const creditNotesWithCustomers: GSTR1CreditNote[] = creditNoteRows.map(cn => ({
-        ...cn,
-        customer: customerMap.get(cn.customer_id) || null
-    }));
-
-    const gstr1Data = categorizeForGSTR1(invoicesWithCustomers, creditNotesWithCustomers, orgStateCode);
-
-    // Format period
-    const periodStart = new Date(startDate);
-    const periodEnd = new Date(endDate);
-    const period = `${periodStart.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })} - ${periodEnd.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`;
-    gstr1Data.period = period;
-
     try {
+        if (!locals.user) {
+            throw new UnauthorizedError();
+        }
+
+        const orgId = locals.user.orgId;
+        const range = parseDateRangeQueryFromUrl(url);
+        const report = await buildGstr1Report(orgId, range);
+
         const doc = buildGSTR1DocDefinition({
-            orgName: org?.name || 'OpenBill',
-            gstin: org?.gstin || '',
-            period,
-            data: gstr1Data
+            orgName: report.org?.name || 'Slate',
+            gstin: report.org?.gstin || '',
+            period: report.data.period,
+            data: report.data
         });
 
         const pdf = await generatePdfBuffer(doc);
-        const filename = `GSTR1_${startDate}_to_${endDate}.pdf`;
+        const filename = `GSTR1_${range.startDate}_to_${range.endDate}.pdf`;
 
         return new Response(pdf as BodyInit, {
             headers: {
@@ -110,8 +36,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
                 'Content-Disposition': `attachment; filename="${filename}"`
             }
         });
-    } catch (error: unknown) {
-        console.error('PDF generation error:', error);
-        return new Response('Failed to generate GSTR-1 PDF', { status: 500 });
+    } catch (error) {
+        return jsonFromError(error, 'GSTR-1 PDF export failed');
     }
 };

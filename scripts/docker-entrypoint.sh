@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-DB_PATH="${OPENBILL_DB_PATH:-/app/data/openbill.db}"
+DB_PATH="${SLATE_DB_PATH:-/app/data/slate.db}"
 DB_DIR=$(dirname "$DB_PATH")
 
 mkdir -p "$DB_DIR"

@@ -5,7 +5,7 @@
     import { Label } from "$lib/components/ui/label";
     import { Badge } from "$lib/components/ui/badge";
     import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
-    import { FileText, RefreshCw, Lock } from "lucide-svelte";
+    import { FileText, RefreshCw, Lock, ArrowLeft } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
@@ -39,6 +39,9 @@
         class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
     >
         <div class="flex items-center gap-4">
+            <Button variant="ghost" href="/reports" size="icon" class="h-8 w-8">
+                <ArrowLeft class="size-4" />
+            </Button>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Journal Entries
             </h1>

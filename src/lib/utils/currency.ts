@@ -114,56 +114,51 @@ export function formatINR(amount: number | string | null | undefined): string {
 
 /**
  * Convert number to words (Indian format)
+ * e.g. 1234.50 → "One Thousand Two Hundred Thirty Four Rupees and Fifty Paise Only"
  */
 export function numberToWords(amount: number): string {
-    const a = [
-        '',
-        'one ',
-        'two ',
-        'three ',
-        'four ',
-        'five ',
-        'six ',
-        'seven ',
-        'eight ',
-        'nine ',
-        'ten ',
-        'eleven ',
-        'twelve ',
-        'thirteen ',
-        'fourteen ',
-        'fifteen ',
-        'sixteen ',
-        'seventeen ',
-        'eighteen ',
-        'nineteen '
-    ];
-    const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    if (amount === 0) return 'Zero Rupees Only';
 
-    const numToString = (num: number): string => {
-        if ((num = num.toString().length) > 9) return 'overflow';
-        const n: any = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-        if (!n) return '';
-        let str = '';
-        str += n[1] != 0 ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
-        str += n[2] != 0 ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
-        str += n[3] != 0 ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
-        str += n[4] != 0 ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
-        str +=
-            n[5] != 0
-                ? (str != '' ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]])
-                : '';
-        return str;
-    };
+    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
-    const whole = Math.floor(amount);
-    const fraction = Math.round((amount - whole) * 100);
-
-    let str = numToString(whole) + 'Rupees';
-
-    if (fraction > 0) {
-        str += ' and ' + numToString(fraction) + 'Paise';
+    function twoDigits(n: number): string {
+        if (n < 20) return ones[n];
+        return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
     }
 
-    return (str + ' Only').replace(/\s+/g, ' ').trim();
+    function convert(n: number): string {
+        if (n === 0) return '';
+        if (n < 100) return twoDigits(n);
+
+        // Indian number system: after hundreds, group by 2 digits (lakhs, crores)
+        const crore = Math.floor(n / 10000000);
+        const lakh = Math.floor((n % 10000000) / 100000);
+        const thousand = Math.floor((n % 100000) / 1000);
+        const hundred = Math.floor((n % 1000) / 100);
+        const remainder = n % 100;
+
+        const parts: string[] = [];
+        if (crore > 0) parts.push(twoDigits(crore) + ' Crore');
+        if (lakh > 0) parts.push(twoDigits(lakh) + ' Lakh');
+        if (thousand > 0) parts.push(twoDigits(thousand) + ' Thousand');
+        if (hundred > 0) parts.push(ones[hundred] + ' Hundred');
+        if (remainder > 0) {
+            if (parts.length > 0) parts.push('and');
+            parts.push(twoDigits(remainder));
+        }
+        return parts.join(' ');
+    }
+
+    const whole = Math.floor(Math.abs(amount));
+    const fraction = Math.round((Math.abs(amount) - whole) * 100);
+
+    let result = convert(whole) + ' Rupees';
+
+    if (fraction > 0) {
+        result += ' and ' + convert(fraction) + ' Paise';
+    }
+
+    return result + ' Only';
 }

@@ -1,5 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { db, type Tx } from '$lib/server/db';
+import { db } from '$lib/server/db';
 import {
     invoices,
     invoice_items,
@@ -9,182 +9,31 @@ import {
     credit_notes,
     credit_allocations,
     payments,
-    payment_allocations,
-    accounts
+    payment_allocations
 } from '$lib/server/db/schema';
-import { eq, and, sql, gt, desc } from 'drizzle-orm';
+import { eq, and, gt, desc } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
-import { postInvoiceIssuance, postPaymentReceipt, reverse, logActivity } from '$lib/server/services';
-import { getNextNumberTx } from '$lib/server/services/number-series';
-import { calculateLineItem, calculateInvoiceTotals, type LineItem } from '../new/schema';
+import { logActivity } from '$lib/server/services';
+import { runInTx } from '$lib/server/platform/db/tx';
+import { failActionFromError } from '$lib/server/platform/errors';
+import {
+    cancelInvoiceInTx,
+    deleteDraftInvoiceInTx,
+    issueDraftInvoiceInTx,
+    parseInvoiceLineItemsFromFormData,
+    parsePricesIncludeGst,
+    updateDraftInvoiceInTx
+} from '$lib/server/modules/invoicing/application/workflows';
+import {
+    applyCreditsToInvoiceInTx,
+    MONEY_EPSILON,
+    parseRequestedCredits,
+    recordInvoicePaymentInTx,
+    settleInvoiceInTx,
+    type RequestedCredit
+} from '$lib/server/modules/receivables/application/workflows';
+import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
 import { round2 } from '$lib/utils/currency';
-
-const MONEY_EPSILON = 0.01;
-
-type RequestedCredit = {
-    id: string;
-    type: 'advance' | 'credit_note';
-    amount: number;
-};
-
-type AppliedCreditsResult = {
-    totalApplied: number;
-    remainingBalanceDue: number;
-};
-
-function parseRequestedCredits(rawValue: FormDataEntryValue | null): RequestedCredit[] {
-    if (typeof rawValue !== 'string') {
-        throw new Error('Invalid credits data');
-    }
-
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(rawValue);
-    } catch {
-        throw new Error('Invalid credits data');
-    }
-
-    if (!Array.isArray(parsed)) {
-        throw new Error('Invalid credits data');
-    }
-
-    const seen = new Set<string>();
-    const credits: RequestedCredit[] = [];
-
-    for (const entry of parsed) {
-        if (!entry || typeof entry !== 'object') {
-            throw new Error('Invalid credits data');
-        }
-
-        const id = typeof (entry as any).id === 'string' ? (entry as any).id.trim() : '';
-        const type = (entry as any).type;
-        const amount = Number((entry as any).amount);
-
-        if (!id || (type !== 'advance' && type !== 'credit_note') || !Number.isFinite(amount) || amount <= 0) {
-            throw new Error('Invalid credits data');
-        }
-
-        const dedupeKey = `${type}:${id}`;
-        if (seen.has(dedupeKey)) {
-            throw new Error('Duplicate credit entries are not allowed');
-        }
-        seen.add(dedupeKey);
-
-        credits.push({ id, type, amount: round2(amount) });
-    }
-
-    return credits;
-}
-
-function applyRequestedCreditsInTx(
-    tx: Tx,
-    orgId: string,
-    customerId: string,
-    invoiceId: string,
-    requestedCredits: RequestedCredit[],
-    startingBalanceDue: number
-): AppliedCreditsResult {
-    let currentBalanceDue = round2(startingBalanceDue);
-    let totalApplied = 0;
-
-    for (const requested of requestedCredits) {
-        if (currentBalanceDue <= MONEY_EPSILON) break;
-
-        if (requested.type === 'advance') {
-            const advance = tx.query.customer_advances.findFirst({
-                where: and(
-                    eq(customer_advances.id, requested.id),
-                    eq(customer_advances.org_id, orgId),
-                    eq(customer_advances.customer_id, customerId),
-                    gt(customer_advances.balance, MONEY_EPSILON)
-                )
-            }).sync();
-
-            if (!advance) {
-                throw new Error('Selected advance is no longer available');
-            }
-
-            const available = round2(advance.balance);
-            if (requested.amount > available + MONEY_EPSILON) {
-                throw new Error('Requested credit exceeds available advance balance');
-            }
-
-            const amountToApply = round2(Math.min(requested.amount, currentBalanceDue));
-            if (amountToApply <= MONEY_EPSILON) continue;
-
-            tx.insert(credit_allocations).values({
-                id: crypto.randomUUID(),
-                org_id: orgId,
-                credit_note_id: null,
-                advance_id: advance.id,
-                invoice_id: invoiceId,
-                amount: amountToApply,
-                created_at: new Date().toISOString()
-            });
-
-            const remaining = round2(available - amountToApply);
-            tx
-                .update(customer_advances)
-                .set({ balance: remaining })
-                .where(eq(customer_advances.id, advance.id));
-
-            currentBalanceDue = round2(currentBalanceDue - amountToApply);
-            totalApplied = round2(totalApplied + amountToApply);
-            continue;
-        }
-
-        const creditNote = tx.query.credit_notes.findFirst({
-            where: and(
-                eq(credit_notes.id, requested.id),
-                eq(credit_notes.org_id, orgId),
-                eq(credit_notes.customer_id, customerId),
-                eq(credit_notes.status, 'issued'),
-                gt(credit_notes.balance, MONEY_EPSILON)
-            )
-        }).sync();
-
-        if (!creditNote) {
-            throw new Error('Selected credit note is no longer available');
-        }
-
-        const available = round2(creditNote.balance || 0);
-        if (requested.amount > available + MONEY_EPSILON) {
-            throw new Error('Requested credit exceeds available credit note balance');
-        }
-
-        const amountToApply = round2(Math.min(requested.amount, currentBalanceDue));
-        if (amountToApply <= MONEY_EPSILON) continue;
-
-        tx.insert(credit_allocations).values({
-            id: crypto.randomUUID(),
-            org_id: orgId,
-            credit_note_id: creditNote.id,
-            advance_id: null,
-            invoice_id: invoiceId,
-            amount: amountToApply,
-            created_at: new Date().toISOString()
-        });
-
-        const remaining = round2(available - amountToApply);
-        tx
-            .update(credit_notes)
-            .set({
-                balance: remaining,
-                status: remaining <= MONEY_EPSILON ? 'applied' : 'issued'
-            })
-            .where(eq(credit_notes.id, creditNote.id));
-
-        currentBalanceDue = round2(currentBalanceDue - amountToApply);
-        totalApplied = round2(totalApplied + amountToApply);
-    }
-
-    return {
-        totalApplied,
-        remainingBalanceDue: currentBalanceDue
-    };
-}
-
-
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
     if (!locals.user) {
@@ -232,7 +81,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
             and(
                 eq(customer_advances.org_id, locals.user.orgId),
                 eq(customer_advances.customer_id, invoice.customer_id),
-                gt(customer_advances.balance, 0.01)
+                gt(customer_advances.balance, MONEY_EPSILON)
             )
         );
 
@@ -249,7 +98,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
                 eq(credit_notes.org_id, locals.user.orgId),
                 eq(credit_notes.customer_id, invoice.customer_id),
                 eq(credit_notes.status, 'issued'),
-                gt(credit_notes.balance, 0.01) // Ensure positive balance
+                gt(credit_notes.balance, MONEY_EPSILON) // Ensure positive balance
             )
         );
 
@@ -374,46 +223,9 @@ export const actions: Actions = {
         let invoiceNumber = invoice.invoice_number;
 
         try {
-            db.transaction((tx) => {
-                if (invoiceNumber.startsWith('DRAFT-')) {
-                    invoiceNumber = getNextNumberTx(tx, orgId, 'invoice');
-                }
-
-                // Post to journal
-                const postingResult = postInvoiceIssuance(orgId, {
-                    invoiceId: invoice.id,
-                    invoiceNumber,
-                    date: invoice.invoice_date,
-                    customerId: invoice.customer_id,
-                    subtotal: invoice.subtotal,
-                    cgst: invoice.cgst || 0,
-                    sgst: invoice.sgst || 0,
-                    igst: invoice.igst || 0,
-                    total: invoice.total,
-                    userId
-                }, tx);
-
-                // Update invoice
-                tx
-                    .update(invoices)
-                    .set({
-                        invoice_number: invoiceNumber,
-                        status: 'issued',
-                        journal_entry_id: postingResult.journalEntryId,
-                        issued_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        updated_by: userId
-                    })
-                    .where(eq(invoices.id, params.id));
-
-                // Update customer balance
-                tx
-                    .update(customers)
-                    .set({
-                        balance: sql`${customers.balance} + ${invoice.total}`,
-                        updated_at: new Date().toISOString()
-                    })
-                    .where(eq(customers.id, invoice.customer_id));
+            runInTx((tx) => {
+                const result = issueDraftInvoiceInTx(tx, orgId, userId, invoice);
+                invoiceNumber = result.invoiceNumber;
             });
 
             // Log activity (outside tx)
@@ -429,10 +241,11 @@ export const actions: Actions = {
                 }
             });
 
+            invalidateReportingCacheForOrg(orgId);
+
             return { success: true, invoiceNumber };
         } catch (error) {
-            console.error('Failed to issue invoice:', error);
-            return fail(500, { error: 'Failed to issue invoice' });
+            return failActionFromError(error, 'Invoice issue failed');
         }
     },
 
@@ -468,37 +281,9 @@ export const actions: Actions = {
 
         try {
             const now = new Date().toISOString();
-            const reversalDate = now.split('T')[0];
 
-            db.transaction((tx) => {
-                if (invoice.status === 'issued') {
-                    if (!invoice.journal_entry_id) {
-                        throw new Error('Issued invoice is missing journal entry');
-                    }
-
-                    // Keep ledger immutable: posted entry must be reversed, not edited.
-                    reverse(orgId, invoice.journal_entry_id, reversalDate, locals.user!.id, tx);
-
-                    // Remove receivable impact from customer balance.
-                    tx
-                        .update(customers)
-                        .set({
-                            balance: sql`${customers.balance} - ${invoice.total}`,
-                            updated_at: now
-                        })
-                        .where(eq(customers.id, invoice.customer_id));
-                }
-
-                // Mark invoice document as cancelled.
-                tx
-                    .update(invoices)
-                    .set({
-                        status: 'cancelled',
-                        cancelled_at: now,
-                        updated_at: now,
-                        updated_by: locals.user!.id
-                    })
-                    .where(eq(invoices.id, params.id));
+            runInTx((tx) => {
+                cancelInvoiceInTx(tx, orgId, locals.user!.id, invoice, now);
             });
 
             await logActivity({
@@ -512,17 +297,11 @@ export const actions: Actions = {
                 }
             });
 
+            invalidateReportingCacheForOrg(orgId);
+
             return { success: true };
         } catch (error) {
-            console.error('Failed to cancel invoice:', error);
-            const message = error instanceof Error ? error.message : 'Failed to cancel invoice';
-            if (
-                message === 'Issued invoice is missing journal entry'
-                || message === 'Cannot cancel an invoice with payments. Reverse settlement first.'
-            ) {
-                return fail(400, { error: message });
-            }
-            return fail(500, { error: 'Failed to cancel invoice' });
+            return failActionFromError(error, 'Invoice cancel failed');
         }
     },
 
@@ -534,8 +313,7 @@ export const actions: Actions = {
         try {
             requestedCredits = parseRequestedCredits(data.get('credits'));
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Invalid credits data';
-            return fail(400, { error: message });
+            return failActionFromError(error, 'Invoice credit parse failed');
         }
 
         if (requestedCredits.length === 0) {
@@ -547,70 +325,18 @@ export const actions: Actions = {
         let totalApplied = 0;
 
         try {
-            db.transaction((tx) => {
-                const invoice = tx.query.invoices.findFirst({
-                    where: and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId))
-                }).sync();
-
-                if (!invoice) {
-                    throw new Error('Invoice not found');
-                }
-                if (invoice.status === 'paid' || invoice.status === 'cancelled') {
-                    throw new Error('Invoice is already paid or cancelled');
-                }
-                if (invoice.balance_due <= MONEY_EPSILON) {
-                    throw new Error('Invoice has no balance due');
-                }
-
-                const applied = applyRequestedCreditsInTx(
-                    tx,
+            runInTx((tx) => {
+                const result = applyCreditsToInvoiceInTx(tx, {
                     orgId,
-                    invoice.customer_id,
                     invoiceId,
-                    requestedCredits,
-                    invoice.balance_due
-                );
-
-                totalApplied = round2(applied.totalApplied);
-                if (totalApplied <= MONEY_EPSILON) {
-                    throw new Error('No credits were applied');
-                }
-
-                const newBalanceDue = round2(Math.max(0, applied.remainingBalanceDue));
-                const newAmountPaid = round2(invoice.total - newBalanceDue);
-                const newStatus = newBalanceDue <= MONEY_EPSILON ? 'paid' : 'partially_paid';
-
-                tx
-                    .update(invoices)
-                    .set({
-                        amount_paid: newAmountPaid,
-                        balance_due: newBalanceDue,
-                        status: newStatus,
-                        updated_at: new Date().toISOString()
-                    })
-                    .where(eq(invoices.id, invoiceId));
+                    requestedCredits
+                });
+                totalApplied = result.totalApplied;
             });
 
             return { success: true, message: `Applied ${totalApplied.toFixed(2)} credits` };
         } catch (error) {
-            console.error('Failed to apply credits:', error);
-            const message = error instanceof Error ? error.message : 'Failed to apply credits';
-            if (
-                message === 'Invoice not found'
-                || message === 'Invoice is already paid or cancelled'
-                || message === 'Invoice has no balance due'
-                || message === 'No credits were applied'
-                || message === 'Invalid credits data'
-                || message === 'Duplicate credit entries are not allowed'
-                || message === 'Selected advance is no longer available'
-                || message === 'Requested credit exceeds available advance balance'
-                || message === 'Selected credit note is no longer available'
-                || message === 'Requested credit exceeds available credit note balance'
-            ) {
-                const statusCode = message === 'Invoice not found' ? 404 : 400;
-                return fail(statusCode, { error: message });
-            }
-            return fail(500, { error: 'Failed to apply credits' });
+            return failActionFromError(error, 'Invoice credit apply failed');
         }
     },
 
@@ -621,7 +347,7 @@ export const actions: Actions = {
         const invoiceId = params.id;
         const formData = await request.formData();
 
-        const amount = parseFloat(formData.get('amount') as string) || 0;
+        const amount = round2(parseFloat(formData.get('amount') as string) || 0);
         const payment_date = formData.get('payment_date') as string;
         const payment_mode = formData.get('payment_mode') as string || 'bank';
         const reference = formData.get('reference') as string || '';
@@ -643,89 +369,37 @@ export const actions: Actions = {
         if (invoice.status === 'paid' || invoice.status === 'cancelled') {
             return fail(400, { error: 'Invoice is already paid or cancelled' });
         }
-        if (amount > invoice.balance_due + 0.01) {
+        if (amount > invoice.balance_due + MONEY_EPSILON) {
             return fail(400, { error: 'Amount exceeds balance due' });
         }
 
         let paymentNumber = '';
 
         try {
-            db.transaction((tx) => {
-                paymentNumber = getNextNumberTx(tx, orgId, 'payment');
-                const paymentId = crypto.randomUUID();
-
-                // Post to journal
-                const paymentModeForPosting = payment_mode === 'cash' ? 'cash' : 'bank';
-                const postingResult = postPaymentReceipt(orgId, {
-                    paymentId,
-                    paymentNumber,
-                    date: payment_date,
-                    customerId: invoice.customer_id,
+            runInTx((tx) => {
+                const result = recordInvoicePaymentInTx(tx, {
+                    orgId,
+                    userId: locals.user!.id,
+                    invoice: {
+                        id: invoice.id,
+                        customer_id: invoice.customer_id,
+                        total: invoice.total,
+                        amount_paid: invoice.amount_paid,
+                        balance_due: invoice.balance_due,
+                        status: invoice.status
+                    },
                     amount,
-                    paymentMode: paymentModeForPosting,
-                    userId: locals.user!.id
-                }, tx);
-
-                // Get deposit account
-                const depositAccountCode = payment_mode === 'cash' ? '1000' : '1100';
-                const depositAccount = tx.query.accounts.findFirst({
-                    where: and(
-                        eq(accounts.account_code, depositAccountCode),
-                        eq(accounts.org_id, orgId)
-                    )
-                }).sync();
-
-                // Create payment record
-                tx.insert(payments).values({
-                    id: paymentId,
-                    org_id: orgId,
-                    customer_id: invoice.customer_id,
-                    payment_number: paymentNumber,
-                    payment_date,
-                    amount,
-                    payment_mode,
-                    deposit_to: depositAccount?.id || '',
-                    reference,
-                    journal_entry_id: postingResult.journalEntryId,
-                    created_by: locals.user!.id
+                    paymentDate: payment_date,
+                    paymentMode: payment_mode,
+                    reference
                 });
-
-                // Create payment allocation
-                tx.insert(payment_allocations).values({
-                    id: crypto.randomUUID(),
-                    payment_id: paymentId,
-                    invoice_id: invoiceId,
-                    amount
-                });
-
-                // Update invoice
-                const newAmountPaid = (invoice.amount_paid || 0) + amount;
-                const newBalanceDue = invoice.total - newAmountPaid;
-                const newStatus = newBalanceDue <= 0.01 ? 'paid' : 'partially_paid';
-
-                tx.update(invoices)
-                    .set({
-                        amount_paid: newAmountPaid,
-                        balance_due: Math.max(0, newBalanceDue),
-                        status: newStatus,
-                        updated_at: new Date().toISOString()
-                    })
-                    .where(eq(invoices.id, invoiceId));
-
-                // Update customer balance
-                tx.update(customers)
-                    .set({
-                        balance: sql`${customers.balance} - ${amount}`,
-                        updated_at: new Date().toISOString()
-                    })
-                    .where(eq(customers.id, invoice.customer_id));
+                paymentNumber = result.paymentNumber;
             });
 
             return { success: true, paymentNumber };
 
-        } catch (e) {
-            console.error('Failed to record payment:', e);
-            return fail(500, { error: 'Failed to record payment' });
+        } catch (error) {
+            return failActionFromError(error, 'Invoice payment record failed');
         }
     },
 
@@ -743,10 +417,9 @@ export const actions: Actions = {
 
         let requestedCredits: RequestedCredit[] = [];
         try {
-            requestedCredits = parseRequestedCredits(formData.get('credits') ?? '[]');
+            requestedCredits = parseRequestedCredits(formData.get('credits'), { allowEmpty: true });
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Invalid credits data';
-            return fail(400, { error: message });
+            return failActionFromError(error, 'Invoice settlement credit parse failed');
         }
 
         if (paymentAmount < 0) {
@@ -765,121 +438,22 @@ export const actions: Actions = {
         let resultingStatus: 'paid' | 'partially_paid' = 'partially_paid';
 
         try {
-            db.transaction((tx) => {
-                const invoice = tx.query.invoices.findFirst({
-                    where: and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId))
-                }).sync();
+            runInTx((tx) => {
+                const result = settleInvoiceInTx(tx, {
+                    orgId,
+                    userId: locals.user!.id,
+                    invoiceId,
+                    requestedCredits,
+                    paymentAmount,
+                    paymentDate,
+                    paymentMode,
+                    paymentReference
+                });
 
-                if (!invoice) {
-                    throw new Error('Invoice not found');
-                }
-                if (invoice.status === 'paid' || invoice.status === 'cancelled') {
-                    throw new Error('Invoice is already paid or cancelled');
-                }
-                if (invoice.balance_due <= MONEY_EPSILON) {
-                    throw new Error('Invoice has no balance due');
-                }
-
-                let currentBalanceDue = round2(invoice.balance_due);
-
-                if (requestedCredits.length > 0) {
-                    const appliedCredits = applyRequestedCreditsInTx(
-                        tx,
-                        orgId,
-                        invoice.customer_id,
-                        invoiceId,
-                        requestedCredits,
-                        currentBalanceDue
-                    );
-
-                    creditSettled = round2(appliedCredits.totalApplied);
-                    currentBalanceDue = round2(appliedCredits.remainingBalanceDue);
-                }
-
-                if (paymentAmount > MONEY_EPSILON) {
-                    if (paymentAmount > currentBalanceDue + MONEY_EPSILON) {
-                        throw new Error('Payment amount exceeds remaining balance due');
-                    }
-
-                    const paymentNumber = getNextNumberTx(tx, orgId, 'payment');
-                    const paymentId = crypto.randomUUID();
-
-                    const paymentModeForPosting = paymentMode === 'cash' ? 'cash' : 'bank';
-                    const postingResult = postPaymentReceipt(
-                        orgId,
-                        {
-                            paymentId,
-                            paymentNumber,
-                            date: paymentDate,
-                            customerId: invoice.customer_id,
-                            amount: paymentAmount,
-                            paymentMode: paymentModeForPosting,
-                            userId: locals.user!.id
-                        },
-                        tx
-                    );
-
-                    const depositAccountCode = paymentModeForPosting === 'cash' ? '1000' : '1100';
-                    const depositAccount = tx.query.accounts.findFirst({
-                        where: and(eq(accounts.account_code, depositAccountCode), eq(accounts.org_id, orgId))
-                    }).sync();
-
-                    if (!depositAccount) {
-                        throw new Error('Deposit account is not configured');
-                    }
-
-                    tx.insert(payments).values({
-                        id: paymentId,
-                        org_id: orgId,
-                        customer_id: invoice.customer_id,
-                        payment_number: paymentNumber,
-                        payment_date: paymentDate,
-                        amount: paymentAmount,
-                        payment_mode: paymentMode,
-                        deposit_to: depositAccount.id,
-                        reference: paymentReference,
-                        journal_entry_id: postingResult.journalEntryId,
-                        created_by: locals.user!.id
-                    });
-
-                    tx.insert(payment_allocations).values({
-                        id: crypto.randomUUID(),
-                        payment_id: paymentId,
-                        invoice_id: invoiceId,
-                        amount: paymentAmount
-                    });
-
-                    tx
-                        .update(customers)
-                        .set({
-                            balance: sql`${customers.balance} - ${paymentAmount}`,
-                            updated_at: new Date().toISOString()
-                        })
-                        .where(eq(customers.id, invoice.customer_id));
-
-                    paymentSettled = paymentAmount;
-                    currentBalanceDue = round2(currentBalanceDue - paymentAmount);
-                }
-
-                totalSettled = round2(creditSettled + paymentSettled);
-                if (totalSettled <= MONEY_EPSILON) {
-                    throw new Error('No settlement was applied');
-                }
-
-                const newBalanceDue = round2(Math.max(0, currentBalanceDue));
-                const newAmountPaid = round2(invoice.total - newBalanceDue);
-                const newStatus = newBalanceDue <= MONEY_EPSILON ? 'paid' : 'partially_paid';
-                resultingStatus = newStatus;
-
-                tx
-                    .update(invoices)
-                    .set({
-                        amount_paid: newAmountPaid,
-                        balance_due: newBalanceDue,
-                        status: newStatus,
-                        updated_at: new Date().toISOString()
-                    })
-                    .where(eq(invoices.id, invoiceId));
+                totalSettled = result.totalSettled;
+                creditSettled = result.creditSettled;
+                paymentSettled = result.paymentSettled;
+                resultingStatus = result.resultingStatus;
             });
 
             await logActivity({
@@ -897,25 +471,7 @@ export const actions: Actions = {
 
             return { success: true, message: 'Settlement recorded successfully' };
         } catch (error) {
-            console.error('Settlement failed:', error);
-            const message = error instanceof Error ? error.message : 'Settlement failed';
-            if (
-                message === 'Invoice not found'
-                || message === 'Invoice is already paid or cancelled'
-                || message === 'Invoice has no balance due'
-                || message === 'No settlement was applied'
-                || message === 'Payment amount exceeds remaining balance due'
-                || message === 'Deposit account is not configured'
-                || message === 'Duplicate credit entries are not allowed'
-                || message === 'Selected advance is no longer available'
-                || message === 'Requested credit exceeds available advance balance'
-                || message === 'Selected credit note is no longer available'
-                || message === 'Requested credit exceeds available credit note balance'
-            ) {
-                const statusCode = message === 'Invoice not found' ? 404 : 400;
-                return fail(statusCode, { error: message });
-            }
-            return fail(500, { error: 'Settlement failed' });
+            return failActionFromError(error, 'Invoice settlement failed');
         }
     },
 
@@ -949,98 +505,38 @@ export const actions: Actions = {
         const order_number = formData.get('order_number') as string;
         const notes = formData.get('notes') as string;
         const terms = formData.get('terms') as string;
-        const pricesIncludeGst = formData.get('prices_include_gst') === 'true';
+        const requestedPricesIncludeGst = parsePricesIncludeGst(formData);
 
         // Validation
         if (!customer_id) return fail(400, { error: 'Customer is required' });
         if (!invoice_date) return fail(400, { error: 'Invoice date is required' });
         if (!due_date) return fail(400, { error: 'Due date is required' });
 
-        // Parse line items
-        const lineItems: LineItem[] = [];
-        let i = 0;
-        while (formData.has(`items[${i}].description`)) {
-            const description = formData.get(`items[${i}].description`) as string;
-            const hsn_code = formData.get(`items[${i}].hsn_code`) as string || '';
-            const quantity = parseFloat(formData.get(`items[${i}].quantity`) as string) || 1;
-            const unit = formData.get(`items[${i}].unit`) as string || 'nos';
-            const rate = parseFloat(formData.get(`items[${i}].rate`) as string) || 0;
-            const gst_rate = parseFloat(formData.get(`items[${i}].gst_rate`) as string) || 18;
-            const item_id = formData.get(`items[${i}].item_id`) as string || '';
-
-            if (description && description.trim()) {
-                lineItems.push({ description, hsn_code, quantity, unit, rate, gst_rate, item_id: item_id || undefined });
-            }
-            i++;
-        }
+        const lineItems = parseInvoiceLineItemsFromFormData(formData);
 
         if (lineItems.length === 0) {
             return fail(400, { error: 'At least one item with a description is required' });
         }
 
-        // Calculate totals (read-only queries safe outside tx)
-        const customer = await db.query.customers.findFirst({
-            where: eq(customers.id, customer_id),
-            columns: { state_code: true },
-        });
-        const org = await db.query.organizations.findFirst({
-            where: eq(organizations.id, orgId),
-            columns: { state_code: true },
-        });
-        const isInterState = customer?.state_code !== org?.state_code;
-        const totals = calculateInvoiceTotals(lineItems, isInterState, pricesIncludeGst);
+        let updatedTotal = invoice.total;
 
         try {
-            db.transaction((tx) => {
-                // Update invoice record
-                tx
-                    .update(invoices)
-                    .set({
-                        customer_id,
-                        invoice_date,
-                        due_date,
-                        order_number: order_number || null,
-                        subtotal: totals.subtotal,
-                        taxable_amount: totals.taxableAmount,
-                        cgst: totals.cgst,
-                        sgst: totals.sgst,
-                        igst: totals.igst,
-                        total: totals.total,
-                        balance_due: totals.total,
-                        is_inter_state: isInterState,
-                        prices_include_gst: pricesIncludeGst,
-                        notes: notes || null,
-                        terms: terms || null,
-                        updated_at: new Date().toISOString(),
-                        updated_by: locals.user!.id,
-                    })
-                    .where(eq(invoices.id, params.id));
+            runInTx((tx) => {
+                const result = updateDraftInvoiceInTx(tx, {
+                    orgId,
+                    userId: locals.user!.id,
+                    invoiceId: params.id,
+                    customerId: customer_id,
+                    invoiceDate: invoice_date,
+                    dueDate: due_date,
+                    orderNumber: order_number || null,
+                    notes: notes || null,
+                    terms: terms || null,
+                    requestedPricesIncludeGst,
+                    lineItems
+                });
 
-                // Delete old line items and insert new ones
-                tx.delete(invoice_items).where(eq(invoice_items.invoice_id, params.id));
-
-                for (let idx = 0; idx < lineItems.length; idx++) {
-                    const item = lineItems[idx];
-                    const calc = calculateLineItem(item, isInterState, pricesIncludeGst);
-
-                    tx.insert(invoice_items).values({
-                        id: crypto.randomUUID(),
-                        invoice_id: params.id,
-                        item_id: item.item_id || null,
-                        description: item.description,
-                        hsn_code: item.hsn_code || null,
-                        quantity: item.quantity,
-                        unit: item.unit,
-                        rate: item.rate,
-                        gst_rate: item.gst_rate,
-                        cgst: calc.cgst,
-                        sgst: calc.sgst,
-                        igst: calc.igst,
-                        amount: calc.amount,
-                        total: calc.total,
-                        sort_order: idx,
-                    });
-                }
+                updatedTotal = result.total;
             });
 
             // Log activity (outside tx)
@@ -1051,13 +547,12 @@ export const actions: Actions = {
                 entityId: params.id,
                 action: 'updated',
                 changedFields: {
-                    total: { old: invoice.total, new: totals.total },
+                    total: { old: invoice.total, new: updatedTotal },
                 }
             });
 
-        } catch (e) {
-            console.error('Invoice update error:', e);
-            return fail(500, { error: 'Failed to update invoice' });
+        } catch (error) {
+            return failActionFromError(error, 'Invoice update failed');
         }
 
         redirect(302, `/invoices/${params.id}`);
@@ -1086,9 +581,8 @@ export const actions: Actions = {
         }
 
         try {
-            db.transaction((tx) => {
-                tx.delete(invoice_items).where(eq(invoice_items.invoice_id, params.id));
-                tx.delete(invoices).where(eq(invoices.id, params.id));
+            runInTx((tx) => {
+                deleteDraftInvoiceInTx(tx, params.id);
             });
 
             // Log activity (outside tx)
@@ -1102,9 +596,8 @@ export const actions: Actions = {
                     invoice_number: { old: invoice.invoice_number },
                 }
             });
-        } catch (e) {
-            console.error('Invoice delete error:', e);
-            return fail(500, { error: 'Failed to delete invoice' });
+        } catch (error) {
+            return failActionFromError(error, 'Invoice delete failed');
         }
 
         redirect(302, '/invoices');

@@ -8,6 +8,8 @@ import { orgSettingsSchema, profileSchema, numberSeriesSchema, smtpSettingsSchem
 import { getCurrentFiscalYear, getDefaultPrefix } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import { testSmtpConnection } from '$lib/server/email';
+import { failActionFromError } from '$lib/server/platform/errors';
+import { logger } from '$lib/server/platform/observability';
 import type { Actions, PageServerLoad } from './$types';
 
 const MODULES = ['invoice', 'payment', 'expense', 'credit_note', 'journal'] as const;
@@ -123,7 +125,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             fyYear: fy
         };
     } catch (e) {
-        console.error("SETTINGS LOAD ERROR:", e);
+        logger.error('settings_load_failed', {}, e);
         throw e;
     }
 };
@@ -141,7 +143,7 @@ export const actions: Actions = {
             return fail(400, { form });
         }
 
-        await db
+        db
             .update(organizations)
             .set({
                 name: form.data.name,
@@ -167,7 +169,8 @@ export const actions: Actions = {
                 pricesIncludeGst: form.data.prices_include_gst,
                 updated_at: new Date().toISOString()
             } as any)
-            .where(eq(organizations.id, locals.user.orgId));
+            .where(eq(organizations.id, locals.user.orgId))
+            .run();
 
         setFlash(cookies, {
             type: 'success',
@@ -190,19 +193,17 @@ export const actions: Actions = {
         }
 
         try {
-            await db
+            db
                 .update(users)
                 .set({
                     name: form.data.name,
                     email: form.data.email,
                     updatedAt: new Date()
                 })
-                .where(eq(users.id, locals.user.id));
+                .where(eq(users.id, locals.user.id))
+                .run();
         } catch (error) {
-            return fail(500, {
-                form,
-                error: 'Failed to update profile'
-            });
+            return failActionFromError(error, 'Profile update failed', { form });
         }
 
         setFlash(cookies, {
@@ -246,12 +247,13 @@ export const actions: Actions = {
             });
 
             if (existing) {
-                await db
+                db
                     .update(number_series)
                     .set({ prefix: entry.prefix })
-                    .where(eq(number_series.id, existing.id));
+                    .where(eq(number_series.id, existing.id))
+                    .run();
             } else {
-                await db.insert(number_series).values({
+                db.insert(number_series).values({
                     id: crypto.randomUUID(),
                     org_id: orgId,
                     module: entry.module,
@@ -259,7 +261,7 @@ export const actions: Actions = {
                     fy_year: fy,
                     current_number: 0,
                     reset_on_fy: true
-                });
+                }).run();
             }
         }
 
@@ -293,7 +295,7 @@ export const actions: Actions = {
             });
 
             if (existing) {
-                await db
+                db
                     .update(app_settings)
                     .set({
                         smtp_host: form.data.smtp_host,
@@ -305,9 +307,10 @@ export const actions: Actions = {
                         smtp_enabled: true,
                         updated_at: new Date().toISOString()
                     })
-                    .where(eq(app_settings.id, existing.id));
+                    .where(eq(app_settings.id, existing.id))
+                    .run();
             } else {
-                await db.insert(app_settings).values({
+                db.insert(app_settings).values({
                     id: crypto.randomUUID(),
                     org_id: orgId,
                     smtp_host: form.data.smtp_host,
@@ -317,7 +320,7 @@ export const actions: Actions = {
                     smtp_from: form.data.smtp_from || form.data.smtp_user,
                     smtp_secure: form.data.smtp_secure,
                     smtp_enabled: true
-                });
+                }).run();
             }
 
             setFlash(cookies, {
@@ -327,11 +330,7 @@ export const actions: Actions = {
 
             return { form };
         } catch (error) {
-            console.error('Failed to save SMTP settings:', error);
-            return fail(500, {
-                form,
-                error: 'Failed to save email settings'
-            });
+            return failActionFromError(error, 'SMTP settings update failed', { form });
         }
     },
 
@@ -367,13 +366,14 @@ export const actions: Actions = {
 
         const orgId = locals.user.orgId;
 
-        await db
+        db
             .update(app_settings)
             .set({
                 smtp_enabled: false,
                 updated_at: new Date().toISOString()
             })
-            .where(eq(app_settings.org_id, orgId));
+            .where(eq(app_settings.org_id, orgId))
+            .run();
 
         setFlash(cookies, {
             type: 'success',

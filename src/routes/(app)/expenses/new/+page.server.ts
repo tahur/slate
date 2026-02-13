@@ -6,6 +6,13 @@ import type { PageServerLoad, Actions } from './$types';
 import { getNextNumberTx, postExpense, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
+import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/sqlite-errors';
+import { calculateLineTax } from '$lib/tax/gst';
+import { runInTx } from '$lib/server/platform/db/tx';
+import { failActionFromError } from '$lib/server/platform/errors';
+import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
+import { round2 } from '$lib/utils/currency';
+import { localDateStr } from '$lib/utils/date';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -74,7 +81,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         selectedVendorId,
         idempotencyKey: generateIdempotencyKey(),
         defaults: {
-            expense_date: new Date().toISOString().split('T')[0]
+            expense_date: localDateStr()
         }
     };
 };
@@ -90,7 +97,14 @@ export const actions: Actions = {
 
         // Check idempotency
         const idempotencyKey = formData.get('idempotency_key') as string;
-        const { isDuplicate } = await checkIdempotency('expenses', orgId, idempotencyKey);
+        const { isDuplicate, existingRecord } = await checkIdempotency<typeof expenses.$inferSelect>(
+            'expenses',
+            orgId,
+            idempotencyKey
+        );
+        if (isDuplicate && existingRecord) {
+            redirect(302, `/expenses/${existingRecord.id}`);
+        }
         if (isDuplicate) {
             redirect(302, '/expenses');
         }
@@ -101,7 +115,7 @@ export const actions: Actions = {
         const vendor_id = formData.get('vendor_id') as string || null;
         const vendor_name = formData.get('vendor_name') as string || '';
         const description = formData.get('description') as string || '';
-        const amount = parseFloat(formData.get('amount') as string) || 0;
+        const amount = round2(parseFloat(formData.get('amount') as string) || 0);
         const gst_rate = parseFloat(formData.get('gst_rate') as string) || 0;
         const is_inter_state = formData.get('is_inter_state') === 'on';
         const paid_through = formData.get('paid_through') as string;
@@ -121,18 +135,15 @@ export const actions: Actions = {
             return fail(400, { error: 'Payment account is required' });
         }
 
-        // Calculate GST
-        const gstAmount = (amount * gst_rate) / 100;
-        let cgst = 0, sgst = 0, igst = 0;
-
-        if (is_inter_state) {
-            igst = gstAmount;
-        } else {
-            cgst = gstAmount / 2;
-            sgst = gstAmount / 2;
-        }
-
-        const total = amount + gstAmount;
+        // Canonical GST calculation uses shared tax engine.
+        const taxBreakdown = calculateLineTax(
+            { quantity: 1, rate: amount, gstRate: gst_rate },
+            { isInterState: is_inter_state, pricesIncludeGst: false }
+        );
+        const cgst = taxBreakdown.cgst;
+        const sgst = taxBreakdown.sgst;
+        const igst = taxBreakdown.igst;
+        const total = taxBreakdown.total;
 
         // Pre-fetch account info (read-only, safe outside transaction)
         const categoryAccount = await db.query.accounts.findFirst({
@@ -152,7 +163,7 @@ export const actions: Actions = {
         let expenseNumber = '';
 
         try {
-            db.transaction((tx) => {
+            runInTx((tx) => {
                 // Generate expense number
                 expenseNumber = getNextNumberTx(tx, orgId, 'expense');
 
@@ -191,7 +202,7 @@ export const actions: Actions = {
                     journal_entry_id: postingResult.journalEntryId,
                     idempotency_key: idempotencyKey || null,
                     created_by: locals.user!.id
-                });
+                }).run();
             });
 
             // Log activity (outside transaction — non-critical)
@@ -208,9 +219,22 @@ export const actions: Actions = {
                 }
             });
 
+            invalidateReportingCacheForOrg(orgId);
+
         } catch (error) {
-            console.error('Failed to record expense:', error);
-            return fail(500, { error: 'Failed to record expense' });
+            if (idempotencyKey && isIdempotencyConstraintError(error, 'expenses')) {
+                const duplicate = await checkIdempotency<typeof expenses.$inferSelect>('expenses', orgId, idempotencyKey);
+                if (duplicate.isDuplicate && duplicate.existingRecord) {
+                    redirect(302, `/expenses/${duplicate.existingRecord.id}`);
+                }
+                redirect(302, '/expenses');
+            }
+
+            if (isUniqueConstraintOnColumns(error, 'expenses', ['org_id', 'expense_number'])) {
+                return fail(409, { error: 'Expense number conflict. Please retry.' });
+            }
+
+            return failActionFromError(error, 'Expense recording failed');
         }
 
         setFlash(cookies, {

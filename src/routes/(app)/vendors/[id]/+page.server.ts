@@ -6,6 +6,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { vendorSchema } from '../new/schema';
 import { addCurrency } from '$lib/utils/currency';
+import { failActionFromError } from '$lib/server/platform/errors';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -102,7 +103,7 @@ export const actions: Actions = {
         try {
             const data = form.data;
 
-            await db.update(vendors)
+            db.update(vendors)
                 .set({
                     name: data.name,
                     company_name: data.company_name || null,
@@ -127,12 +128,12 @@ export const actions: Actions = {
                 .where(and(
                     eq(vendors.id, event.params.id),
                     eq(vendors.org_id, event.locals.user.orgId)
-                ));
+                ))
+                .run();
 
             return { form, success: true };
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to update vendor' });
+        } catch (error) {
+            return failActionFromError(error, 'Vendor update failed', { form });
         }
     }
 };

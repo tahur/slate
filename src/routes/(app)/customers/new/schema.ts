@@ -87,3 +87,26 @@ export const customerSchema = z.object({
 });
 
 export type CustomerSchema = typeof customerSchema;
+
+/**
+ * Extract 2-digit state code from a GSTIN string.
+ * Returns the code if valid, otherwise null.
+ */
+export function extractStateFromGstin(gstin: string): string | null {
+    const cleaned = gstin.trim().toUpperCase();
+    if (cleaned.length < 2) return null;
+    const code = cleaned.substring(0, 2);
+    if (INDIAN_STATES.some(s => s.code === code)) return code;
+    return null;
+}
+
+/**
+ * Extract PAN from a GSTIN string (characters 3-12).
+ */
+export function extractPanFromGstin(gstin: string): string | null {
+    const cleaned = gstin.trim().toUpperCase();
+    if (cleaned.length < 12) return null;
+    const pan = cleaned.substring(2, 12);
+    if (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) return pan;
+    return null;
+}

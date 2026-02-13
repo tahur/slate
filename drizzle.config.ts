@@ -5,6 +5,6 @@ export default {
     out: './migrations',
     dialect: 'sqlite',
     dbCredentials: {
-        url: 'data/openbill.db'
+        url: 'data/slate.db'
     }
 } satisfies Config;

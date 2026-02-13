@@ -107,7 +107,7 @@
                     <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <TrendingUp class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Invoiced</span
                         >
                     </div>
@@ -119,7 +119,7 @@
                     <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <TrendingDown class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Received</span
                         >
                     </div>
@@ -131,7 +131,7 @@
                     <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <Wallet class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Outstanding</span
                         >
                     </div>
@@ -153,7 +153,7 @@
                     <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <BadgePercent class="size-4" />
                         <span
-                            class="text-xs font-medium uppercase tracking-wider"
+                            class="text-xs font-medium uppercase tracking-wide"
                             >Available Credits</span
                         >
                     </div>
@@ -591,7 +591,7 @@
                             <!-- Credit Notes -->
                             <div>
                                 <h4
-                                    class="text-xs font-bold uppercase tracking-wider text-text-muted mb-3"
+                                    class="text-xs font-bold uppercase tracking-wide text-text-muted mb-3"
                                 >
                                     Credit Notes
                                 </h4>
@@ -674,7 +674,7 @@
                             <!-- Advances -->
                             <div>
                                 <h4
-                                    class="text-xs font-bold uppercase tracking-wider text-text-muted mb-3"
+                                    class="text-xs font-bold uppercase tracking-wide text-text-muted mb-3"
                                 >
                                     Customer Advances
                                 </h4>

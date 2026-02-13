@@ -146,7 +146,7 @@
                     >
                         <div class="px-2">
                             <span
-                                class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+                                class="text-xs font-bold text-slate-400 uppercase tracking-wide"
                                 >Main</span
                             >
                             <div class="mt-2 space-y-1">
@@ -170,7 +170,7 @@
                         </div>
                         <div class="px-2">
                             <span
-                                class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+                                class="text-xs font-bold text-slate-400 uppercase tracking-wide"
                                 >Finance</span
                             >
                             <div class="mt-2 space-y-1">

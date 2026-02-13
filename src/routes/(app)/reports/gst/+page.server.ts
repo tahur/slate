@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { invoices, expenses } from '$lib/server/db/schema';
 import { eq, and, ne, sql, gte, lte } from 'drizzle-orm';
+import { localDateStr } from '$lib/utils/date';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -13,8 +14,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     // Get date range from query params or default to current month
     const now = new Date();
-    const defaultStartDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const defaultStartDate = localDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
+    const defaultEndDate = localDateStr(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
     const startDate = url.searchParams.get('from') || defaultStartDate;
     const endDate = url.searchParams.get('to') || defaultEndDate;

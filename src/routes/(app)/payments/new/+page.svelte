@@ -147,13 +147,11 @@
             <div
                 class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
-                <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-8">
+                <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Customer Selection -->
                     <div class="space-y-2">
-                        <Label
-                            for="customer_id"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                            >Customer *</Label
+                        <Label for="customer_id" variant="form"
+                            >Customer <span class="text-destructive">*</span></Label
                         >
                         <select
                             id="customer_id"
@@ -161,7 +159,7 @@
                             bind:value={selectedCustomer}
                             onchange={(e) =>
                                 loadInvoices(e.currentTarget.value)}
-                            class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                             required
                         >
                             <option value="">Select customer...</option>
@@ -184,10 +182,8 @@
                     <div class="grid gap-6 grid-cols-2">
                         <!-- Amount -->
                         <div class="space-y-2">
-                            <Label
-                                for="amount"
-                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                                >Amount *</Label
+                            <Label for="amount" variant="form"
+                                >Amount <span class="text-destructive">*</span></Label
                             >
                             <Input
                                 type="number"
@@ -197,16 +193,14 @@
                                 step="0.01"
                                 min="0.01"
                                 required
-                                class="h-11 border-border-strong text-text-strong bg-surface-0 font-mono text-lg font-bold"
+                                class="h-12 border-border-strong text-text-strong bg-surface-1 font-mono text-xl font-bold text-right"
                             />
                         </div>
 
                         <!-- Date -->
                         <div class="space-y-2">
-                            <Label
-                                for="payment_date"
-                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                                >Date *</Label
+                            <Label for="payment_date" variant="form"
+                                >Date <span class="text-destructive">*</span></Label
                             >
                             <Input
                                 type="date"
@@ -214,7 +208,7 @@
                                 name="payment_date"
                                 value={data.defaults.payment_date}
                                 required
-                                class="h-11 border-border-strong bg-surface-0"
+                                class="border-border-strong bg-surface-0"
                             />
                         </div>
                     </div>
@@ -222,16 +216,14 @@
                     <div class="grid gap-6 grid-cols-2">
                         <!-- Mode -->
                         <div class="space-y-2">
-                            <Label
-                                for="payment_mode"
-                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                                >Mode *</Label
+                            <Label for="payment_mode" variant="form"
+                                >Mode <span class="text-destructive">*</span></Label
                             >
                             <select
                                 id="payment_mode"
                                 name="payment_mode"
                                 bind:value={paymentMode}
-                                class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
+                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                                 required
                             >
                                 <option value="bank">Bank Transfer</option>
@@ -243,16 +235,14 @@
 
                         <!-- Deposit To -->
                         <div class="space-y-2">
-                            <Label
-                                for="deposit_to"
-                                class="text-xs uppercase tracking-wider text-text-muted font-bold"
-                                >Deposit To *</Label
+                            <Label for="deposit_to" variant="form"
+                                >Deposit To <span class="text-destructive">*</span></Label
                             >
                             <select
                                 id="deposit_to"
                                 name="deposit_to"
                                 bind:value={depositTo}
-                                class="w-full h-11 rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm"
+                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                                 required
                             >
                                 {#each data.depositAccounts as account}
@@ -266,9 +256,7 @@
 
                     <!-- Reference -->
                     <div class="space-y-2">
-                        <Label
-                            for="reference"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                        <Label for="reference" variant="form"
                             >Reference</Label
                         >
                         <Input
@@ -276,22 +264,20 @@
                             id="reference"
                             name="reference"
                             placeholder="UTR / Cheque No."
-                            class="h-11 border-border-strong bg-surface-0"
+                            class="border-border-strong bg-surface-0"
                         />
                     </div>
 
                     <!-- Notes -->
                     <div class="space-y-2">
-                        <Label
-                            for="notes"
-                            class="text-xs uppercase tracking-wider text-text-muted font-bold"
+                        <Label for="notes" variant="form"
                             >Notes</Label
                         >
                         <textarea
                             id="notes"
                             name="notes"
                             rows="3"
-                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong resize-none placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                             placeholder="Internal notes..."
                         ></textarea>
                     </div>
@@ -299,11 +285,11 @@
             </div>
 
             <!-- RIGHT COLUMN: Invoice Allocation -->
-            <div class="flex-1 overflow-y-auto bg-surface-2/30 p-6 md:p-8">
-                <div class="max-w-2xl mr-auto ml-0 md:ml-8 space-y-6">
+            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto">
+                <div class="space-y-6">
                     <div class="flex items-center justify-between">
                         <h3
-                            class="text-sm font-bold uppercase tracking-wider text-text-muted"
+                            class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Unpaid Invoices
                         </h3>
@@ -437,7 +423,7 @@
         <div class="flex items-center gap-8 text-sm">
             <div class="flex flex-col items-end">
                 <span
-                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
                     >Received</span
                 >
                 <span class="font-mono text-xl font-bold text-text-strong"
@@ -447,7 +433,7 @@
 
             <div class="flex flex-col items-end">
                 <span
-                    class="text-[10px] uppercase tracking-wider text-text-muted font-semibold"
+                    class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
                     >Allocated</span
                 >
                 <span
@@ -461,7 +447,7 @@
             {#if isPureAdvance}
                 <div class="flex flex-col items-end text-blue-600">
                     <span
-                        class="text-[10px] uppercase tracking-wider font-semibold"
+                        class="text-[10px] uppercase tracking-wide font-semibold"
                         >Full Advance</span
                     >
                     <span class="font-mono font-bold">{formatINR(amount)}</span>
@@ -472,7 +458,7 @@
             {:else if hasExcess}
                 <div class="flex flex-col items-end text-amber-600">
                     <span
-                        class="text-[10px] uppercase tracking-wider font-semibold"
+                        class="text-[10px] uppercase tracking-wide font-semibold"
                         >Customer Advance</span
                     >
                     <span class="font-mono font-bold"

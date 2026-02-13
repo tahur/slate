@@ -7,6 +7,7 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from './schema';
 import { setFlash } from '$lib/server/flash';
 import { logActivity } from '$lib/server/services';
+import { failActionFromError } from '$lib/server/platform/errors';
 import type { Actions, PageServerLoad } from './$types';
 
 async function generateNextSku(orgId: string): Promise<string> {
@@ -65,7 +66,7 @@ export const actions: Actions = {
 
             const itemId = crypto.randomUUID();
 
-            await db.insert(items).values({
+            db.insert(items).values({
                 id: itemId,
                 org_id: event.locals.user.orgId,
                 type: data.type,
@@ -75,11 +76,12 @@ export const actions: Actions = {
                 hsn_code: data.hsn_code || null,
                 rate: data.rate,
                 unit: data.unit,
+                min_quantity: data.min_quantity,
                 gst_rate: data.gst_rate,
                 is_active: true,
                 created_by: event.locals.user.id,
                 updated_by: event.locals.user.id,
-            });
+            }).run();
 
             await logActivity({
                 orgId: event.locals.user.orgId,
@@ -94,9 +96,8 @@ export const actions: Actions = {
                 }
             });
 
-        } catch (e) {
-            console.error(e);
-            return fail(500, { form, error: 'Failed to create item' });
+        } catch (error) {
+            return failActionFromError(error, 'Item creation failed', { form });
         }
 
         setFlash(event.cookies, {

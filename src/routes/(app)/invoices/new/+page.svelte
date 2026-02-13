@@ -289,7 +289,7 @@
                                                 class="flex items-center justify-between"
                                             >
                                                 <span
-                                                    class="text-[10px] uppercase tracking-wider text-text-subtle font-semibold"
+                                                    class="text-[10px] uppercase tracking-wide text-text-subtle font-semibold"
                                                 >
                                                     Customers
                                                 </span>
@@ -352,7 +352,7 @@
                                 </Select.Root>
                                 {#if selectedCustomer}
                                     <div
-                                        class="flex items-center gap-3 text-[10px] uppercase tracking-wider text-text-muted mt-2"
+                                        class="flex items-center gap-3 text-[10px] uppercase tracking-wide text-text-muted mt-2"
                                     >
                                         <span class="font-semibold">GSTIN</span>
                                         <span
@@ -388,7 +388,7 @@
                                     {#if invoiceNumberMode === "auto"}
                                         <button
                                             type="button"
-                                            class="text-[10px] uppercase tracking-wider text-primary font-semibold hover:underline"
+                                            class="text-[10px] uppercase tracking-wide text-primary font-semibold hover:underline"
                                             onclick={() =>
                                                 (invoiceNumberMode = "manual")}
                                         >
@@ -397,7 +397,7 @@
                                     {:else}
                                         <button
                                             type="button"
-                                            class="text-[10px] uppercase tracking-wider text-text-muted font-semibold hover:text-text-strong hover:underline"
+                                            class="text-[10px] uppercase tracking-wide text-text-muted font-semibold hover:text-text-strong hover:underline"
                                             onclick={() =>
                                                 (invoiceNumberMode = "auto")}
                                         >
@@ -551,7 +551,7 @@
                                 <table class="w-full text-sm">
                                     <thead>
                                         <tr
-                                            class="border-b border-border text-[10px] uppercase tracking-wider font-semibold text-text-subtle bg-surface-2/50"
+                                            class="border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-subtle bg-surface-2/50"
                                         >
                                             <th
                                                 class="px-2 py-3 w-8 text-center"
@@ -756,7 +756,7 @@
 
             <!-- RIGHT COLUMN: Financials -->
             <div
-                class="w-full md:w-[320px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
+                class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto"
             >
                 <div class="space-y-6">
                     <h3

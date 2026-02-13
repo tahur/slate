@@ -28,6 +28,7 @@ export const items = sqliteTable(
         // Pricing
         rate: real('rate').default(0).notNull(),
         unit: text('unit').default('nos'),
+        min_quantity: real('min_quantity').default(1).notNull(),
 
         // Status
         is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull(),

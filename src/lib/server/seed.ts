@@ -48,5 +48,5 @@ export function seedChartOfAccounts(orgId: string, tx?: Tx) {
         balance: 0
     }));
 
-    (tx || db).insert(accounts).values(values);
+    (tx || db).insert(accounts).values(values).run();
 }

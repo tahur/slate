@@ -5,6 +5,7 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check } from "lucide-svelte";
     import { toast } from "svelte-sonner";
+    import { formatINR } from "$lib/utils/currency";
 
     let { data } = $props();
     let isSubmitting = $state(false);
@@ -147,7 +148,7 @@
 
             <!-- RIGHT COLUMN: Financials -->
             <div
-                class="w-full md:w-[380px] bg-surface-0 p-6 md:p-8 overflow-y-auto"
+                class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto"
             >
                 <div class="space-y-6">
                     <h3
@@ -186,10 +187,7 @@
                             <span
                                 class="font-mono text-2xl font-bold text-primary"
                             >
-                                {new Intl.NumberFormat("en-IN", {
-                                    style: "currency",
-                                    currency: "INR",
-                                }).format(amount)}
+                                {formatINR(amount)}
                             </span>
                         </div>
                     </div>

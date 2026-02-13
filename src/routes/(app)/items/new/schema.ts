@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const UNITS = ['nos', 'pcs', 'box', 'kg', 'gm', 'litre', 'ml', 'hrs', 'days', 'sqft', 'meter'] as const;
+/** Common unit suggestions — users can also type their own. */
+export const UNIT_SUGGESTIONS = ['nos', 'pcs', 'box', 'kg', 'gm', 'litre', 'ml', 'hrs', 'days', 'sqft', 'meter'] as const;
 
 export const GST_RATES = [0, 5, 12, 18, 28] as const;
 
@@ -11,7 +12,8 @@ export const itemSchema = z.object({
     description: z.string().optional().or(z.literal('')),
     hsn_code: z.string().optional().or(z.literal('')),
     rate: z.coerce.number().min(0, 'Rate must be 0 or more').default(0),
-    unit: z.string().default('nos'),
+    unit: z.string().min(1, 'Unit is required').default('nos'),
+    min_quantity: z.coerce.number().min(0, 'Min quantity must be 0 or more').default(1),
     gst_rate: z.coerce.number().default(18),
 });
 

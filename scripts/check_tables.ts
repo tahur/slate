@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-const db = new Database('data/openbill.db');
+const db = new Database('data/slate.db');
 
 const tables = ['customer_advances', 'credit_allocations', 'credit_notes'];
 

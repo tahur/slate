@@ -5,7 +5,7 @@
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
-    import { UNITS, GST_RATES } from "./schema";
+    import { UNIT_SUGGESTIONS, GST_RATES } from "./schema";
     import { ArrowLeft, Save, Hash, PenLine } from "lucide-svelte";
 
     let { data } = $props();
@@ -61,11 +61,11 @@
             <div
                 class="flex-1 p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
             >
-                <div class="max-w-3xl space-y-8">
+                <div class="max-w-3xl space-y-6">
                     <!-- Section: Type (compact segmented control) -->
                     <section class="space-y-4">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                            class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Item Type
                         </h3>
@@ -100,7 +100,7 @@
                     <!-- Section: Basic Information -->
                     <section class="space-y-6">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                            class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Details
                         </h3>
@@ -185,12 +185,12 @@
             </div>
 
             <!-- RIGHT COLUMN: Pricing & Tax -->
-            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8">
-                <div class="space-y-8">
+            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto">
+                <div class="space-y-6">
                     <!-- Section: Tax -->
-                    <section class="space-y-6">
+                    <section class="space-y-4">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                            class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Tax
                         </h3>
@@ -241,9 +241,9 @@
                     </section>
 
                     <!-- Section: Pricing -->
-                    <section class="space-y-6">
+                    <section class="space-y-4">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                            class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                         >
                             Pricing
                         </h3>
@@ -266,27 +266,34 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="unit" variant="form">Unit</Label
-                                >
-                                <Select.Root
-                                    type="single"
+                                <Label for="unit" variant="form">Unit</Label>
+                                <Input
+                                    id="unit"
                                     name="unit"
                                     bind:value={$form.unit}
-                                >
-                                    <Select.Trigger
-                                        id="unit"
-                                        class="border-border-strong bg-surface-0"
-                                    >
-                                        {$form.unit || "nos"}
-                                    </Select.Trigger>
-                                    <Select.Content>
-                                        {#each UNITS as unit}
-                                            <Select.Item value={unit}
-                                                >{unit}</Select.Item
-                                            >
-                                        {/each}
-                                    </Select.Content>
-                                </Select.Root>
+                                    list="unit-suggestions"
+                                    placeholder="e.g. nos, kg, hrs"
+                                    class="border-border-strong bg-surface-0"
+                                />
+                                <datalist id="unit-suggestions">
+                                    {#each UNIT_SUGGESTIONS as u}
+                                        <option value={u} />
+                                    {/each}
+                                </datalist>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="min_quantity" variant="form">Min Quantity</Label>
+                                <Input
+                                    id="min_quantity"
+                                    name="min_quantity"
+                                    type="number"
+                                    bind:value={$form.min_quantity}
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="1"
+                                    class="border-border-strong bg-surface-0 font-mono"
+                                />
                             </div>
                         </div>
                     </section>

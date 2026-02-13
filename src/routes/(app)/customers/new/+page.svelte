@@ -5,8 +5,34 @@
     import * as Select from "$lib/components/ui/select";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
-    import { INDIAN_STATES, GST_TREATMENTS } from "./schema";
+    import { INDIAN_STATES, GST_TREATMENTS, extractStateFromGstin } from "./schema";
     import { ArrowLeft, Save } from "lucide-svelte";
+
+    let stateSearch = $state("");
+    const filteredStates = $derived(
+        stateSearch
+            ? INDIAN_STATES.filter(
+                  (s) =>
+                      s.name.toLowerCase().includes(stateSearch.toLowerCase()) ||
+                      s.code.includes(stateSearch),
+              )
+            : INDIAN_STATES,
+    );
+    let stateDropdownOpen = $state(false);
+
+    function handleGstinInput() {
+        const gstin = $form.gstin?.trim().toUpperCase() || "";
+        if (gstin.length >= 2) {
+            const stateCode = extractStateFromGstin(gstin);
+            if (stateCode) {
+                $form.state_code = stateCode;
+                // Auto-set GST treatment to registered if valid GSTIN
+                if (gstin.length === 15) {
+                    $form.gst_treatment = "registered";
+                }
+            }
+        }
+    }
 
     let { data } = $props();
     const { form: initialForm } = data;
@@ -172,33 +198,52 @@
                                 />
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="space-y-2 relative">
                                 <Label for="state_code" variant="form"
                                     >State</Label
                                 >
-                                <Select.Root
-                                    type="single"
-                                    name="state_code"
-                                    bind:value={$form.state_code}
-                                >
-                                    <Select.Trigger
+                                <input type="hidden" name="state_code" value={$form.state_code} />
+                                <div class="relative">
+                                    <input
                                         id="state_code"
-                                        class="border-border-strong bg-surface-0 {$errors.state_code
-                                            ? 'border-destructive'
-                                            : ''}"
-                                    >
-                                        {INDIAN_STATES.find(
-                                            (s) => s.code === $form.state_code,
-                                        )?.name || "Select state"}
-                                    </Select.Trigger>
-                                    <Select.Content class="max-h-[200px]">
-                                        {#each INDIAN_STATES as state}
-                                            <Select.Item value={state.code}
-                                                >{state.name}</Select.Item
-                                            >
-                                        {/each}
-                                    </Select.Content>
-                                </Select.Root>
+                                        type="text"
+                                        class="flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary border-border-strong bg-surface-0 {$errors.state_code ? 'border-destructive' : ''}"
+                                        placeholder="Search state..."
+                                        value={INDIAN_STATES.find((s) => s.code === $form.state_code)?.name || ""}
+                                        onfocus={() => (stateDropdownOpen = true)}
+                                        onblur={() => setTimeout(() => (stateDropdownOpen = false), 150)}
+                                        oninput={(e) => {
+                                            stateSearch = (e.target as HTMLInputElement).value;
+                                            stateDropdownOpen = true;
+                                            // Clear selection if typing
+                                            if (!INDIAN_STATES.some((s) => s.name === stateSearch)) {
+                                                $form.state_code = "";
+                                            }
+                                        }}
+                                    />
+                                    {#if stateDropdownOpen && filteredStates.length > 0}
+                                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                        <div
+                                            class="absolute z-50 mt-1 w-full max-h-[200px] overflow-auto rounded-md border border-border bg-surface-0 shadow-lg"
+                                            onmousedown={(e) => e.preventDefault()}
+                                        >
+                                            {#each filteredStates as state}
+                                                <button
+                                                    type="button"
+                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.state_code === state.code ? 'bg-primary/10 text-primary font-medium' : 'text-text-strong'}"
+                                                    onclick={() => {
+                                                        $form.state_code = state.code;
+                                                        stateSearch = "";
+                                                        stateDropdownOpen = false;
+                                                    }}
+                                                >
+                                                    <span class="font-mono text-text-muted mr-2">{state.code}</span>
+                                                    {state.name}
+                                                </button>
+                                            {/each}
+                                        </div>
+                                    {/if}
+                                </div>
                                 {#if $errors.state_code}
                                     <p class="text-xs text-destructive">
                                         {$errors.state_code}
@@ -279,6 +324,7 @@
                                     id="gstin"
                                     name="gstin"
                                     bind:value={$form.gstin}
+                                    oninput={handleGstinInput}
                                     placeholder="22AAAAA0000A1Z5"
                                     class="border-border-strong bg-surface-0 uppercase font-mono tracking-wide {$errors.gstin
                                         ? 'border-destructive'

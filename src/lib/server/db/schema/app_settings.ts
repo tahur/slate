@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 
@@ -20,7 +20,9 @@ export const app_settings = sqliteTable('app_settings', {
     // Timestamps
     created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
     updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`)
-});
+}, (t) => ({
+    orgUniqueIdx: uniqueIndex('idx_app_settings_org_unique').on(t.org_id)
+}));
 
 export type AppSettings = typeof app_settings.$inferSelect;
 export type NewAppSettings = typeof app_settings.$inferInsert;

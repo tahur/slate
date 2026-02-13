@@ -1,16 +1,23 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { credit_notes, customers } from '$lib/server/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { getNextNumberTx, peekNextNumber, bumpNumberSeriesIfHigher, postCreditNote, logActivity } from '$lib/server/services';
+import { eq } from 'drizzle-orm';
+import { peekNextNumber, logActivity } from '$lib/server/services';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
+import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/sqlite-errors';
 import type { Actions, PageServerLoad } from './$types';
+import { createCreditNoteInTx } from '$lib/server/modules/receivables/application/workflows';
+import { runInTx } from '$lib/server/platform/db/tx';
+import { failActionFromError } from '$lib/server/platform/errors';
+import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
+import { round2 } from '$lib/utils/currency';
+import { localDateStr } from '$lib/utils/date';
 
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user) redirect(302, '/login');
 
     const orgId = locals.user.orgId;
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
 
     // Fetch customers
     const customerList = await db.query.customers.findMany({
@@ -38,13 +45,20 @@ export const actions: Actions = {
 
         // Check idempotency
         const idempotencyKey = formData.get('idempotency_key') as string;
-        const { isDuplicate } = await checkIdempotency('credit_notes', orgId, idempotencyKey);
+        const { isDuplicate, existingRecord } = await checkIdempotency<typeof credit_notes.$inferSelect>(
+            'credit_notes',
+            orgId,
+            idempotencyKey
+        );
+        if (isDuplicate && existingRecord) {
+            redirect(302, `/credit-notes/${existingRecord.id}`);
+        }
         if (isDuplicate) {
             redirect(302, '/credit-notes');
         }
 
         const customer_id = formData.get('customer_id') as string;
-        const amount = parseFloat(formData.get('amount') as string);
+        const amount = round2(parseFloat(formData.get('amount') as string) || 0);
         const reason = formData.get('reason') as string;
         const notes = formData.get('notes') as string;
         const date = formData.get('date') as string;
@@ -57,67 +71,23 @@ export const actions: Actions = {
             return fail(400, { error: 'Amount must be greater than zero' });
         }
 
-        const id = crypto.randomUUID();
+        let creditNoteId = '';
 
         try {
-            db.transaction((tx) => {
-                // Collision Check & Recovery (inside tx for atomicity)
-                const existingCN = tx.query.credit_notes.findFirst({
-                    where: and(
-                        eq(credit_notes.org_id, orgId),
-                        eq(credit_notes.credit_note_number, number)
-                    )
-                }).sync();
-
-                if (existingCN) {
-                    // Force generate next number
-                    number = getNextNumberTx(tx, orgId, 'credit_note');
-                } else if (!number) {
-                    number = getNextNumberTx(tx, orgId, 'credit_note');
-                }
-
-                // Post journal entry (reverse of invoice: debit sales, credit AR)
-                const postingResult = postCreditNote(orgId, {
-                    creditNoteId: id,
-                    creditNoteNumber: number,
-                    date,
+            runInTx((tx) => {
+                const result = createCreditNoteInTx(tx, {
+                    orgId,
+                    userId: locals.user!.id,
                     customerId: customer_id,
-                    subtotal: amount,
-                    cgst: 0,
-                    sgst: 0,
-                    igst: 0,
-                    total: amount,
-                    userId: locals.user!.id
-                }, tx);
-
-                tx.insert(credit_notes).values({
-                    id,
-                    org_id: orgId,
-                    customer_id,
-                    credit_note_number: number,
-                    credit_note_date: date,
-                    subtotal: amount,
-                    total: amount,
-                    balance: amount,
+                    amount,
                     reason,
                     notes,
-                    status: 'issued',
-                    journal_entry_id: postingResult.journalEntryId,
-                    idempotency_key: idempotencyKey || null,
-                    created_by: locals.user!.id
+                    date,
+                    providedNumber: number,
+                    idempotencyKey: idempotencyKey || null
                 });
-
-                // Update customer balance (reduce by credit note amount)
-                tx
-                    .update(customers)
-                    .set({
-                        balance: sql`${customers.balance} - ${amount}`,
-                        updated_at: new Date().toISOString()
-                    })
-                    .where(eq(customers.id, customer_id));
-
-                // Ensure the number series is updated if we used a manual/peeked number
-                bumpNumberSeriesIfHigher(orgId, 'credit_note', number, tx);
+                creditNoteId = result.creditNoteId;
+                number = result.creditNoteNumber;
             });
 
             // Log activity (outside transaction — non-critical)
@@ -125,7 +95,7 @@ export const actions: Actions = {
                 orgId,
                 userId: locals.user.id,
                 entityType: 'credit_note',
-                entityId: id,
+                entityId: creditNoteId,
                 action: 'created',
                 changedFields: {
                     credit_note_number: { new: number },
@@ -134,9 +104,22 @@ export const actions: Actions = {
                 }
             });
 
+            invalidateReportingCacheForOrg(orgId);
+
         } catch (e) {
-            console.error('Failed to create credit note:', e);
-            return fail(500, { error: 'Failed to create credit note' });
+            if (idempotencyKey && isIdempotencyConstraintError(e, 'credit_notes')) {
+                const duplicate = await checkIdempotency<typeof credit_notes.$inferSelect>('credit_notes', orgId, idempotencyKey);
+                if (duplicate.isDuplicate && duplicate.existingRecord) {
+                    redirect(302, `/credit-notes/${duplicate.existingRecord.id}`);
+                }
+                redirect(302, '/credit-notes');
+            }
+
+            if (isUniqueConstraintOnColumns(e, 'credit_notes', ['org_id', 'credit_note_number'])) {
+                return fail(409, { error: 'Credit note number conflict. Please retry.' });
+            }
+
+            return failActionFromError(e, 'Credit note creation failed');
         }
 
         redirect(302, '/credit-notes');

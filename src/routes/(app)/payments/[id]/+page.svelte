@@ -79,7 +79,7 @@
     </header>
 
     <!-- Content: Paper View -->
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-2/30 print-bg-white">
+    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
         <div class="mx-auto max-w-4xl">
             <div
                 class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet"
@@ -128,7 +128,7 @@
                 <div class="flex justify-between items-start">
                     <div class="space-y-2">
                         <p
-                            class="text-xs font-bold uppercase tracking-wider text-text-muted"
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted"
                         >
                             Received From
                         </p>
@@ -156,7 +156,7 @@
                     <div class="text-right space-y-4">
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
                                 Payment Date
                             </p>
@@ -166,7 +166,7 @@
                         </div>
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
                                 Payment Mode
                             </p>
@@ -177,7 +177,7 @@
                         {#if data.payment.reference}
                             <div class="space-y-1">
                                 <p
-                                    class="text-[10px] font-bold uppercase tracking-wider text-text-muted"
+                                    class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                                 >
                                     Reference
                                 </p>
@@ -194,7 +194,7 @@
                     class="bg-positive/5 border border-positive/20 rounded-lg p-6 text-center"
                 >
                     <p
-                        class="text-xs font-bold uppercase tracking-wider text-positive mb-2"
+                        class="text-xs font-bold uppercase tracking-wide text-positive mb-2"
                     >
                         Amount Received
                     </p>
@@ -207,7 +207,7 @@
                 {#if data.allocations.length > 0}
                     <div>
                         <p
-                            class="text-xs font-bold uppercase tracking-wider text-text-muted mb-3"
+                            class="text-xs font-bold uppercase tracking-wide text-text-muted mb-3"
                         >
                             Applied to Invoices
                         </p>
@@ -303,7 +303,7 @@
                 {#if data.payment.notes}
                     <div class="border-t border-border pt-6">
                         <p
-                            class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2"
+                            class="text-[10px] font-bold uppercase tracking-wide text-text-muted mb-2"
                         >
                             Notes
                         </p>

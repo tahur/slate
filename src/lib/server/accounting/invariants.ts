@@ -14,6 +14,7 @@
 import { db } from '../db';
 import { journal_entries, journal_lines } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { InvariantError } from '../platform/errors/domain';
 
 // =============================================================================
 // TYPES
@@ -31,14 +32,24 @@ export interface JournalEntryData {
     total_credit: number;
 }
 
-export class AccountingInvariantError extends Error {
+export class AccountingInvariantError extends InvariantError {
+    public readonly invariant: string;
+    public readonly detail: string;
+    public readonly context?: Record<string, unknown>;
+
     constructor(
-        public readonly invariant: string,
-        public readonly details: string,
-        public readonly context?: Record<string, unknown>
+        invariant: string,
+        details: string,
+        context?: Record<string, unknown>
     ) {
-        super(`Accounting Invariant Violated [${invariant}]: ${details}`);
+        super(
+            `Accounting Invariant Violated [${invariant}]: ${details}`,
+            { invariant, details, context }
+        );
         this.name = 'AccountingInvariantError';
+        this.invariant = invariant;
+        this.detail = details;
+        this.context = context;
     }
 }
 

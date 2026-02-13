@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db';
 import { audit_log } from '$lib/server/db/schema';
+import { logger, logDomainEvent } from '$lib/server/platform/observability';
 
 export type EntityType =
     | 'invoice'
@@ -42,7 +43,7 @@ export interface LogActivityParams {
  */
 export async function logActivity(params: LogActivityParams): Promise<void> {
     try {
-        await db.insert(audit_log).values({
+        db.insert(audit_log).values({
             id: crypto.randomUUID(),
             org_id: params.orgId,
             entity_type: params.entityType,
@@ -52,10 +53,20 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
             user_id: params.userId,
             ip_address: params.ipAddress || null,
             user_agent: params.userAgent || null
+        }).run();
+
+        logDomainEvent('audit.activity.logged', {
+            entityType: params.entityType,
+            entityId: params.entityId,
+            action: params.action
         });
     } catch (error) {
         // Log errors but don't throw - audit logging should never break the main operation
-        console.error('Failed to log activity:', error);
+        logger.warn('audit_log_failed', {
+            entityType: params.entityType,
+            entityId: params.entityId,
+            action: params.action
+        }, error);
     }
 }
 

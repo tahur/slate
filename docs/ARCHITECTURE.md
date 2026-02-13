@@ -1,240 +1,214 @@
-# Slate - System Architecture & Design System
+# Slate Architecture
 
-> **Single Source of Truth for Architecture, Design Tokens, and Technical Implementation**  
-> Version: 2.0 (Consolidated)  
-> Audience: Developers & LLMs  
-> Last Updated: February 2026
+Version: 3.0  
+Date: February 13, 2026  
+Audience: maintainers, contributors, and LLM coding agents
 
----
+This document is the source of truth for how Slate is structured and how critical financial workflows run.
 
-## 1. Executive Summary
+## 1. System Model
 
-**Slate** is a self-hosted, double-entry accounting system designed specifically for **Indian micro-enterprises**. It prioritizes business logic over accounting jargon, automating complex financial operations like GST compliance and double-entry posting behind a user-friendly interface.
+Slate is a modular monolith:
+1. One deployable SvelteKit app.
+2. One SQLite database.
+3. Clear in-process module boundaries.
+4. No distributed transactions.
 
-### Core Philosophy
-- **Business-First**: Users think in invoices and payments; the system translates to debits and credits.
-- **Micro-Enterprise Focus**: Optimized for single-server, self-hosted deployment (SQLite).
-- **Accounting Integrity**: Strict adherence to double-entry principles, immutability, and ACID compliance.
+Why this model:
+1. Financial workflows are consistency-critical.
+2. SQLite + `better-sqlite3` favors simple synchronous transaction boundaries.
+3. The team can move faster with explicit module boundaries before any service split.
 
----
+## 2. Engineering Philosophy
 
-## 2. High-Level Architecture
+1. Business-first UX: users act in invoices/payments/expenses, not debits/credits.
+2. Accounting invariants first: correctness is non-negotiable.
+3. Reversal-first corrections: no mutable posted ledgers.
+4. KISS + DRY: keep logic centralized and explicit.
+5. Guardrails over trust: CI checks enforce policy.
 
-Slate is a **Monolithic SvelteKit Application**. It does not use microservices. The frontend and backend run in the same process, communicating via internal SvelteKit `actions` and `load` functions.
+## 3. Runtime Architecture
 
-```mermaid
-graph TB
-    subgraph "Client (Browser)"
-        UI[Svelte 5 Components]
-        Forms[Superforms + Enhance]
-    end
-    
-    subgraph "Server (Node.js)"
-        API[SvelteKit Server Load/Actions]
-        Auth[Better Auth]
-        Logic[Posting Engine Service]
-        PDF[PDF Generation Service]
-        DB_Layer[Drizzle ORM]
-    end
-    
-    subgraph "Data Storage"
-        SQLite[(SQLite Database)]
-    end
+### 3.1 Request lifecycle
 
-    UI -->|GET Data| API
-    Forms -->|POST Actions| API
-    API -->|Validate Session| Auth
-    API -->|Execute Logic| Logic
-    Logic -->|Read/Write| DB_Layer
-    DB_Layer -->|SQL| SQLite
-```
+1. Request enters `src/hooks.server.ts`.
+2. `requestId` is generated and stored in request context.
+3. Session is resolved through Better Auth.
+4. Route `load`/`actions`/API handler executes.
+5. Logs are emitted (`request_started`, `request_completed`, `request_failed`).
+6. Error mapping sanitizes public payloads and hides sensitive stack traces.
 
----
+### 3.2 Layering model
 
-## 3. Technology Stack
+1. `routes/*`:
+   - transport wiring, auth guards, form/query parsing, response mapping
+2. `src/lib/server/modules/*/application`:
+   - use-case orchestration and transaction-safe business logic
+3. `src/lib/server/modules/*/infra`:
+   - repeated query helpers and DB data-access primitives
+4. `src/lib/server/services/*`:
+   - shared accounting primitives (posting engine, number series, PDF, audit)
+5. `src/lib/server/platform/*`:
+   - cross-cutting concerns (tx wrappers, errors, observability)
+6. `src/lib/server/db/*`:
+   - schema, connection, startup checks
 
-| Layer | Technology | Usage |
-|:------|:-----------|:------|
-| **Framework** | **SvelteKit** | Full-stack meta-framework (SSR + CSR) |
-| **Frontend** | **Svelte 5** | Reactive UI (Runes mode: `$state`, `$derived`) |
-| **Styling** | **Tailwind CSS v4** | Utility-first styling with custom design tokens |
-| **Database** | **SQLite** | Embedded SQL database (via `better-sqlite3`) |
-| **ORM** | **Drizzle ORM** | Type-safe database queries & schema management |
-| **Auth** | **Better Auth** | Comprehensive authentication solution |
-| **Validation** | **Zod** | Schema validation for forms and API inputs |
-| **Math** | **Decimal.js** | Precision financial calculations (no floating point errors) |
+### 3.3 Current module map
 
----
+1. `modules/invoicing`:
+   - draft/create/issue/cancel workflows
+2. `modules/receivables`:
+   - payments, allocations, customer credit application
+3. `modules/reporting`:
+   - GST report query orchestration + cache invalidation
+4. `platform/db`:
+   - transaction wrappers for `better-sqlite3`
+5. `platform/errors`:
+   - typed domain errors and HTTP/action mappers
+6. `platform/observability`:
+   - request context, logger, report cache
 
-## 4. Design System & Tokens (CRITICAL)
+## 4. Persistence and Transaction Semantics
 
-**LLM INSTRUCTION**: You MUST use the following Design Tokens for all UI development. Do NOT use raw Tailwind colors (e.g., `bg-blue-500`, `text-gray-700`) in application pages. Use the semantic tokens defined below.
+### 4.1 SQLite baseline
 
-### 4.1 Color Tokens (`app.css`)
+Startup safety checks in `src/lib/server/db/index.ts` enforce:
+1. `journal_mode = WAL`
+2. `foreign_keys = ON`
+3. `quick_check = ok`
+4. ping query success
 
-Usage: `class="bg-surface-1 text-text-strong"`
+### 4.2 Transaction rule
 
-| Token | Tailwind Class | Hex/HSL | Purpose |
-|:------|:---------------|:--------|:--------|
-| **Surfaces** | | | |
-| `surface-0` | `bg-surface-0` | `hsl(0 0% 100%)` | Cards, inputs, table rows (White) |
-| `surface-1` | `bg-surface-1` | `hsl(210 20% 98%)` | Page background (Light Blue-Grey) |
-| `surface-2` | `bg-surface-2` | `hsl(210 20% 96%)` | Hover states, subtle fills |
-| **Text** | | | |
-| `text-strong` | `text-text-strong` | `hsl(220 20% 15%)` | Headings, primary data (Dark Blue-Grey) |
-| `text-subtle` | `text-text-subtle` | `hsl(220 10% 45%)` | Secondary info, descriptions |
-| `text-muted` | `text-text-muted` | `hsl(220 10% 65%)` | Labels, hints, timestamps |
-| **Borders** | | | |
-| `border` | `border-border` | `hsl(220 15% 92%)` | Default borders |
-| `border-strong`| `border-border-strong`| `hsl(220 15% 85%)` | Input borders, focus rings |
-| **Brand** | | | |
-| `primary` | `bg-primary` | `#fb631b` | Main actions, links, active states (Orange) |
+All write workflows must use `runInTx`/`runInExistingOrNewTx` from `src/lib/server/platform/db/tx.ts`.
 
-### 4.2 Semantic Status Colors
+Important rule:
+1. Transaction callbacks must be synchronous for `better-sqlite3`.
+2. Async work must stay outside DB transaction callbacks.
 
-Use these for badges and indicators:
+This prevents runtime failures like "Transaction function cannot return a promise".
 
-*   **Success** (`bg-green-50 text-green-700`): Paid, Active, Positive
-*   **Warning** (`bg-amber-50 text-amber-700`): Pending, Partial, Due Soon
-*   **Error** (`bg-red-50 text-red-700`): Overdue, Cancelled, Errors
-*   **Info** (`bg-blue-50 text-blue-700`): Issued, Draft
+## 5. Money, Tax, and Precision
 
-### 4.3 Typography Tokens
+1. Money math must use shared helpers from `src/lib/utils/currency.ts`.
+2. Comparison tolerances use epsilon (`MONEY_EPSILON`) where needed.
+3. GST computation is centralized in `src/lib/tax/gst.ts`.
+4. Invoicing workflows call canonical tax utilities, not ad-hoc math.
 
-*   **Font Sans** (`font-sans`): Inter (Default UI text)
-*   **Font Mono** (`font-mono`): JetBrains Mono (Financial numbers, IDs, GSTINs)
-*   **Font Display** (`font-display`): Space Grotesk (Brand/Logo only)
+## 6. Core Financial Workflows
 
-### 4.4 UI Patterns (Copy-Paste Ready)
+### 6.1 Invoice create/issue
 
-**Page Layout Wrapper:**
-```svelte
-<div class="page-full-bleed">
-    <header>...</header>
-    <div class="flex-1 overflow-y-auto bg-surface-1">
-        <!-- content -->
-    </div>
-</div>
-```
+Primary application workflow:
+1. Parse line items and tax mode.
+2. Resolve org/customer tax context.
+3. Calculate totals via centralized GST utility.
+4. Insert invoice + lines.
+5. If issued:
+   - post journal via posting engine,
+   - update invoice `journal_entry_id`,
+   - update customer balance,
+   - emit domain event.
 
-**Data Table:**
-```svelte
-<div class="border border-border rounded-lg overflow-hidden bg-surface-0">
-    <table class="data-table w-full">
-        <!-- ... -->
-    </table>
-</div>
-```
+Reference: `src/lib/server/modules/invoicing/application/workflows.ts`
 
----
+### 6.2 Invoice cancel
 
-## 5. Backend Architecture & Business Logic
+Safety rule:
+1. Cancellation must reverse accounting via ledger reversal flow.
+2. Direct status mutation without reversal is forbidden.
 
-### 5.1 Directory Structure
-```
-src/
-├── lib/server/
-│   ├── db/                 # Database schema & connection
-│   ├── services/           # CORE BUSINESS LOGIC
-│   │   ├── posting-engine.ts # Double-entry accounting logic
-│   │   ├── number-series.ts  # Auto-increment (INV-001)
-│   │   └── pdf.ts           # PDF Generation
-│   └── accounting/         # Invariant checks
-├── routes/                 # SvelteKit Routes
-│   ├── (app)/              # Protected App Routes
-│   └── api/                # Internal API
-```
+### 6.3 Payment and allocation
 
-### 5.2 The Posting Engine (`posting-engine.ts`)
-This is the most critical service. It converts business actions into accounting journal entries.
+Primary safety controls:
+1. Allocations are deduped per invoice.
+2. Allocation totals are bounded by payment amount.
+3. Invoice settlement state is updated transactionally.
+4. Customer balance is adjusted in the same transaction.
 
-**Logic Flow:**
-1.  **Input**: User Action (e.g., "Create Invoice")
-2.  **Validation**: Zod Schema check.
-3.  **Posting**:
-    *   Creates `Invoice` record.
-    *   Creates `JournalEntry` (Header).
-    *   Creates `JournalLine` items (Debits/Credits).
-    *   Updates `Account` balances (Atomic Transaction).
+Reference: `src/lib/server/modules/receivables/application/workflows.ts`
 
-**Example: Invoice Posting Rule**
-*   **Debit**: Accounts Receivable (Asset)
-*   **Credit**: Sales Revenue (Income)
-*   **Credit**: Output GST (Liability)
+### 6.4 Credit application
 
-### 5.3 Accounting Invariants
-Rules enforced at Database and Application levels to ensure financial data integrity.
+Safety rule:
+1. Requested credit amounts are validated against DB-verified available balances in transaction scope.
+2. Client payload is treated as intent, never source of truth.
 
-1.  **Balanced Entries**: Total Debits == Total Credits.
-2.  **Immutability**: Posted entries CANNOT be edited, only reversed.
-3.  **Single-Sided Lines**: A journal line is either Debit OR Credit, never both.
-4.  **Non-Negative**: Amounts must be positive (use Debit/Credit to indicate direction).
+## 7. Accounting Invariant Model
 
----
+Critical invariants are enforced through DB constraints, posting logic, and guardrails:
+1. Debits equal credits per posted entry.
+2. Posted journal entries are immutable.
+3. Correction path is reversal-based.
+4. Payment/credit applications cannot over-apply.
+5. Idempotency is race-safe (app checks plus DB uniqueness).
 
-## 6. Database Schema (Core Tables)
+See `docs/ACCOUNTING_INVARIANTS.md`.
 
-### Organizations (Tenant)
-*   `id` (PK), `name`, `gstin`, `state_code`
+## 8. Error and API Contract Model
 
-### Accounts (Chart of Accounts)
-*   `id` (PK), `account_code` (e.g., "1200"), `account_name`, `balance`
-*   **Standard COA**:
-    *   `1000`: Cash
-    *   `1200`: Accounts Receivable
-    *   `4000`: Sales Revenue
+1. Domain errors are typed (`ValidationError`, `InvariantError`, `ConflictError`, etc.).
+2. `mapErrorToHttp` converts internal errors to safe public payloads.
+3. `failActionFromError` and `jsonFromError` standardize SvelteKit error responses.
+4. Public responses include `traceId` for diagnostics.
+5. Raw stack traces are never returned to clients.
 
-### Journal Entries (Ledger)
-*   `id` (PK), `entry_number`, `total_debit`, `total_credit`, `status`
-*   **Constraint**: `CHECK(total_debit = total_credit)`
+References:
+1. `src/lib/server/platform/errors/domain.ts`
+2. `src/lib/server/platform/errors/http.ts`
+3. `src/lib/server/platform/errors/sveltekit.ts`
 
-### Invoices (Sub-Ledger)
-*   `id` (PK), `invoice_number`, `total`, `balance_due`, `status`
-*   `journal_entry_id` (FK to Journal Entries)
+## 9. Observability and Health
 
----
+1. Structured JSON logs with request context (`requestId`, path, user/org IDs).
+2. Domain event logging for business transitions.
+3. `/api/health` returns DB ping status, startup check snapshot, and report cache stats.
+4. Health responses include `cache-control: no-store`.
+5. `x-request-id` is propagated for tracing.
 
-## 7. Key Workflows
+See `docs/HEALTH_AND_OPERATIONS.md`.
 
-### 7.1 Creating an Invoice
-1.  User submits form at `/invoices/new`.
-2.  `actions.default` validates data with Zod.
-3.  Calls `postingEngine.postInvoiceIssuance()`.
-4.  DB Transaction:
-    *   Insert `Invoice` & `InvoiceItems`.
-    *   Insert `JournalEntry` & `JournalLines`.
-    *   Update `Account` balances.
-    *   Increment `NumberSeries`.
-5.  Redirect to `/invoices/[id]`.
+## 10. Guardrails and CI
 
-### 7.2 Generating PDF
-1.  Client requests `/api/invoices/[id]/pdf`.
-2.  Server fetches Invoice data (and related Customer/Items).
-3.  `pdfmake` generates PDF buffer on server (using headless Chrome via Puppeteer if needed for advanced layout, though `pdfmake` is JS-only).
-4.  Server streams PDF with `Content-Disposition: attachment`.
+Release gates:
+1. `npm run check`
+2. `npm run build`
+3. `npm run ci:guardrails`
 
----
+Guardrail scripts enforce phase-specific constraints:
+1. money math usage
+2. phase 1-9 safety checks
+3. transaction sync-callback policy
+4. integrity checks
 
-## 8. Deployment
+See:
+1. `docs/TESTING_AND_SAFETY_GUARDRAILS.md`
+2. `docs/refactor/governance.md`
 
-*   **Docker**: Multi-stage build (Node 18 Alpine).
-*   **Environment Variables**:
-    *   `SLATE_DB_PATH`: Path to SQLite file.
-    *   `PUPPETEER_EXECUTABLE_PATH`: Path to Chromium (for specific PDF needs).
+## 11. Deployment and Operations
 
-### Backup Strategy
-*   SQLite is a single file (`slate.db`).
-*   Backup = Copy the file.
-*   Restore = Replace the file.
+1. App deploys as one Node process (SvelteKit adapter-node build).
+2. SQLite is file-backed (`SLATE_DB_PATH`).
+3. Backup/restore runbook is documented and validated by restore drill script.
+4. Production incidents are diagnosed with trace IDs + health snapshot + integrity checks.
 
----
+See `docs/ops/backup-restore-runbook.md`.
 
-## 9. Security
-*   **Authentication**: Better Auth (Session cookies, HTTP-only).
-*   **Password Hashing**: Argon2id.
-*   **Authorization**: `hooks.server.ts` validates session; `+layout.server.ts` checks Org ID.
-*   **Data Isolation**: All DB queries MUST filter by `org_id`.
+## 12. Contributor Rules for Safe Changes
 
----
+1. Keep route handlers thin.
+2. Put business write logic in module workflows.
+3. Use transaction wrappers for writes.
+4. Use shared money/tax helpers.
+5. Preserve org isolation in every query path.
+6. Run required checks before merge.
+7. Update docs when behavior/contracts change.
 
-**Appendix**: For detailed code style rules, refer to [STYLE_GUIDE.md](./STYLE_GUIDE.md).
+## 13. Related Documents
+
+1. `docs/FOSS_CONTRIBUTOR_PLAYBOOK.md`
+2. `docs/TESTING_AND_SAFETY_GUARDRAILS.md`
+3. `docs/HEALTH_AND_OPERATIONS.md`
+4. `docs/REVAMP_IMPLEMENTATION_SUMMARY.md`
+5. `docs/refactor/governance.md`
+6. `revamp.md`

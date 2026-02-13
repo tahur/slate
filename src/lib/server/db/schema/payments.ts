@@ -44,6 +44,7 @@ export const payments = sqliteTable(
         unq: unique().on(t.org_id, t.payment_number),
         orgIdx: index('idx_payments_org').on(t.org_id),
         custIdx: index('idx_payments_org_customer').on(t.org_id, t.customer_id),
+        journalEntryIdx: index('idx_payments_journal_entry').on(t.journal_entry_id),
         idempotencyIdx: uniqueIndex('idx_payments_org_idempotency').on(t.org_id, t.idempotency_key)
     })
 );
