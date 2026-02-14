@@ -1,5 +1,5 @@
 FROM node:20-bookworm-slim AS deps
-FROM litestream/litestream:0.3.13 AS litestream
+
 
 WORKDIR /app
 
@@ -41,8 +41,11 @@ COPY --from=build --chown=appuser:appgroup /app/build ./build
 COPY --from=build --chown=appuser:appgroup /app/migrations ./migrations
 COPY --from=build --chown=appuser:appgroup /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=build --chown=appuser:appgroup /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
-COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
 COPY litestream.yml /etc/litestream.yml
+
+# Install Litestream
+ADD https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.tar.gz /tmp/litestream.tar.gz
+RUN tar -C /usr/local/bin -xzf /tmp/litestream.tar.gz
 
 
 RUN chmod +x ./scripts/docker-entrypoint.sh
