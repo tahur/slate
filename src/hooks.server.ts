@@ -198,7 +198,22 @@ export const handle: Handle = async ({ event, resolve }) => {
                 event.locals.session = null;
             }
 
+            logger.info('request_received', {
+                method: event.request.method,
+                path: event.url.pathname,
+                origin: event.url.origin
+            });
+
             const response = await svelteKitHandler({ event, resolve, auth, building });
+
+            if (response.status === 404) {
+                logger.warn('404_not_found', {
+                    method: event.request.method,
+                    path: event.url.pathname,
+                    user: event.locals.user?.id
+                });
+            }
+
             response.headers.set('x-request-id', requestId);
             applySecurityHeaders(response, event);
             if (isApiRequest) {
