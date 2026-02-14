@@ -15,10 +15,12 @@ import {
 } from '$lib/server/modules/receivables/application/workflows';
 import { runInTx } from '$lib/server/platform/db/tx';
 import {
+    listActivePaymentModes,
     listDepositAccounts,
     listPaymentCustomers,
     listUnpaidCustomerInvoices
 } from '$lib/server/modules/receivables/infra/queries';
+import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -27,8 +29,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     const orgId = locals.user.orgId;
 
+    // Auto-seed payment modes for existing orgs
+    if (!hasPaymentModes(orgId)) {
+        seedPaymentModes(orgId);
+    }
+
     const customerList = await listPaymentCustomers(orgId);
     const depositAccounts = await listDepositAccounts(orgId);
+    const paymentModes = await listActivePaymentModes(orgId);
 
     // Check if a customer is pre-selected (from invoice page)
     const customerId = url.searchParams.get('customer');
@@ -42,6 +50,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     return {
         customers: customerList,
         depositAccounts,
+        paymentModes,
         selectedCustomer: customerId || '',
         preSelectedInvoiceId,
         unpaidInvoices,

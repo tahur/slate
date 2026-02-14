@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { setupSchema } from './schema';
-import { seedChartOfAccounts } from '$lib/server/seed';
+import { seedChartOfAccounts, seedPaymentModes } from '$lib/server/seed';
 import { setFlash } from '$lib/server/flash';
 import { runInTx } from '$lib/server/platform/db/tx';
 import { failActionFromError, InvariantError } from '$lib/server/platform/errors';
@@ -106,6 +106,9 @@ export const actions: Actions = {
 
                 // 4. Seed Chart of Accounts
                 seedChartOfAccounts(orgId, tx);
+
+                // 5. Seed Payment Modes
+                seedPaymentModes(orgId, tx);
             });
 
             const linkedUser = await db.query.users.findFirst({

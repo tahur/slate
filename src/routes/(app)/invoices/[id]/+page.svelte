@@ -64,7 +64,8 @@
 
     // Payment Form State
     let paymentAmount = $state(0);
-    let paymentMode = $state("bank");
+    const defaultPaymentMode = data.paymentModes.find((m: any) => m.is_default) || data.paymentModes[0];
+    let paymentMode = $state(defaultPaymentMode?.mode_key || "bank");
     let paymentDate = $state(localDateStr());
     let paymentReference = $state("");
 
@@ -787,35 +788,38 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1.5">
-                                <Label for="payment_mode" variant="form"
-                                    >Mode</Label
-                                >
-                                <select
-                                    id="payment_mode"
-                                    name="payment_mode"
-                                    bind:value={paymentMode}
-                                    class="h-9 w-full border border-border-strong rounded-md bg-surface-0 text-sm text-text-strong px-2"
-                                >
-                                    <option value="bank">Bank Transfer</option>
-                                    <option value="cash">Cash</option>
-                                    <option value="upi">UPI / QR</option>
-                                </select>
+                        <!-- Payment Mode Toggle Chips -->
+                        <div class="space-y-1.5">
+                            <Label variant="form">Mode</Label>
+                            <input type="hidden" name="payment_mode" value={paymentMode} />
+                            <div class="flex flex-wrap gap-1.5">
+                                {#each data.paymentModes as mode}
+                                    <button
+                                        type="button"
+                                        onclick={() => { paymentMode = mode.mode_key; }}
+                                        class="px-3 py-1.5 rounded-md text-xs font-medium border transition-all {paymentMode === mode.mode_key
+                                            ? 'bg-primary text-white border-primary shadow-sm'
+                                            : 'bg-surface-0 text-text-strong border-border-strong hover:border-primary/50'}"
+                                    >
+                                        {mode.label}
+                                    </button>
+                                {/each}
                             </div>
-                            <div class="space-y-1.5">
-                                <Label
-                                    for="payment_reference"
-                                    variant="form">Ref (Opt)</Label
-                                >
-                                <Input
-                                    id="payment_reference"
-                                    name="payment_reference"
-                                    bind:value={paymentReference}
-                                    placeholder="UTR / Txn ID"
-                                    class="bg-surface-0"
-                                />
-                            </div>
+                        </div>
+
+                        <!-- Reference -->
+                        <div class="space-y-1.5">
+                            <Label
+                                for="payment_reference"
+                                variant="form">Reference (Optional)</Label
+                            >
+                            <Input
+                                id="payment_reference"
+                                name="payment_reference"
+                                bind:value={paymentReference}
+                                placeholder="UTR / Txn ID"
+                                class="bg-surface-0"
+                            />
                         </div>
                     </div>
                 </div>

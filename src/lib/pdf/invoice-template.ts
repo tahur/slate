@@ -21,10 +21,10 @@ function stateName(code: string | null | undefined): string {
 	return STATE_NAMES[code] || code;
 }
 
-/** Format INR amount — uses Unicode ₹ */
+/** Format INR amount — uses Rs. prefix (Helvetica lacks ₹ glyph) */
 function fmt(amount: number | null | undefined): string {
 	const value = amount || 0;
-	return '\u20B9' + new Intl.NumberFormat('en-IN', {
+	return 'Rs.' + new Intl.NumberFormat('en-IN', {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2
 	}).format(value);

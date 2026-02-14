@@ -1,5 +1,6 @@
 <script lang="ts">
     import { superForm } from "sveltekit-superforms";
+    import { enhance as formEnhance } from "$app/forms";
     import { Card } from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
@@ -9,7 +10,6 @@
     import { INDIAN_STATES } from "../customers/new/schema";
     import {
         Building2,
-        CreditCard,
         FileText,
         Hash,
         User,
@@ -23,6 +23,10 @@
         Mail,
         Send,
         Loader2,
+        Wallet,
+        Pencil,
+        Trash2,
+        Plus,
     } from "lucide-svelte";
 
     let { data } = $props();
@@ -31,7 +35,7 @@
 
     const tabs = [
         { id: "business", label: "Business Info", icon: Building2 },
-        { id: "bank", label: "Bank & UPI", icon: CreditCard },
+        { id: "payments", label: "Payments", icon: Wallet },
         { id: "invoice", label: "Invoice Settings", icon: FileText },
         { id: "series", label: "Number Series", icon: Hash },
         { id: "email", label: "Email (SMTP)", icon: Mail },
@@ -166,6 +170,31 @@
     }
 
     let showBankPreview = $state(false);
+
+    // Payment Modes state
+    let isPaymentModeModalOpen = $state(false);
+    let editingMode = $state<any>(null);
+    let modeLabel = $state("");
+    let modeLinkedAccountId = $state("");
+
+    function openAddMode() {
+        editingMode = null;
+        modeLabel = "";
+        modeLinkedAccountId = "";
+        isPaymentModeModalOpen = true;
+    }
+
+    function openEditMode(mode: any) {
+        editingMode = mode;
+        modeLabel = mode.label;
+        modeLinkedAccountId = mode.linked_account_id || "";
+        isPaymentModeModalOpen = true;
+    }
+
+    function closePaymentModeModal() {
+        isPaymentModeModalOpen = false;
+        editingMode = null;
+    }
 </script>
 
 <div class="flex flex-col gap-6">
@@ -469,198 +498,372 @@
             </form>
         {/if}
 
-        <!-- Bank & UPI Tab -->
-        {#if activeTab === "bank"}
-            <form
-                method="POST"
-                action="?/updateOrg"
-                use:orgEnhance
-                class="space-y-6"
-            >
-                <!-- Hidden fields for other form data -->
-                <input type="hidden" name="name" value={$orgForm.name} />
-                <input
-                    type="hidden"
-                    name="state_code"
-                    value={$orgForm.state_code}
-                />
-                <input
-                    type="hidden"
-                    name="logo_url"
-                    bind:value={$orgForm.logo_url}
-                />
-                <input
-                    type="hidden"
-                    name="signature_url"
-                    bind:value={$orgForm.signature_url}
-                />
-                {#if $orgForm.prices_include_gst}
-                    <input type="hidden" name="prices_include_gst" value="on" />
-                {/if}
-
-                <Card class="p-6 space-y-6">
+        <!-- Payments Tab (Payment Modes + Bank & UPI) -->
+        {#if activeTab === "payments"}
+            <div class="space-y-6">
+                <!-- Payment Modes Section -->
+                <Card class="p-6 space-y-5">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2
-                                class="text-base font-semibold text-text-strong"
-                            >
-                                Bank Account
+                            <h2 class="text-base font-semibold text-text-strong">
+                                Payment Modes
                             </h2>
                             <p class="text-sm text-text-subtle">
-                                Bank details shown on invoices for payments.
+                                These appear in payment dropdowns. Click the radio to set default.
                             </p>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onclick={() => (showBankPreview = !showBankPreview)}
-                        >
-                            <Eye class="mr-2 size-3" />
-                            {showBankPreview ? "Hide" : "Preview"}
+                        <Button size="sm" onclick={openAddMode}>
+                            <Plus class="mr-2 size-3" />
+                            Add Mode
                         </Button>
                     </div>
 
-                    {#if showBankPreview}
-                        <div
-                            class="bg-surface-2 rounded-lg p-4 border border-border"
-                        >
-                            <p
-                                class="text-xs font-semibold text-text-muted mb-2"
+                    <div class="space-y-2">
+                        {#each data.paymentModes as mode}
+                            <div
+                                class="flex items-center gap-3 p-3 rounded-lg border transition-colors {mode.is_active
+                                    ? 'border-border bg-surface-0 hover:border-primary/30'
+                                    : 'border-dashed border-border bg-surface-1/50 opacity-60'}"
                             >
-                                BANK DETAILS (as shown on invoice)
-                            </p>
-                            <div class="text-sm space-y-1">
-                                <p>
-                                    <span class="text-text-muted">Bank:</span>
-                                    {$orgForm.bank_name || "—"}
-                                </p>
-                                <p>
-                                    <span class="text-text-muted">A/c No:</span>
-                                    <span class="font-mono"
-                                        >{$orgForm.account_number || "—"}</span
-                                    >
-                                </p>
-                                <p>
-                                    <span class="text-text-muted">IFSC:</span>
-                                    <span class="font-mono"
-                                        >{$orgForm.ifsc || "—"}</span
-                                    >
-                                </p>
-                                <p>
-                                    <span class="text-text-muted">Branch:</span>
-                                    {$orgForm.branch || "—"}
-                                </p>
-                                {#if $orgForm.upi_id}
-                                    <p>
-                                        <span class="text-text-muted">UPI:</span
+                                <!-- Default radio -->
+                                {#if mode.is_active}
+                                    <form method="POST" action="?/setDefaultPaymentMode" use:formEnhance>
+                                        <input type="hidden" name="id" value={mode.id} />
+                                        <button
+                                            type="submit"
+                                            class="size-5 rounded-full border-2 flex items-center justify-center transition-colors {mode.is_default
+                                                ? 'border-primary bg-primary'
+                                                : 'border-border-strong hover:border-primary/50'}"
+                                            title={mode.is_default ? "Default mode" : "Set as default"}
                                         >
-                                        <span class="font-mono"
-                                            >{$orgForm.upi_id}</span
-                                        >
-                                    </p>
+                                            {#if mode.is_default}
+                                                <div class="size-2 rounded-full bg-white"></div>
+                                            {/if}
+                                        </button>
+                                    </form>
+                                {:else}
+                                    <div class="size-5"></div>
                                 {/if}
-                            </div>
-                        </div>
-                    {/if}
 
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div class="space-y-2">
-                            <Label for="bank_name">Bank Name</Label>
-                            <Input
-                                id="bank_name"
-                                name="bank_name"
-                                bind:value={$orgForm.bank_name}
-                                placeholder="HDFC Bank"
-                            />
-                        </div>
-                        <div class="space-y-2">
-                            <Label for="branch">Branch</Label>
-                            <Input
-                                id="branch"
-                                name="branch"
-                                bind:value={$orgForm.branch}
-                                placeholder="Koramangala, Bangalore"
-                            />
-                        </div>
-                        <div class="space-y-2">
-                            <Label for="account_number">Account Number</Label>
-                            <Input
-                                id="account_number"
-                                name="account_number"
-                                bind:value={$orgForm.account_number}
-                                class="font-mono"
-                                placeholder="50100123456789"
-                            />
-                        </div>
-                        <div class="space-y-2">
-                            <Label for="ifsc">IFSC Code</Label>
-                            <div class="relative">
-                                <Input
-                                    id="ifsc"
-                                    name="ifsc"
-                                    bind:value={$orgForm.ifsc}
-                                    class="uppercase font-mono pr-10"
-                                    placeholder="HDFC0001234"
-                                />
-                                {#if $orgForm.ifsc}
-                                    <div
-                                        class="absolute right-3 top-1/2 -translate-y-1/2"
-                                    >
-                                        {#if isIfscValid($orgForm.ifsc)}
-                                            <CheckCircle
-                                                class="size-4 text-green-500"
-                                            />
-                                        {:else}
-                                            <AlertCircle
-                                                class="size-4 text-amber-500"
-                                            />
+                                <!-- Label & linked account -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-text-strong">{mode.label}</span>
+                                        {#if mode.is_default}
+                                            <span class="text-[10px] font-semibold uppercase tracking-wide text-primary">Default</span>
+                                        {/if}
+                                        {#if !mode.is_active}
+                                            <span class="text-[10px] font-medium text-text-muted">Inactive</span>
                                         {/if}
                                     </div>
-                                {/if}
+                                    {#if mode.linked_account_name}
+                                        <p class="text-xs text-text-muted mt-0.5">Deposits to {mode.linked_account_name}</p>
+                                    {/if}
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="flex items-center gap-0.5">
+                                    <button
+                                        type="button"
+                                        onclick={() => openEditMode(mode)}
+                                        class="p-1.5 rounded-md hover:bg-surface-2 text-text-muted hover:text-text-strong transition-colors"
+                                        title="Edit"
+                                    >
+                                        <Pencil class="size-3.5" />
+                                    </button>
+                                    {#if mode.is_active}
+                                        <form method="POST" action="?/deletePaymentMode" use:formEnhance>
+                                            <input type="hidden" name="id" value={mode.id} />
+                                            <button
+                                                type="submit"
+                                                class="p-1.5 rounded-md hover:bg-destructive/10 text-text-muted hover:text-destructive transition-colors"
+                                                title="Remove"
+                                            >
+                                                <Trash2 class="size-3.5" />
+                                            </button>
+                                        </form>
+                                    {/if}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </Card>
+
+                <!-- Bank Account Section -->
+                <form
+                    method="POST"
+                    action="?/updateOrg"
+                    use:orgEnhance
+                    class="space-y-6"
+                >
+                    <!-- Hidden fields for other form data -->
+                    <input type="hidden" name="name" value={$orgForm.name} />
+                    <input
+                        type="hidden"
+                        name="state_code"
+                        value={$orgForm.state_code}
+                    />
+                    <input
+                        type="hidden"
+                        name="logo_url"
+                        bind:value={$orgForm.logo_url}
+                    />
+                    <input
+                        type="hidden"
+                        name="signature_url"
+                        bind:value={$orgForm.signature_url}
+                    />
+                    {#if $orgForm.prices_include_gst}
+                        <input type="hidden" name="prices_include_gst" value="on" />
+                    {/if}
+
+                    <Card class="p-6 space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2
+                                    class="text-base font-semibold text-text-strong"
+                                >
+                                    Bank Account
+                                </h2>
+                                <p class="text-sm text-text-subtle">
+                                    Bank details shown on invoices for payments.
+                                </p>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onclick={() => (showBankPreview = !showBankPreview)}
+                            >
+                                <Eye class="mr-2 size-3" />
+                                {showBankPreview ? "Hide" : "Preview"}
+                            </Button>
+                        </div>
+
+                        {#if showBankPreview}
+                            <div
+                                class="bg-surface-2 rounded-lg p-4 border border-border"
+                            >
+                                <p
+                                    class="text-xs font-semibold text-text-muted mb-2"
+                                >
+                                    BANK DETAILS (as shown on invoice)
+                                </p>
+                                <div class="text-sm space-y-1">
+                                    <p>
+                                        <span class="text-text-muted">Bank:</span>
+                                        {$orgForm.bank_name || "—"}
+                                    </p>
+                                    <p>
+                                        <span class="text-text-muted">A/c No:</span>
+                                        <span class="font-mono"
+                                            >{$orgForm.account_number || "—"}</span
+                                        >
+                                    </p>
+                                    <p>
+                                        <span class="text-text-muted">IFSC:</span>
+                                        <span class="font-mono"
+                                            >{$orgForm.ifsc || "—"}</span
+                                        >
+                                    </p>
+                                    <p>
+                                        <span class="text-text-muted">Branch:</span>
+                                        {$orgForm.branch || "—"}
+                                    </p>
+                                    {#if $orgForm.upi_id}
+                                        <p>
+                                            <span class="text-text-muted">UPI:</span
+                                            >
+                                            <span class="font-mono"
+                                                >{$orgForm.upi_id}</span
+                                            >
+                                        </p>
+                                    {/if}
+                                </div>
+                            </div>
+                        {/if}
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div class="space-y-2">
+                                <Label for="bank_name">Bank Name</Label>
+                                <Input
+                                    id="bank_name"
+                                    name="bank_name"
+                                    bind:value={$orgForm.bank_name}
+                                    placeholder="HDFC Bank"
+                                />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="branch">Branch</Label>
+                                <Input
+                                    id="branch"
+                                    name="branch"
+                                    bind:value={$orgForm.branch}
+                                    placeholder="Koramangala, Bangalore"
+                                />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="account_number">Account Number</Label>
+                                <Input
+                                    id="account_number"
+                                    name="account_number"
+                                    bind:value={$orgForm.account_number}
+                                    class="font-mono"
+                                    placeholder="50100123456789"
+                                />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="ifsc">IFSC Code</Label>
+                                <div class="relative">
+                                    <Input
+                                        id="ifsc"
+                                        name="ifsc"
+                                        bind:value={$orgForm.ifsc}
+                                        class="uppercase font-mono pr-10"
+                                        placeholder="HDFC0001234"
+                                    />
+                                    {#if $orgForm.ifsc}
+                                        <div
+                                            class="absolute right-3 top-1/2 -translate-y-1/2"
+                                        >
+                                            {#if isIfscValid($orgForm.ifsc)}
+                                                <CheckCircle
+                                                    class="size-4 text-green-500"
+                                                />
+                                            {:else}
+                                                <AlertCircle
+                                                    class="size-4 text-amber-500"
+                                                />
+                                            {/if}
+                                        </div>
+                                    {/if}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </Card>
+                    </Card>
 
-                <Card class="p-6 space-y-6">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-purple-100 rounded-lg">
-                            <Smartphone class="size-5 text-purple-600" />
+                    <Card class="p-6 space-y-6">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-purple-100 rounded-lg">
+                                <Smartphone class="size-5 text-purple-600" />
+                            </div>
+                            <div>
+                                <h2
+                                    class="text-base font-semibold text-text-strong"
+                                >
+                                    UPI Payment
+                                </h2>
+                                <p class="text-sm text-text-subtle">
+                                    Accept payments via UPI.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2
-                                class="text-base font-semibold text-text-strong"
-                            >
-                                UPI Payment
-                            </h2>
-                            <p class="text-sm text-text-subtle">
-                                Accept payments via UPI.
+
+                        <div class="space-y-2">
+                            <Label for="upi_id">UPI ID</Label>
+                            <Input
+                                id="upi_id"
+                                name="upi_id"
+                                bind:value={$orgForm.upi_id}
+                                class="font-mono"
+                                placeholder="business@upi"
+                            />
+                            <p class="text-xs text-text-subtle">
+                                Your UPI ID for receiving payments (e.g.,
+                                yourname@paytm)
                             </p>
                         </div>
-                    </div>
+                    </Card>
 
-                    <div class="space-y-2">
-                        <Label for="upi_id">UPI ID</Label>
-                        <Input
-                            id="upi_id"
-                            name="upi_id"
-                            bind:value={$orgForm.upi_id}
-                            class="font-mono"
-                            placeholder="business@upi"
-                        />
-                        <p class="text-xs text-text-subtle">
-                            Your UPI ID for receiving payments (e.g.,
-                            yourname@paytm)
-                        </p>
+                    <div class="flex justify-end pt-2">
+                        <Button type="submit" disabled={$orgSubmitting}>
+                            {$orgSubmitting ? "Saving..." : "Save Bank Details"}
+                        </Button>
                     </div>
-                </Card>
+                </form>
+            </div>
 
-                <div class="flex justify-end pt-2">
-                    <Button type="submit" disabled={$orgSubmitting}>
-                        {$orgSubmitting ? "Saving..." : "Save Bank Details"}
-                    </Button>
+            <!-- Payment Mode Modal -->
+            {#if isPaymentModeModalOpen}
+                <div class="fixed inset-0 z-50 flex items-center justify-center">
+                    <!-- Backdrop -->
+                    <button
+                        type="button"
+                        class="absolute inset-0 bg-black/50"
+                        onclick={closePaymentModeModal}
+                        tabindex="-1"
+                    ></button>
+
+                    <!-- Modal -->
+                    <div class="relative bg-surface-0 rounded-xl shadow-xl border border-border w-full max-w-md mx-4 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-text-strong">
+                                {editingMode ? "Edit Payment Mode" : "Add Payment Mode"}
+                            </h3>
+                            <button
+                                type="button"
+                                onclick={closePaymentModeModal}
+                                class="p-1 rounded-md hover:bg-surface-2 text-text-muted"
+                            >
+                                <X class="size-4" />
+                            </button>
+                        </div>
+
+                        <form
+                            method="POST"
+                            action={editingMode ? "?/updatePaymentMode" : "?/addPaymentMode"}
+                            use:formEnhance={() => {
+                                closePaymentModeModal();
+                                return async ({ update }) => {
+                                    await update();
+                                };
+                            }}
+                            class="space-y-4"
+                        >
+                            {#if editingMode}
+                                <input type="hidden" name="id" value={editingMode.id} />
+                            {/if}
+
+                            <div class="space-y-2">
+                                <Label for="mode_label">Label <span class="text-destructive">*</span></Label>
+                                <Input
+                                    id="mode_label"
+                                    name="label"
+                                    bind:value={modeLabel}
+                                    placeholder="e.g. NEFT/RTGS, UPI - PhonePe"
+                                    required
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="mode_linked_account">Linked Deposit Account</Label>
+                                <select
+                                    id="mode_linked_account"
+                                    name="linked_account_id"
+                                    bind:value={modeLinkedAccountId}
+                                    class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                                >
+                                    <option value="">None</option>
+                                    {#each data.depositAccounts as account}
+                                        <option value={account.id}>{account.name}</option>
+                                    {/each}
+                                </select>
+                                <p class="text-xs text-text-muted">
+                                    Auto-selects this deposit account when mode is chosen.
+                                </p>
+                            </div>
+
+                            <div class="flex justify-end gap-3 pt-2">
+                                <Button variant="outline" type="button" onclick={closePaymentModeModal}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit">
+                                    {editingMode ? "Save Changes" : "Add Mode"}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
+            {/if}
         {/if}
 
         <!-- Invoice Settings Tab -->

@@ -243,42 +243,38 @@
                     >
                         Quick Actions
                     </h3>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <Button
                             variant="outline"
                             size="sm"
                             href="/invoices/new?customer={data.customer.id}"
-                            class="justify-start"
                         >
-                            <FileText class="mr-2 size-3" />
+                            <FileText class="mr-1.5 size-3" />
                             Invoice
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             href="/payments/new?customer={data.customer.id}"
-                            class="justify-start"
                         >
-                            <CreditCard class="mr-2 size-3" />
+                            <CreditCard class="mr-1.5 size-3" />
                             Payment
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             href="/credit-notes/new?customer={data.customer.id}"
-                            class="justify-start"
                         >
-                            <Receipt class="mr-2 size-3" />
+                            <Receipt class="mr-1.5 size-3" />
                             Credit Note
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             onclick={() => (isEditing = true)}
-                            class="justify-start"
                         >
-                            <Pencil class="mr-2 size-3" />
-                            Edit Info
+                            <Pencil class="mr-1.5 size-3" />
+                            Edit
                         </Button>
                     </div>
                 </div>
@@ -712,11 +708,13 @@
                                                             advance.created_at,
                                                         )}</td
                                                     >
-                                                    <td
-                                                        class="py-3 pr-4 text-text-subtle"
-                                                        >{advance.notes ||
-                                                            "Advance payment"}</td
-                                                    >
+                                                    <td class="py-3 pr-4">
+                                                        {#if advance.payment_number}
+                                                            <span class="font-mono text-primary">{advance.payment_number}</span>
+                                                        {:else}
+                                                            <span class="text-text-subtle">{advance.notes || "Advance payment"}</span>
+                                                        {/if}
+                                                    </td>
                                                     <td
                                                         class="py-3 pr-4 text-right font-mono"
                                                         >{formatINR(

@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, ne, sql } from 'drizzle-orm';
 import { db, type Tx } from '$lib/server/db';
-import { accounts, credit_notes, customer_advances, customers, invoices } from '$lib/server/db/schema';
+import { accounts, credit_notes, customer_advances, customers, invoices, payment_modes } from '$lib/server/db/schema';
 import { round2 } from '$lib/utils/currency';
 
 export type InvoiceSettlementRow = {
@@ -182,6 +182,20 @@ export async function listDepositAccounts(orgId: string) {
         })
         .from(accounts)
         .where(and(eq(accounts.org_id, orgId), inArray(accounts.account_code, ['1000', '1100'])));
+}
+
+export async function listActivePaymentModes(orgId: string) {
+    return db
+        .select({
+            id: payment_modes.id,
+            mode_key: payment_modes.mode_key,
+            label: payment_modes.label,
+            linked_account_id: payment_modes.linked_account_id,
+            is_default: payment_modes.is_default
+        })
+        .from(payment_modes)
+        .where(and(eq(payment_modes.org_id, orgId), eq(payment_modes.is_active, true)))
+        .orderBy(payment_modes.sort_order);
 }
 
 export async function listUnpaidCustomerInvoices(orgId: string, customerId: string) {

@@ -10,16 +10,26 @@
     import { formatDate } from "$lib/utils/date";
 
     let { data, form } = $props();
-    const { selectedCustomer: initCustomer, depositAccounts, unpaidInvoices: initUnpaid } = data;
+    const { selectedCustomer: initCustomer, depositAccounts, paymentModes, unpaidInvoices: initUnpaid } = data;
     let isSubmitting = $state(false);
 
     // Form state
     let selectedCustomer = $state(initCustomer);
     let amount = $state(0);
-    let paymentMode = $state("bank");
+    const defaultMode = paymentModes.find((m) => m.is_default) || paymentModes[0];
+    let paymentMode = $state(defaultMode?.mode_key || "bank");
     let depositTo = $state(
+        defaultMode?.linked_account_id ||
         depositAccounts.find((a) => a.code === "1100")?.id || "",
     );
+
+    function onPaymentModeChange(modeKey: string) {
+        paymentMode = modeKey;
+        const mode = paymentModes.find((m) => m.mode_key === modeKey);
+        if (mode?.linked_account_id) {
+            depositTo = mode.linked_account_id;
+        }
+    }
 
     // Invoice allocations
     let unpaidInvoices = $state(initUnpaid || []);
@@ -213,45 +223,45 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-6 grid-cols-2">
-                        <!-- Mode -->
-                        <div class="space-y-2">
-                            <Label for="payment_mode" variant="form"
-                                >Mode <span class="text-destructive">*</span></Label
-                            >
-                            <select
-                                id="payment_mode"
-                                name="payment_mode"
-                                bind:value={paymentMode}
-                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                                required
-                            >
-                                <option value="bank">Bank Transfer</option>
-                                <option value="upi">UPI</option>
-                                <option value="cash">Cash</option>
-                                <option value="cheque">Cheque</option>
-                            </select>
+                    <!-- Payment Mode Toggle Chips -->
+                    <div class="space-y-2">
+                        <Label variant="form"
+                            >Mode <span class="text-destructive">*</span></Label
+                        >
+                        <input type="hidden" name="payment_mode" value={paymentMode} />
+                        <div class="flex flex-wrap gap-2">
+                            {#each paymentModes as mode}
+                                <button
+                                    type="button"
+                                    onclick={() => onPaymentModeChange(mode.mode_key)}
+                                    class="px-4 py-2 rounded-lg text-sm font-medium border transition-all {paymentMode === mode.mode_key
+                                        ? 'bg-primary text-white border-primary shadow-sm'
+                                        : 'bg-surface-0 text-text-strong border-border-strong hover:border-primary/50 hover:bg-surface-1'}"
+                                >
+                                    {mode.label}
+                                </button>
+                            {/each}
                         </div>
+                    </div>
 
-                        <!-- Deposit To -->
-                        <div class="space-y-2">
-                            <Label for="deposit_to" variant="form"
-                                >Deposit To <span class="text-destructive">*</span></Label
-                            >
-                            <select
-                                id="deposit_to"
-                                name="deposit_to"
-                                bind:value={depositTo}
-                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                                required
-                            >
-                                {#each data.depositAccounts as account}
-                                    <option value={account.id}>
-                                        {account.name}
-                                    </option>
-                                {/each}
-                            </select>
-                        </div>
+                    <!-- Deposit To -->
+                    <div class="space-y-2">
+                        <Label for="deposit_to" variant="form"
+                            >Deposit To <span class="text-destructive">*</span></Label
+                        >
+                        <select
+                            id="deposit_to"
+                            name="deposit_to"
+                            bind:value={depositTo}
+                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                            required
+                        >
+                            {#each data.depositAccounts as account}
+                                <option value={account.id}>
+                                    {account.name}
+                                </option>
+                            {/each}
+                        </select>
                     </div>
 
                     <!-- Reference -->
@@ -413,7 +423,7 @@
             </Button>
             <Button
                 href="/payments"
-                variant="destructive"
+                variant="ghost"
                 type="button"
             >
                 Cancel

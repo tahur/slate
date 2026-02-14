@@ -29,6 +29,13 @@
       "when": 1771015800000,
       "tag": "0003_honorable_archangel",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771038370904,
+      "tag": "0004_curved_cyclops",
+      "breakpoints": true
     }
   ]
 }

@@ -33,6 +33,8 @@ import {
     type RequestedCredit
 } from '$lib/server/modules/receivables/application/workflows';
 import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
+import { listActivePaymentModes } from '$lib/server/modules/receivables/infra/queries';
+import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
 import { round2 } from '$lib/utils/currency';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -74,9 +76,10 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
             id: customer_advances.id,
             amount: customer_advances.balance,
             date: customer_advances.created_at,
-            number: customer_advances.payment_id // using payment_id as ref
+            number: payments.payment_number
         })
         .from(customer_advances)
+        .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
         .where(
             and(
                 eq(customer_advances.org_id, locals.user.orgId),
@@ -192,7 +195,13 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
         }))
     ].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
 
-    return { invoice, items, customer, org, justRecordedPayment, availableCredits, paymentHistory };
+    // Load payment modes for settle modal
+    if (!hasPaymentModes(locals.user.orgId)) {
+        seedPaymentModes(locals.user.orgId);
+    }
+    const paymentModes = await listActivePaymentModes(locals.user.orgId);
+
+    return { invoice, items, customer, org, justRecordedPayment, availableCredits, paymentHistory, paymentModes };
 };
 
 export const actions: Actions = {

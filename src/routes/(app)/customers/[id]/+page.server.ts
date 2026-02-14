@@ -82,17 +82,19 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         ))
         .orderBy(desc(credit_notes.credit_note_date));
 
-    // Fetch available advances
+    // Fetch available advances (join with payments for friendly number)
     const customerAdvances = await db
         .select({
             id: customer_advances.id,
             payment_id: customer_advances.payment_id,
+            payment_number: payments.payment_number,
             amount: customer_advances.amount,
             balance: customer_advances.balance,
             created_at: customer_advances.created_at,
             notes: customer_advances.notes
         })
         .from(customer_advances)
+        .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
         .where(and(
             eq(customer_advances.org_id, orgId),
             eq(customer_advances.customer_id, customerId)

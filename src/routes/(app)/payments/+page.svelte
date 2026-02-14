@@ -9,14 +9,17 @@
 
     let { data } = $props();
 
+    // Build mode label lookup from server data with fallback
+    const FALLBACK_LABELS: Record<string, string> = {
+        cash: "Cash",
+        bank: "Bank Transfer",
+        upi: "UPI",
+        cheque: "Cheque",
+    };
+
     function getModeLabel(mode: string): string {
-        const labels: Record<string, string> = {
-            cash: "Cash",
-            bank: "Bank Transfer",
-            upi: "UPI",
-            cheque: "Cheque",
-        };
-        return labels[mode] || mode;
+        const found = data.paymentModes.find((m: any) => m.mode_key === mode);
+        return found?.label || FALLBACK_LABELS[mode] || mode;
     }
 </script>
 

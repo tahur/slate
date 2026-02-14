@@ -14,3 +14,4 @@ export * from './credit_notes';
 export * from './credit_allocations';
 export * from './vendors';
 export * from './app_settings';
+export * from './payment_modes';

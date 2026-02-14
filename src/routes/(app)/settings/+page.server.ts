@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { organizations, users, number_series, app_settings } from '$lib/server/db/schema';
+import { organizations, users, number_series, app_settings, payment_modes, accounts } from '$lib/server/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
@@ -10,6 +10,8 @@ import { setFlash } from '$lib/server/flash';
 import { testSmtpConnection } from '$lib/server/email';
 import { failActionFromError } from '$lib/server/platform/errors';
 import { logger } from '$lib/server/platform/observability';
+import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
+import { listDepositAccounts } from '$lib/server/modules/receivables/infra/queries';
 import type { Actions, PageServerLoad } from './$types';
 
 const MODULES = ['invoice', 'payment', 'expense', 'credit_note', 'journal'] as const;
@@ -97,6 +99,31 @@ export const load: PageServerLoad = async ({ locals }) => {
             { id: 'series-settings' }
         );
 
+        // Auto-seed payment modes for existing orgs
+        if (!hasPaymentModes(orgId)) {
+            seedPaymentModes(orgId);
+        }
+
+        // Load payment modes with linked account names
+        const paymentModesList = db
+            .select({
+                id: payment_modes.id,
+                mode_key: payment_modes.mode_key,
+                label: payment_modes.label,
+                linked_account_id: payment_modes.linked_account_id,
+                linked_account_name: accounts.account_name,
+                is_default: payment_modes.is_default,
+                sort_order: payment_modes.sort_order,
+                is_active: payment_modes.is_active
+            })
+            .from(payment_modes)
+            .leftJoin(accounts, eq(payment_modes.linked_account_id, accounts.id))
+            .where(eq(payment_modes.org_id, orgId))
+            .orderBy(payment_modes.sort_order)
+            .all();
+
+        const depositAccounts = await listDepositAccounts(orgId);
+
         // Get SMTP settings
         const smtpSettings = await db.query.app_settings.findFirst({
             where: eq(app_settings.org_id, orgId)
@@ -122,7 +149,9 @@ export const load: PageServerLoad = async ({ locals }) => {
             seriesForm,
             smtpForm,
             smtpEnabled: smtpSettings?.smtp_enabled || false,
-            fyYear: fy
+            fyYear: fy,
+            paymentModes: paymentModesList,
+            depositAccounts
         };
     } catch (e) {
         logger.error('settings_load_failed', {}, e);
@@ -378,6 +407,155 @@ export const actions: Actions = {
         setFlash(cookies, {
             type: 'success',
             message: 'Email disabled.'
+        });
+
+        return { success: true };
+    },
+
+    addPaymentMode: async ({ locals, request, cookies }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+        const formData = await request.formData();
+        const label = (formData.get('label') as string || '').trim();
+        const linked_account_id = formData.get('linked_account_id') as string || null;
+
+        if (!label) {
+            return fail(400, { error: 'Label is required' });
+        }
+
+        // Generate mode_key from label
+        const mode_key = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+        // Get max sort_order
+        const maxOrder = db
+            .select({ sort_order: payment_modes.sort_order })
+            .from(payment_modes)
+            .where(eq(payment_modes.org_id, orgId))
+            .orderBy(payment_modes.sort_order)
+            .all();
+        const nextOrder = (maxOrder.length > 0 ? Math.max(...maxOrder.map(r => r.sort_order || 0)) : 0) + 1;
+
+        db.insert(payment_modes).values({
+            id: crypto.randomUUID(),
+            org_id: orgId,
+            mode_key,
+            label,
+            linked_account_id: linked_account_id || null,
+            is_default: false,
+            sort_order: nextOrder,
+            is_active: true
+        }).run();
+
+        setFlash(cookies, {
+            type: 'success',
+            message: `Payment mode "${label}" added.`
+        });
+
+        return { success: true };
+    },
+
+    updatePaymentMode: async ({ locals, request, cookies }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+        const formData = await request.formData();
+        const id = formData.get('id') as string;
+        const label = (formData.get('label') as string || '').trim();
+        const linked_account_id = formData.get('linked_account_id') as string || null;
+
+        if (!id || !label) {
+            return fail(400, { error: 'ID and label are required' });
+        }
+
+        const mode_key = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+        db.update(payment_modes)
+            .set({
+                label,
+                mode_key,
+                linked_account_id: linked_account_id || null
+            })
+            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)))
+            .run();
+
+        setFlash(cookies, {
+            type: 'success',
+            message: `Payment mode "${label}" updated.`
+        });
+
+        return { success: true };
+    },
+
+    deletePaymentMode: async ({ locals, request, cookies }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+        const formData = await request.formData();
+        const id = formData.get('id') as string;
+
+        if (!id) {
+            return fail(400, { error: 'ID is required' });
+        }
+
+        // Prevent deleting the last active mode
+        const activeCount = db
+            .select({ id: payment_modes.id })
+            .from(payment_modes)
+            .where(and(eq(payment_modes.org_id, orgId), eq(payment_modes.is_active, true)))
+            .all();
+
+        if (activeCount.length <= 1) {
+            return fail(400, { error: 'Cannot delete the last active payment mode' });
+        }
+
+        // Soft-delete
+        db.update(payment_modes)
+            .set({ is_active: false })
+            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)))
+            .run();
+
+        setFlash(cookies, {
+            type: 'success',
+            message: 'Payment mode removed.'
+        });
+
+        return { success: true };
+    },
+
+    setDefaultPaymentMode: async ({ locals, request, cookies }) => {
+        if (!locals.user) {
+            redirect(302, '/login');
+        }
+
+        const orgId = locals.user.orgId;
+        const formData = await request.formData();
+        const id = formData.get('id') as string;
+
+        if (!id) {
+            return fail(400, { error: 'ID is required' });
+        }
+
+        // Unset all defaults, then set the chosen one
+        db.update(payment_modes)
+            .set({ is_default: false })
+            .where(eq(payment_modes.org_id, orgId))
+            .run();
+
+        db.update(payment_modes)
+            .set({ is_default: true })
+            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)))
+            .run();
+
+        setFlash(cookies, {
+            type: 'success',
+            message: 'Default payment mode updated.'
         });
 
         return { success: true };
