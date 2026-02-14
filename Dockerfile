@@ -1,4 +1,6 @@
 FROM node:20-bookworm-slim AS deps
+FROM litestream/litestream:0.3.13 AS litestream
+
 WORKDIR /app
 
 RUN apt-get update \
@@ -39,6 +41,9 @@ COPY --from=build --chown=appuser:appgroup /app/build ./build
 COPY --from=build --chown=appuser:appgroup /app/migrations ./migrations
 COPY --from=build --chown=appuser:appgroup /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=build --chown=appuser:appgroup /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
+COPY --from=litestream /usr/local/bin/litestream /usr/local/bin/litestream
+COPY litestream.yml /etc/litestream.yml
+
 
 RUN chmod +x ./scripts/docker-entrypoint.sh
 

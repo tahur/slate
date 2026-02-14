@@ -1,0 +1,4 @@
+dbs:
+  - path: /app/data/slate.db
+    replicas:
+      - url: ${LITESTREAM_REPLICA_URL}

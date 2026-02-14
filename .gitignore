@@ -46,3 +46,4 @@ fix_*.ts
 # Research notes
 research.md
 itemline.md
+dist-electron
