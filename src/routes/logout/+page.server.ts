@@ -12,8 +12,16 @@ export const actions: Actions = {
             headers: event.request.headers
         });
 
-        // Clear the session cookie
-        event.cookies.delete('better-auth.session_token', { path: '/' });
+        // Clear ALL Better Auth cookies (plain + __Secure- HTTPS variants)
+        const cookiesToClear = [
+            'better-auth.session_token',
+            '__Secure-better-auth.session_token',
+            'better-auth.session_data',
+            '__Secure-better-auth.session_data'
+        ];
+        for (const name of cookiesToClear) {
+            event.cookies.delete(name, { path: '/' });
+        }
 
         redirect(302, '/login');
     }
