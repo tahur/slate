@@ -28,8 +28,9 @@ ENV PORT=3000
 
 # better-sqlite3 needs libstdc++ at runtime
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libstdc++6 \
+    && apt-get install -y --no-install-recommends libstdc++6 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
 
 RUN addgroup --system --gid 1001 appgroup \
     && adduser --system --uid 1001 --ingroup appgroup appuser \
