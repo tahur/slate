@@ -37,12 +37,19 @@ function createAuth() {
             }
         },
         session: {
+            expiresIn: 60 * 60 * 24 * 30,       // 30 days
+            updateAge: 60 * 60 * 24,             // refresh DB session daily
             cookieCache: {
                 enabled: true,
-                maxAge: 60,
+                maxAge: 60 * 60 * 24 * 7,        // 7-day cookie cache (survives container restarts)
+                strategy: 'jwe',                  // encrypted cookie
+                refreshCache: true,               // auto-renew cookie at ~80% of maxAge
                 version: (_session: any, user: any) => user.orgId || 'no-org'
             }
-        }
+        },
+        advanced: {
+            useSecureCookies: !!env.ORIGIN?.startsWith('https'),
+        },
     });
 }
 
