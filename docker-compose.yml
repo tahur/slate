@@ -13,7 +13,6 @@ services:
       PORT: 3000
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
-      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-http://localhost:3000}
       SLATE_DB_PATH: /app/data/slate.db
     volumes:
       - slate_data:/app/data

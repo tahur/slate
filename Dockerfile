@@ -25,6 +25,8 @@ ENV NODE_ENV=production
 ENV SLATE_DB_PATH=/app/data/slate.db
 ENV HOST=0.0.0.0
 ENV PORT=3000
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV XFF_DEPTH=1
 
 # better-sqlite3 needs libstdc++ at runtime
 RUN apt-get update \

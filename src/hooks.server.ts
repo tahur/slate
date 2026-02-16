@@ -25,14 +25,9 @@ const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 const TRUSTED_ORIGINS = new Set(
-    [
-        process.env.ORIGIN,
-        ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS || '').split(',')
-    ]
-        .map((origin) => {
-            const normalized = normalizeOrigin(origin);
-            return normalized;
-        })
+    (process.env.BETTER_AUTH_TRUSTED_ORIGINS || process.env.ORIGIN || '')
+        .split(',')
+        .map((origin) => normalizeOrigin(origin))
         .filter((origin): origin is string => Boolean(origin))
 );
 

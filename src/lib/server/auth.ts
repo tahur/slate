@@ -19,9 +19,10 @@ function createAuth() {
         }),
         baseURL: env.ORIGIN || 'http://localhost:5173',
         secret: env.BETTER_AUTH_SECRET,
-        trustedOrigins: env.BETTER_AUTH_TRUSTED_ORIGINS
-            ? env.BETTER_AUTH_TRUSTED_ORIGINS.split(',')
-            : undefined,
+        trustedOrigins: (env.BETTER_AUTH_TRUSTED_ORIGINS || env.ORIGIN || '')
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean),
         emailAndPassword: {
             enabled: true,
             sendResetPassword: async ({ user, url }) => {
