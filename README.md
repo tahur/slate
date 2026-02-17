@@ -13,7 +13,7 @@
 [![SQLite](https://img.shields.io/badge/SQLite-3.0+-003B57?logo=sqlite)](https://www.sqlite.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle-Latest-C5F74F?logo=drizzle)](https://orm.drizzle.team/)
 
-[Features](#features) • [Demo](#demo) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Contributing](#contributing)
+[Features](#features) • [Demo](https://slate-825537818098.asia-south1.run.app/) • [Getting Started](#getting-started) • [Documentation](#documentation) • [Contributing](#contributing)
 
 </div>
 
