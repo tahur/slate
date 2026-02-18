@@ -84,3 +84,18 @@ export function getStartupCheckSnapshot(): StartupCheckSnapshot {
 
 /** Drizzle transaction type for passing transactions through service layers */
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Graceful shutdown: checkpoint WAL so LiteStream can flush all data before container dies.
+// Cloud Run/Fly.io send SIGTERM before killing the container.
+process.on('SIGTERM', () => {
+    logger.info('sigterm_received', { action: 'wal_checkpoint' });
+    try {
+        sqlite.pragma('wal_checkpoint(TRUNCATE)');
+        sqlite.close();
+        logger.info('db_closed_cleanly');
+    } catch (err) {
+        logger.error('shutdown_checkpoint_failed', {}, err);
+    }
+    // Give LiteStream 2s to replicate the final checkpoint, then exit
+    setTimeout(() => process.exit(0), 2000);
+});

@@ -13,17 +13,24 @@ if [ -n "${LITESTREAM_REPLICA_URL:-}" ]; then
   # Always attempt restore if DB doesn't exist
   if [ ! -f "$DB_PATH" ]; then
     echo "[entrypoint] No database found at ${DB_PATH}, attempting restore..."
-    # Capture stderr for debugging restore failures
     RESTORE_OUTPUT=$(litestream restore -v -if-replica-exists -o "$DB_PATH" "${LITESTREAM_REPLICA_URL}" 2>&1) && RESTORE_OK=true || RESTORE_OK=false
     echo "$RESTORE_OUTPUT"
 
     if [ "$RESTORE_OK" = "true" ] && [ -f "$DB_PATH" ]; then
       DB_SIZE=$(stat -c%s "$DB_PATH" 2>/dev/null || stat -f%z "$DB_PATH" 2>/dev/null || echo "unknown")
       echo "[entrypoint] Restore SUCCESS — database size: ${DB_SIZE} bytes"
+
+      # Verify restored DB is usable
+      if node -e "const D=require('better-sqlite3');const d=new D('${DB_PATH}');const r=d.pragma('quick_check',{simple:true});d.close();if(r!=='ok')process.exit(1);" 2>/dev/null; then
+        echo "[entrypoint] Restored database integrity check: OK"
+      else
+        echo "[entrypoint] WARNING: Restored database failed integrity check, removing corrupt file."
+        rm -f "$DB_PATH" "${DB_PATH}-wal" "${DB_PATH}-shm"
+      fi
     elif [ "$RESTORE_OK" = "true" ]; then
       echo "[entrypoint] Restore completed but no database file created (no replica exists yet). Starting fresh."
     else
-      echo "[entrypoint] ⚠️  Restore FAILED. Output above may contain the reason."
+      echo "[entrypoint] WARNING: Restore FAILED. Output above may contain the reason."
       echo "[entrypoint] Starting with empty database."
     fi
   else
@@ -41,12 +48,18 @@ echo "[entrypoint] Migrations complete."
 echo "[entrypoint] Starting application..."
 
 if [ -n "${LITESTREAM_REPLICA_URL:-}" ]; then
-  # Generate litestream config at runtime (env var substitution)
+  # Generate litestream config at runtime with proper sync settings
+  # sync-interval=200ms: replicate WAL frames every 200ms (fast enough for Cloud Run)
+  # snapshot-interval=1h: periodic full snapshot for faster restores
+  # retention=72h: keep 3 days of WAL history
   cat > /tmp/litestream.yml <<EOF
 dbs:
   - path: ${DB_PATH}
     replicas:
       - url: ${LITESTREAM_REPLICA_URL}
+        sync-interval: 200ms
+        snapshot-interval: 1h
+        retention: 72h
 EOF
   exec litestream replicate -config /tmp/litestream.yml -exec "$*"
 else
