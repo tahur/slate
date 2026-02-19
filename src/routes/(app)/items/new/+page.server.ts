@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { items } from '$lib/server/db/schema';
-import { eq, and, count, ne } from 'drizzle-orm';
+import { eq, and, count, ne, desc } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from './schema';
@@ -40,8 +40,20 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     const nextSku = await generateNextSku(locals.user.orgId);
-    const form = await superValidate(zod(itemSchema));
-    return { form, nextSku };
+
+    // Remember last used unit
+    const [lastItem] = db
+        .select({ unit: items.unit })
+        .from(items)
+        .where(eq(items.org_id, locals.user.orgId))
+        .orderBy(desc(items.created_at))
+        .limit(1)
+        .all();
+
+    const lastUsedUnit = lastItem?.unit || 'nos';
+    const form = await superValidate({ unit: lastUsedUnit }, zod(itemSchema));
+
+    return { form, nextSku, lastUsedUnit };
 };
 
 export const actions: Actions = {

@@ -152,6 +152,15 @@ export const handle: Handle = async ({ event, resolve }) => {
                 clearFlash(event.cookies);
             }
 
+            // Clean up stale cookie-cache cookies from before cookieCache was disabled.
+            // Without this, browsers with old session_data JWE cookies get 500 errors.
+            if (event.cookies.get('better-auth.session_data')) {
+                event.cookies.delete('better-auth.session_data', { path: '/' });
+            }
+            if (event.cookies.get('__Secure-better-auth.session_data')) {
+                event.cookies.delete('__Secure-better-auth.session_data', { path: '/' });
+            }
+
             const session = await auth.api.getSession({ headers: event.request.headers });
             if (session) {
                 // Always read orgId/role from DB — single source of truth

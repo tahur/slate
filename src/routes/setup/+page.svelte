@@ -4,7 +4,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Card } from "$lib/components/ui/card";
-    import * as Select from "$lib/components/ui/select";
+    import { INDIAN_STATES } from "../(app)/customers/new/schema";
     import type { PageData } from "./$types";
     import { Building2, ArrowRight } from "lucide-svelte";
 
@@ -19,45 +19,17 @@
         delayed,
     } = superForm(initialForm);
 
-    // Indian States for Dropdown
-    const states = [
-        { code: "37", name: "Andhra Pradesh" },
-        { code: "12", name: "Arunachal Pradesh" },
-        { code: "18", name: "Assam" },
-        { code: "10", name: "Bihar" },
-        { code: "22", name: "Chhattisgarh" },
-        { code: "30", name: "Goa" },
-        { code: "24", name: "Gujarat" },
-        { code: "06", name: "Haryana" },
-        { code: "02", name: "Himachal Pradesh" },
-        { code: "20", name: "Jharkhand" },
-        { code: "29", name: "Karnataka" },
-        { code: "32", name: "Kerala" },
-        { code: "23", name: "Madhya Pradesh" },
-        { code: "27", name: "Maharashtra" },
-        { code: "14", name: "Manipur" },
-        { code: "17", name: "Meghalaya" },
-        { code: "15", name: "Mizoram" },
-        { code: "13", name: "Nagaland" },
-        { code: "21", name: "Odisha" },
-        { code: "03", name: "Punjab" },
-        { code: "08", name: "Rajasthan" },
-        { code: "11", name: "Sikkim" },
-        { code: "33", name: "Tamil Nadu" },
-        { code: "36", name: "Telangana" },
-        { code: "16", name: "Tripura" },
-        { code: "09", name: "Uttar Pradesh" },
-        { code: "05", name: "Uttarakhand" },
-        { code: "19", name: "West Bengal" },
-        { code: "35", name: "Andaman and Nicobar Islands" },
-        { code: "04", name: "Chandigarh" },
-        { code: "26", name: "Dadra and Nagar Haveli and Daman and Diu" },
-        { code: "07", name: "Delhi" },
-        { code: "01", name: "Jammu and Kashmir" },
-        { code: "31", name: "Lakshadweep" },
-        { code: "34", name: "Puducherry" },
-        { code: "38", name: "Ladakh" },
-    ].sort((a, b) => a.name.localeCompare(b.name));
+    let stateSearch = $state("");
+    let stateDropdownOpen = $state(false);
+    const filteredStates = $derived(
+        stateSearch
+            ? INDIAN_STATES.filter(
+                  (s) =>
+                      s.name.toLowerCase().includes(stateSearch.toLowerCase()) ||
+                      s.code.includes(stateSearch),
+              )
+            : INDIAN_STATES,
+    );
 </script>
 
 <div class="min-h-screen bg-surface-1 flex flex-col">
@@ -178,7 +150,7 @@
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-2">
+                                <div class="space-y-2 relative">
                                     <Label
                                         for="state_code"
                                         class="text-text-subtle"
@@ -187,41 +159,47 @@
                                             >*</span
                                         >
                                     </Label>
-                                    <Select.Root
-                                        type="single"
-                                        bind:value={
-                                            $formData.state_code as string
-                                        }
-                                        name="state_code"
-                                    >
-                                        <Select.Trigger
-                                            class="bg-surface-0 border-border"
-                                        >
-                                            {#if $formData.state_code}
-                                                {states.find(
-                                                    (s) =>
-                                                        s.code ===
-                                                        $formData.state_code,
-                                                )?.name}
-                                            {:else}
-                                                <span class="text-text-muted"
-                                                    >Select state</span
-                                                >
-                                            {/if}
-                                        </Select.Trigger>
-                                        <Select.Content class="max-h-[200px]">
-                                            {#each states as state}
-                                                <Select.Item value={state.code}
-                                                    >{state.name}</Select.Item
-                                                >
-                                            {/each}
-                                        </Select.Content>
-                                    </Select.Root>
-                                    <input
-                                        type="hidden"
-                                        name="state_code"
-                                        value={$formData.state_code}
-                                    />
+                                    <input type="hidden" name="state_code" value={$formData.state_code} />
+                                    <div class="relative">
+                                        <input
+                                            id="state_code"
+                                            type="text"
+                                            class="flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary bg-surface-0 border-border {$errors.state_code ? 'border-destructive' : ''}"
+                                            placeholder="Search state..."
+                                            value={INDIAN_STATES.find((s) => s.code === $formData.state_code)?.name || ""}
+                                            onfocus={() => (stateDropdownOpen = true)}
+                                            onblur={() => setTimeout(() => (stateDropdownOpen = false), 150)}
+                                            oninput={(e) => {
+                                                stateSearch = (e.target as HTMLInputElement).value;
+                                                stateDropdownOpen = true;
+                                                if (!INDIAN_STATES.some((s) => s.name === stateSearch)) {
+                                                    $formData.state_code = "";
+                                                }
+                                            }}
+                                        />
+                                        {#if stateDropdownOpen && filteredStates.length > 0}
+                                            <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                            <div
+                                                class="absolute z-50 mt-1 w-full max-h-[200px] overflow-auto rounded-md border border-border bg-surface-0 shadow-lg"
+                                                onmousedown={(e) => e.preventDefault()}
+                                            >
+                                                {#each filteredStates as state}
+                                                    <button
+                                                        type="button"
+                                                        class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$formData.state_code === state.code ? 'bg-primary/10 text-primary font-medium' : 'text-text-strong'}"
+                                                        onclick={() => {
+                                                            $formData.state_code = state.code;
+                                                            stateSearch = "";
+                                                            stateDropdownOpen = false;
+                                                        }}
+                                                    >
+                                                        <span class="font-mono text-text-muted mr-2">{state.code}</span>
+                                                        {state.name}
+                                                    </button>
+                                                {/each}
+                                            </div>
+                                        {/if}
+                                    </div>
                                     {#if $errors.state_code}
                                         <span class="text-xs text-destructive"
                                             >{$errors.state_code}</span

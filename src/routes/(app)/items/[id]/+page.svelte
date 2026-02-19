@@ -38,6 +38,21 @@
     let activeTab = $state<"invoices" | "overview">("invoices");
     let gstRateStr = $state(String(initialItem.gst_rate));
 
+    const DEFAULT_UNIT = "nos";
+    let unitSearch = $state("");
+    let unitDropdownOpen = $state(false);
+    const filteredUnits = $derived(
+        unitSearch
+            ? UNIT_SUGGESTIONS.filter((u) =>
+                  u.toLowerCase().includes(unitSearch.toLowerCase()),
+              )
+            : [...UNIT_SUGGESTIONS],
+    );
+    const showCustomOption = $derived(
+        unitSearch &&
+        !UNIT_SUGGESTIONS.some((u) => u.toLowerCase() === unitSearch.toLowerCase()),
+    );
+
     const { form, errors, enhance, submitting } = superForm(initialForm, {
         onResult: ({ result }) => {
             if (result.type === "success") {
@@ -570,20 +585,63 @@
                                 class="font-mono"
                             />
                         </div>
-                        <div class="space-y-2">
+                        <div class="space-y-2 relative">
                             <Label for="unit">Unit</Label>
-                            <Input
-                                id="unit"
-                                name="unit"
-                                bind:value={$form.unit}
-                                list="unit-suggestions-edit"
-                                placeholder="e.g. nos, kg, hrs"
-                            />
-                            <datalist id="unit-suggestions-edit">
-                                {#each UNIT_SUGGESTIONS as u}
-                                    <option value={u} />
-                                {/each}
-                            </datalist>
+                            <input type="hidden" name="unit" value={$form.unit} />
+                            <div class="relative">
+                                <input
+                                    id="unit"
+                                    type="text"
+                                    class="flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary border-border-strong bg-surface-0"
+                                    placeholder="e.g. nos, kg, hrs"
+                                    value={$form.unit || ""}
+                                    onfocus={() => (unitDropdownOpen = true)}
+                                    onblur={() => setTimeout(() => (unitDropdownOpen = false), 150)}
+                                    oninput={(e) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        unitSearch = val;
+                                        $form.unit = val;
+                                        unitDropdownOpen = true;
+                                    }}
+                                />
+                                {#if unitDropdownOpen && (filteredUnits.length > 0 || showCustomOption)}
+                                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                    <div
+                                        class="absolute z-50 mt-1 w-full max-h-[200px] overflow-auto rounded-md border border-border bg-surface-0 shadow-lg"
+                                        onmousedown={(e) => e.preventDefault()}
+                                    >
+                                        {#if showCustomOption}
+                                            <button
+                                                type="button"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors text-primary font-medium border-b border-border"
+                                                onclick={() => {
+                                                    $form.unit = unitSearch;
+                                                    unitSearch = "";
+                                                    unitDropdownOpen = false;
+                                                }}
+                                            >
+                                                Use "{unitSearch}"
+                                            </button>
+                                        {/if}
+                                        {#each filteredUnits as unit}
+                                            <button
+                                                type="button"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.unit === unit ? 'bg-primary/10 text-primary font-medium' : 'text-text-strong'}"
+                                                onclick={() => {
+                                                    $form.unit = unit;
+                                                    unitSearch = "";
+                                                    unitDropdownOpen = false;
+                                                }}
+                                            >
+                                                {unit}
+                                                {#if unit === DEFAULT_UNIT}
+                                                    <span class="ml-2 text-[10px] font-medium uppercase tracking-wide text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">default</span>
+                                                {/if}
+                                            </button>
+                                        {/each}
+                                    </div>
+                                {/if}
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <Label for="min_quantity">Min Quantity</Label>
