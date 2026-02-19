@@ -36,6 +36,9 @@ export const actions: Actions = {
 
         forwardAuthCookies(result, event);
 
-        redirect(302, '/dashboard');
+        // Read user from response to determine redirect target
+        const body = await result.clone().json().catch(() => null);
+        const userOrgId = body?.user?.orgId;
+        redirect(302, userOrgId ? '/dashboard' : '/setup');
     }
 };

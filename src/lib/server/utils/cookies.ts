@@ -32,7 +32,10 @@ function parseCookieAttributes(cookie: string): Record<string, any> {
         const lower = trimmed.toLowerCase();
         if (lower === 'httponly') attrs.httpOnly = true;
         else if (lower === 'secure') attrs.secure = true;
-        else if (lower.startsWith('samesite=')) attrs.sameSite = lower.split('=')[1];
+        else if (lower.startsWith('samesite=')) {
+            const raw = trimmed.split('=')[1];
+            attrs.sameSite = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+        }
         else if (lower.startsWith('max-age=')) attrs.maxAge = parseInt(lower.split('=')[1]);
         else if (lower.startsWith('path=')) {
             // Use original case for path value

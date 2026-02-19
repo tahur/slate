@@ -17,17 +17,10 @@ export const load: PageServerLoad = async (event) => {
         redirect(302, '/login');
     }
 
-    // Resolve orgId from DB as source of truth to avoid setup-loop on stale session cache.
-    const persistedUser = await db.query.users.findFirst({
-        where: eq(users.id, event.locals.user.id),
-        columns: { orgId: true }
-    });
-    const effectiveOrgId = event.locals.user.orgId || persistedUser?.orgId || '';
-
-    // Check if already has an org
-    if (effectiveOrgId) {
+    // Check if already has an org (orgId is always fresh from DB via hooks)
+    if (event.locals.user.orgId) {
         const org = await db.query.organizations.findFirst({
-            where: eq(organizations.id, effectiveOrgId)
+            where: eq(organizations.id, event.locals.user.orgId)
         });
         // If org exists and setup is basically done (has name), redirect to dashboard
         if (org && org.name) {
@@ -127,10 +120,6 @@ export const actions: Actions = {
                 throw new InvariantError('Organization setup failed to persist organization');
             }
 
-            // 5. Delete Better Auth cookie cache so next request reads fresh user from DB
-            //    Without this, the cached session still has orgId=null for up to 5 minutes
-            event.cookies.delete('better-auth.session_data', { path: '/' });
-            event.cookies.delete('__Secure-better-auth.session_data', { path: '/' });
         } catch (error) {
             return failActionFromError(error, 'Organization setup failed', { form });
         }

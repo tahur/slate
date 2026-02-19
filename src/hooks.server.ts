@@ -154,33 +154,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 
             const session = await auth.api.getSession({ headers: event.request.headers });
             if (session) {
-                let resolvedOrgId = (session.user as any).orgId || '';
-                let resolvedRole = (session.user as any).role || 'admin';
-
-                // Better Auth cookie cache can hold stale user payload right after setup.
-                // Fall back to DB truth if cached orgId is missing.
-                if (!resolvedOrgId) {
-                    const persistedUser = await db.query.users.findFirst({
-                        where: eq(users.id, session.user.id),
-                        columns: { orgId: true, role: true }
-                    });
-
-                    if (persistedUser?.orgId) {
-                        resolvedOrgId = persistedUser.orgId;
-                        resolvedRole = persistedUser.role || resolvedRole;
-
-                        // Force Better Auth to refresh cached user payload on next request.
-                        event.cookies.delete('better-auth.session_data', { path: '/' });
-                        event.cookies.delete('__Secure-better-auth.session_data', { path: '/' });
-                    }
-                }
+                // Always read orgId/role from DB — single source of truth
+                const persistedUser = await db.query.users.findFirst({
+                    where: eq(users.id, session.user.id),
+                    columns: { orgId: true, role: true }
+                });
 
                 event.locals.user = {
                     id: session.user.id,
                     email: session.user.email,
                     name: session.user.name,
-                    role: resolvedRole,
-                    orgId: resolvedOrgId
+                    role: persistedUser?.role || 'admin',
+                    orgId: persistedUser?.orgId || ''
                 };
                 event.locals.session = session.session;
 
