@@ -29,10 +29,12 @@
         Hash,
         ReceiptText,
         FileText,
+        Info,
     } from "lucide-svelte";
+    import { findHsnNode, HSN_DICTIONARY } from "$lib/data/hsn-codes";
 
     let { data } = $props();
-    const { form: initialForm, item: initialItem } = data;
+    const { form: initialForm, item: initialItem, usedHsnCodes } = data;
 
     let isEditing = $state(false);
     let activeTab = $state<"invoices" | "overview">("invoices");
@@ -50,7 +52,31 @@
     );
     const showCustomOption = $derived(
         unitSearch &&
-        !UNIT_SUGGESTIONS.some((u) => u.toLowerCase() === unitSearch.toLowerCase()),
+            !UNIT_SUGGESTIONS.some(
+                (u) => u.toLowerCase() === unitSearch.toLowerCase(),
+            ),
+    );
+
+    let hsnSearch = $state("");
+    let hsnDropdownOpen = $state(false);
+
+    const filteredHsn = $derived.by(() => {
+        if (!hsnSearch) {
+            return usedHsnCodes
+                .map((code: string) => findHsnNode(code))
+                .filter(Boolean) as import("$lib/data/hsn-codes").HsnNode[];
+        }
+
+        const term = hsnSearch.toLowerCase();
+        return HSN_DICTIONARY.filter(
+            (h) =>
+                h.code.toLowerCase().includes(term) ||
+                h.description.toLowerCase().includes(term),
+        ).slice(0, 50);
+    });
+
+    const showHsnCustomOption = $derived(
+        hsnSearch && !HSN_DICTIONARY.some((h) => h.code === hsnSearch),
     );
 
     const { form, errors, enhance, submitting } = superForm(initialForm, {
@@ -64,6 +90,8 @@
             }
         },
     });
+
+    let activeHsnDetails = $derived(findHsnNode($form.hsn_code || ""));
 
     const effectivePrice = $derived(
         data.item.rate * (1 + data.item.gst_rate / 100),
@@ -147,66 +175,46 @@
         <div class="p-6 space-y-6">
             <!-- Summary Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div
-                    class="bg-surface-0 rounded-lg border border-border p-4"
-                >
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                <div class="bg-surface-0 rounded-lg border border-border p-4">
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <ReceiptText class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wide"
                             >Times Used</span
                         >
                     </div>
-                    <p
-                        class="text-xl font-bold font-mono text-text-strong"
-                    >
+                    <p class="text-xl font-bold font-mono text-text-strong">
                         {data.usageStats.invoiceCount}
                     </p>
                     <p class="text-xs text-text-muted mt-1">invoices</p>
                 </div>
-                <div
-                    class="bg-surface-0 rounded-lg border border-border p-4"
-                >
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                <div class="bg-surface-0 rounded-lg border border-border p-4">
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <Hash class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wide"
                             >Qty Sold</span
                         >
                     </div>
-                    <p
-                        class="text-xl font-bold font-mono text-text-strong"
-                    >
+                    <p class="text-xl font-bold font-mono text-text-strong">
                         {data.usageStats.totalQuantity}
                     </p>
                     <p class="text-xs text-text-muted mt-1">
                         {data.item.unit || "nos"}
                     </p>
                 </div>
-                <div
-                    class="bg-surface-0 rounded-lg border border-border p-4"
-                >
-                    <div
-                        class="flex items-center gap-2 text-text-subtle mb-1"
-                    >
+                <div class="bg-surface-0 rounded-lg border border-border p-4">
+                    <div class="flex items-center gap-2 text-text-subtle mb-1">
                         <TrendingUp class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wide"
                             >Revenue</span
                         >
                     </div>
-                    <p
-                        class="text-xl font-bold font-mono text-text-strong"
-                    >
+                    <p class="text-xl font-bold font-mono text-text-strong">
                         {formatINR(data.usageStats.totalRevenue)}
                     </p>
-                    <p class="text-xs text-text-muted mt-1">
-                        total amount
-                    </p>
+                    <p class="text-xs text-text-muted mt-1">total amount</p>
                 </div>
             </div>
 
@@ -341,9 +349,7 @@
                             <Table>
                                 <TableHeader>
                                     <TableRow class="hover:bg-transparent">
-                                        <TableHead class="w-28"
-                                            >Date</TableHead
-                                        >
+                                        <TableHead class="w-28">Date</TableHead>
                                         <TableHead>Invoice #</TableHead>
                                         <TableHead>Customer</TableHead>
                                         <TableHead class="text-right w-20"
@@ -543,12 +549,108 @@
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="space-y-2">
                             <Label for="hsn_code">HSN/SAC Code</Label>
-                            <Input
-                                id="hsn_code"
-                                name="hsn_code"
-                                bind:value={$form.hsn_code}
-                                class="font-mono"
-                            />
+                            <input type="hidden" name="hsn_code" value={$form.hsn_code || ""} />
+                            <div class="relative">
+                                <input
+                                    id="hsn_code"
+                                    type="text"
+                                    class="flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary border-border-strong bg-surface-0"
+                                    placeholder="e.g. 8471 or 9983"
+                                    value={$form.hsn_code || ""}
+                                    onfocus={() => (hsnDropdownOpen = true)}
+                                    onblur={() =>
+                                        setTimeout(
+                                            () => (hsnDropdownOpen = false),
+                                            150,
+                                        )}
+                                    oninput={(e) => {
+                                        const val = (
+                                            e.target as HTMLInputElement
+                                        ).value;
+                                        hsnSearch = val;
+                                        $form.hsn_code = val;
+                                        hsnDropdownOpen = true;
+                                    }}
+                                />
+                                {#if hsnDropdownOpen && (filteredHsn.length > 0 || showHsnCustomOption)}
+                                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                    <div
+                                        class="absolute z-50 mt-1 w-full max-h-[300px] overflow-auto rounded-md border border-border bg-surface-0 shadow-lg"
+                                        onmousedown={(e) => e.preventDefault()}
+                                    >
+                                        {#if showHsnCustomOption}
+                                            <button
+                                                type="button"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors text-primary font-medium border-b border-border"
+                                                onclick={() => {
+                                                    $form.hsn_code = hsnSearch;
+                                                    hsnSearch = "";
+                                                    hsnDropdownOpen = false;
+                                                }}
+                                            >
+                                                Use "{hsnSearch}"
+                                            </button>
+                                        {/if}
+                                        {#if !hsnSearch && usedHsnCodes.length > 0}
+                                            <div
+                                                class="px-3 py-1.5 text-xs font-semibold text-text-muted bg-surface-1/50 border-b border-border uppercase tracking-wider"
+                                            >
+                                                Previously Used
+                                            </div>
+                                        {/if}
+                                        {#each filteredHsn as hsn}
+                                            <button
+                                                type="button"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.hsn_code ===
+                                                hsn.code
+                                                    ? 'bg-primary/10 text-primary font-medium'
+                                                    : 'text-text-strong'}"
+                                                onclick={() => {
+                                                    $form.hsn_code = hsn.code;
+                                                    if (
+                                                        hsn.gst_rate !==
+                                                        undefined
+                                                    ) {
+                                                        $form.gst_rate =
+                                                            hsn.gst_rate;
+                                                        gstRateStr = String(
+                                                            hsn.gst_rate,
+                                                        );
+                                                    }
+                                                    hsnSearch = "";
+                                                    hsnDropdownOpen = false;
+                                                }}
+                                            >
+                                                <div class="font-medium">
+                                                    {hsn.code}
+                                                </div>
+                                                <div
+                                                    class="text-xs text-text-muted truncate mt-0.5"
+                                                >
+                                                    {hsn.description}
+                                                </div>
+                                            </button>
+                                        {/each}
+                                    </div>
+                                {/if}
+                            </div>
+                            {#if activeHsnDetails}
+                                <p
+                                    class="text-xs text-text-muted mt-1.5 flex items-start gap-1.5"
+                                >
+                                    <Info
+                                        class="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary/70"
+                                    />
+                                    <span
+                                        >{activeHsnDetails.description} (GST: {activeHsnDetails.gst_rate}%)</span
+                                    >
+                                </p>
+                            {/if}
+                            {#if $errors.hsn_code}
+                                <p class="text-xs text-destructive">
+                                    {$errors.hsn_code}
+                                </p>
+                            {/if}
                         </div>
                         <div class="space-y-2">
                             <Label for="gst_rate">GST Rate</Label>
@@ -587,7 +689,11 @@
                         </div>
                         <div class="space-y-2 relative">
                             <Label for="unit">Unit</Label>
-                            <input type="hidden" name="unit" value={$form.unit} />
+                            <input
+                                type="hidden"
+                                name="unit"
+                                value={$form.unit}
+                            />
                             <div class="relative">
                                 <input
                                     id="unit"
@@ -596,9 +702,15 @@
                                     placeholder="e.g. nos, kg, hrs"
                                     value={$form.unit || ""}
                                     onfocus={() => (unitDropdownOpen = true)}
-                                    onblur={() => setTimeout(() => (unitDropdownOpen = false), 150)}
+                                    onblur={() =>
+                                        setTimeout(
+                                            () => (unitDropdownOpen = false),
+                                            150,
+                                        )}
                                     oninput={(e) => {
-                                        const val = (e.target as HTMLInputElement).value;
+                                        const val = (
+                                            e.target as HTMLInputElement
+                                        ).value;
                                         unitSearch = val;
                                         $form.unit = val;
                                         unitDropdownOpen = true;
@@ -626,7 +738,10 @@
                                         {#each filteredUnits as unit}
                                             <button
                                                 type="button"
-                                                class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.unit === unit ? 'bg-primary/10 text-primary font-medium' : 'text-text-strong'}"
+                                                class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.unit ===
+                                                unit
+                                                    ? 'bg-primary/10 text-primary font-medium'
+                                                    : 'text-text-strong'}"
                                                 onclick={() => {
                                                     $form.unit = unit;
                                                     unitSearch = "";
@@ -635,7 +750,10 @@
                                             >
                                                 {unit}
                                                 {#if unit === DEFAULT_UNIT}
-                                                    <span class="ml-2 text-[10px] font-medium uppercase tracking-wide text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">default</span>
+                                                    <span
+                                                        class="ml-2 text-[10px] font-medium uppercase tracking-wide text-text-muted bg-surface-2 px-1.5 py-0.5 rounded"
+                                                        >default</span
+                                                    >
                                                 {/if}
                                             </button>
                                         {/each}

@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { items } from '$lib/server/db/schema';
-import { eq, and, count, ne, desc } from 'drizzle-orm';
+import { eq, and, count, ne, desc, isNotNull } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from './schema';
@@ -53,7 +53,22 @@ export const load: PageServerLoad = async ({ locals }) => {
     const lastUsedUnit = lastItem?.unit || 'nos';
     const form = await superValidate({ unit: lastUsedUnit }, zod(itemSchema));
 
-    return { form, nextSku, lastUsedUnit };
+    // Fetch previously used HSN codes for this org
+    const usedHsnRecords = db
+        .select({ hsn_code: items.hsn_code })
+        .from(items)
+        .where(
+            and(
+                eq(items.org_id, locals.user.orgId),
+                isNotNull(items.hsn_code),
+                ne(items.hsn_code, '')
+            )
+        )
+        .groupBy(items.hsn_code)
+        .all();
+    const usedHsnCodes = usedHsnRecords.map(r => r.hsn_code as string);
+
+    return { form, nextSku, lastUsedUnit, usedHsnCodes };
 };
 
 export const actions: Actions = {

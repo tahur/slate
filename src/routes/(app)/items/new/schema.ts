@@ -10,7 +10,8 @@ export const itemSchema = z.object({
     type: z.enum(['product', 'service']).default('product'),
     sku: z.string().optional().or(z.literal('')),
     description: z.string().optional().or(z.literal('')),
-    hsn_code: z.string().optional().or(z.literal('')),
+    hsn_code: z.string().optional().or(z.literal(''))
+        .refine(val => !val || /^\d{2}$|^\d{4}$|^\d{6}$|^\d{8}$/.test(val), 'HSN/SAC code must be 2, 4, 6, or 8 digits'),
     rate: z.coerce.number().min(0, 'Rate must be 0 or more').default(0),
     unit: z.string().min(1, 'Unit is required').default('nos'),
     min_quantity: z.coerce.number().min(0, 'Min quantity must be 0 or more').default(1),

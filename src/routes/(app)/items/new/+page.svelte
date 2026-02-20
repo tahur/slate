@@ -6,10 +6,11 @@
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
     import { UNIT_SUGGESTIONS, GST_RATES } from "./schema";
-    import { ArrowLeft, Save, Hash, PenLine } from "lucide-svelte";
+    import { ArrowLeft, Save, Hash, PenLine, Info } from "lucide-svelte";
+    import { findHsnNode, HSN_DICTIONARY } from "$lib/data/hsn-codes";
 
     let { data } = $props();
-    const { form: initialForm, nextSku, lastUsedUnit } = data;
+    const { form: initialForm, nextSku, lastUsedUnit, usedHsnCodes } = data;
 
     let gstRateStr = $state("18");
     let skuMode = $state<"auto" | "manual">("auto");
@@ -26,7 +27,31 @@
     );
     const showCustomOption = $derived(
         unitSearch &&
-        !UNIT_SUGGESTIONS.some((u) => u.toLowerCase() === unitSearch.toLowerCase()),
+            !UNIT_SUGGESTIONS.some(
+                (u) => u.toLowerCase() === unitSearch.toLowerCase(),
+            ),
+    );
+
+    let hsnSearch = $state("");
+    let hsnDropdownOpen = $state(false);
+
+    const filteredHsn = $derived.by(() => {
+        if (!hsnSearch) {
+            return usedHsnCodes
+                .map((code) => findHsnNode(code))
+                .filter(Boolean) as import("$lib/data/hsn-codes").HsnNode[];
+        }
+
+        const term = hsnSearch.toLowerCase();
+        return HSN_DICTIONARY.filter(
+            (h) =>
+                h.code.toLowerCase().includes(term) ||
+                h.description.toLowerCase().includes(term),
+        ).slice(0, 50);
+    });
+
+    const showHsnCustomOption = $derived(
+        hsnSearch && !HSN_DICTIONARY.some((h) => h.code === hsnSearch),
     );
 
     const { form, errors, enhance, submitting } = superForm(initialForm, {
@@ -37,13 +62,14 @@
         },
     });
 
+    let activeHsnDetails = $derived(findHsnNode($form.hsn_code || ""));
+
     // Set auto SKU and last used unit initially
     $effect(() => {
         if (skuMode === "auto") {
             $form.sku = nextSku;
         }
     });
-
 </script>
 
 <div class="page-full-bleed">
@@ -178,7 +204,10 @@
                                         ? nextSku
                                         : "e.g. PRD-001"}
                                     disabled={skuMode === "auto"}
-                                    class="border-border-strong bg-surface-0 font-mono {skuMode === 'auto' ? 'text-text-muted' : ''}"
+                                    class="border-border-strong bg-surface-0 font-mono {skuMode ===
+                                    'auto'
+                                        ? 'text-text-muted'
+                                        : ''}"
                                 />
                             </div>
 
@@ -215,13 +244,112 @@
                                 <Label for="hsn_code" variant="form"
                                     >HSN/SAC Code</Label
                                 >
-                                <Input
-                                    id="hsn_code"
-                                    name="hsn_code"
-                                    bind:value={$form.hsn_code}
-                                    placeholder="e.g. 8471 or 9983"
-                                    class="border-border-strong bg-surface-0 font-mono"
-                                />
+                                <input type="hidden" name="hsn_code" value={$form.hsn_code || ""} />
+                                <div class="relative">
+                                    <input
+                                        id="hsn_code"
+                                        type="text"
+                                        class="flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary border-border-strong bg-surface-0"
+                                        placeholder="e.g. 8471 or 9983"
+                                        value={$form.hsn_code || ""}
+                                        onfocus={() => (hsnDropdownOpen = true)}
+                                        onblur={() =>
+                                            setTimeout(
+                                                () => (hsnDropdownOpen = false),
+                                                150,
+                                            )}
+                                        oninput={(e) => {
+                                            const val = (
+                                                e.target as HTMLInputElement
+                                            ).value;
+                                            hsnSearch = val;
+                                            $form.hsn_code = val;
+                                            hsnDropdownOpen = true;
+                                        }}
+                                    />
+                                    {#if hsnDropdownOpen && (filteredHsn.length > 0 || showHsnCustomOption)}
+                                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                                        <div
+                                            class="absolute z-50 mt-1 w-full max-h-[300px] overflow-auto rounded-md border border-border bg-surface-0 shadow-lg"
+                                            onmousedown={(e) =>
+                                                e.preventDefault()}
+                                        >
+                                            {#if showHsnCustomOption}
+                                                <button
+                                                    type="button"
+                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors text-primary font-medium border-b border-border"
+                                                    onclick={() => {
+                                                        $form.hsn_code =
+                                                            hsnSearch;
+                                                        hsnSearch = "";
+                                                        hsnDropdownOpen = false;
+                                                    }}
+                                                >
+                                                    Use "{hsnSearch}"
+                                                </button>
+                                            {/if}
+                                            {#if !hsnSearch && usedHsnCodes.length > 0}
+                                                <div
+                                                    class="px-3 py-1.5 text-xs font-semibold text-text-muted bg-surface-1/50 border-b border-border uppercase tracking-wider"
+                                                >
+                                                    Previously Used
+                                                </div>
+                                            {/if}
+                                            {#each filteredHsn as hsn}
+                                                <button
+                                                    type="button"
+                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.hsn_code ===
+                                                    hsn.code
+                                                        ? 'bg-primary/10 text-primary font-medium'
+                                                        : 'text-text-strong'}"
+                                                    onclick={() => {
+                                                        $form.hsn_code =
+                                                            hsn.code;
+                                                        if (
+                                                            hsn.gst_rate !==
+                                                            undefined
+                                                        ) {
+                                                            $form.gst_rate =
+                                                                hsn.gst_rate;
+                                                            gstRateStr = String(
+                                                                hsn.gst_rate,
+                                                            );
+                                                        }
+                                                        hsnSearch = "";
+                                                        hsnDropdownOpen = false;
+                                                    }}
+                                                >
+                                                    <div class="font-medium">
+                                                        {hsn.code}
+                                                    </div>
+                                                    <div
+                                                        class="text-xs text-text-muted truncate mt-0.5"
+                                                    >
+                                                        {hsn.description}
+                                                    </div>
+                                                </button>
+                                            {/each}
+                                        </div>
+                                    {/if}
+                                </div>
+                                {#if activeHsnDetails}
+                                    <p
+                                        class="text-xs text-text-muted mt-1.5 flex items-start gap-1.5"
+                                    >
+                                        <Info
+                                            class="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary/70"
+                                        />
+                                        <span
+                                            >{activeHsnDetails.description} (GST:
+                                            {activeHsnDetails.gst_rate}%)</span
+                                        >
+                                    </p>
+                                {/if}
+                                {#if $errors.hsn_code}
+                                    <p class="text-xs text-destructive">
+                                        {$errors.hsn_code}
+                                    </p>
+                                {/if}
                             </div>
 
                             <div class="space-y-2">
@@ -282,7 +410,11 @@
 
                             <div class="space-y-2 relative">
                                 <Label for="unit" variant="form">Unit</Label>
-                                <input type="hidden" name="unit" value={$form.unit} />
+                                <input
+                                    type="hidden"
+                                    name="unit"
+                                    value={$form.unit}
+                                />
                                 <div class="relative">
                                     <input
                                         id="unit"
@@ -290,10 +422,18 @@
                                         class="flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary border-border-strong bg-surface-0"
                                         placeholder="e.g. nos, kg, hrs"
                                         value={$form.unit || ""}
-                                        onfocus={() => (unitDropdownOpen = true)}
-                                        onblur={() => setTimeout(() => (unitDropdownOpen = false), 150)}
+                                        onfocus={() =>
+                                            (unitDropdownOpen = true)}
+                                        onblur={() =>
+                                            setTimeout(
+                                                () =>
+                                                    (unitDropdownOpen = false),
+                                                150,
+                                            )}
                                         oninput={(e) => {
-                                            const val = (e.target as HTMLInputElement).value;
+                                            const val = (
+                                                e.target as HTMLInputElement
+                                            ).value;
                                             unitSearch = val;
                                             $form.unit = val;
                                             unitDropdownOpen = true;
@@ -303,7 +443,8 @@
                                         <!-- svelte-ignore a11y_no_static_element_interactions -->
                                         <div
                                             class="absolute z-50 mt-1 w-full max-h-[200px] overflow-auto rounded-md border border-border bg-surface-0 shadow-lg"
-                                            onmousedown={(e) => e.preventDefault()}
+                                            onmousedown={(e) =>
+                                                e.preventDefault()}
                                         >
                                             {#if showCustomOption}
                                                 <button
@@ -321,7 +462,10 @@
                                             {#each filteredUnits as unit}
                                                 <button
                                                     type="button"
-                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.unit === unit ? 'bg-primary/10 text-primary font-medium' : 'text-text-strong'}"
+                                                    class="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors {$form.unit ===
+                                                    unit
+                                                        ? 'bg-primary/10 text-primary font-medium'
+                                                        : 'text-text-strong'}"
                                                     onclick={() => {
                                                         $form.unit = unit;
                                                         unitSearch = "";
@@ -330,7 +474,10 @@
                                                 >
                                                     {unit}
                                                     {#if unit === DEFAULT_UNIT}
-                                                        <span class="ml-2 text-[10px] font-medium uppercase tracking-wide text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">default</span>
+                                                        <span
+                                                            class="ml-2 text-[10px] font-medium uppercase tracking-wide text-text-muted bg-surface-2 px-1.5 py-0.5 rounded"
+                                                            >default</span
+                                                        >
                                                     {/if}
                                                 </button>
                                             {/each}
@@ -340,7 +487,9 @@
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="min_quantity" variant="form">Min Quantity</Label>
+                                <Label for="min_quantity" variant="form"
+                                    >Min Quantity</Label
+                                >
                                 <Input
                                     id="min_quantity"
                                     name="min_quantity"

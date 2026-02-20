@@ -112,7 +112,9 @@
     );
 
     // Calculate totals reactively
-    let totals = $derived(calculateInvoiceTotals(formData.items, isInterState, pricesIncludeGst));
+    let totals = $derived(
+        calculateInvoiceTotals(formData.items, isInterState, pricesIncludeGst),
+    );
 
     function addItem() {
         formData.items = [
@@ -381,9 +383,8 @@
                             <!-- Invoice Number -->
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
-                                    <Label
-                                        for="invoice_number"
-                                        variant="form">Invoice #</Label
+                                    <Label for="invoice_number" variant="form"
+                                        >Invoice #</Label
                                     >
                                     {#if invoiceNumberMode === "auto"}
                                         <button
@@ -474,9 +475,7 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="terms" variant="form"
-                                    >Terms</Label
-                                >
+                                <Label for="terms" variant="form">Terms</Label>
                                 <Select.Root
                                     type="single"
                                     bind:value={formData.terms}
@@ -532,8 +531,12 @@
                             >
                                 Line Items
                             </h3>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <span class="text-xs font-medium text-text-subtle">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer"
+                            >
+                                <span
+                                    class="text-xs font-medium text-text-subtle"
+                                >
                                     Prices include GST
                                 </span>
                                 <input
@@ -645,7 +648,7 @@
                                                             item.hsn_code
                                                         }
                                                         placeholder="HSN"
-                                                        class="h-9 w-full border-transparent hover:border-border bg-transparent text-xs font-mono text-text-subtle"
+                                                        class="h-9 border-border text-center bg-surface-1 focus:border-primary font-mono"
                                                     />
                                                 </td>
                                                 <td class="px-2 py-2 align-top">
@@ -755,9 +758,7 @@
             </div>
 
             <!-- RIGHT COLUMN: Financials -->
-            <div
-                class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto"
-            >
+            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto">
                 <div class="space-y-6">
                     <h3
                         class="text-sm font-bold uppercase tracking-wide text-text-subtle"
@@ -770,20 +771,23 @@
                         {#if pricesIncludeGst}
                             <div class="flex justify-between text-text-subtle">
                                 <span>Subtotal (incl. GST)</span>
-                                <span class="font-mono font-medium text-text-strong"
+                                <span
+                                    class="font-mono font-medium text-text-strong"
                                     >{formatINR(totals.subtotal)}</span
                                 >
                             </div>
                             <div class="flex justify-between text-text-subtle">
                                 <span>Taxable Amount</span>
-                                <span class="font-mono font-medium text-text-strong"
+                                <span
+                                    class="font-mono font-medium text-text-strong"
                                     >{formatINR(totals.taxableAmount)}</span
                                 >
                             </div>
                         {:else}
                             <div class="flex justify-between text-text-subtle">
                                 <span>Subtotal</span>
-                                <span class="font-mono font-medium text-text-strong"
+                                <span
+                                    class="font-mono font-medium text-text-strong"
                                     >{formatINR(totals.subtotal)}</span
                                 >
                             </div>

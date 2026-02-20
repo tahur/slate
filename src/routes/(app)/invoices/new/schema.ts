@@ -5,7 +5,8 @@ export const GST_RATES = [0, 5, 12, 18, 28] as const;
 
 export const lineItemSchema = z.object({
     description: z.string().min(1, 'Description is required'),
-    hsn_code: z.string().optional().default(''),
+    hsn_code: z.string().optional().default('')
+        .refine(val => !val || /^\d{2}$|^\d{4}$|^\d{6}$|^\d{8}$/.test(val), 'HSN/SAC code must be 2, 4, 6, or 8 digits'),
     quantity: z.coerce.number().min(0.01, 'Quantity must be positive').default(1),
     unit: z.string().default('nos'),
     rate: z.coerce.number().min(0, 'Rate must be positive').default(0),

@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { items, invoice_items, invoices, customers } from '$lib/server/db/schema';
-import { eq, and, ne, desc, sum, count, sql } from 'drizzle-orm';
+import { eq, and, ne, desc, sum, count, sql, isNotNull } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { itemSchema } from '../new/schema';
@@ -90,6 +90,20 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 
     const isUsedInInvoices = usageStats.invoiceCount > 0;
 
+    // Fetch previously used HSN codes for this org
+    const usedHsnRecords = await db
+        .select({ hsn_code: items.hsn_code })
+        .from(items)
+        .where(
+            and(
+                eq(items.org_id, orgId),
+                isNotNull(items.hsn_code),
+                ne(items.hsn_code, '')
+            )
+        )
+        .groupBy(items.hsn_code);
+    const usedHsnCodes = usedHsnRecords.map(r => r.hsn_code as string);
+
     const form = await superValidate({
         name: item.name,
         type: item.type as 'product' | 'service',
@@ -108,6 +122,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         isUsedInInvoices,
         usageStats,
         recentInvoices,
+        usedHsnCodes,
     };
 };
 
