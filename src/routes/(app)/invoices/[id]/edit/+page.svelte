@@ -12,6 +12,7 @@
     } from "../../new/schema";
     import { toast } from "svelte-sonner";
     import { ArrowLeft, Save, Plus, Trash2, GripVertical } from "lucide-svelte";
+    import * as Tooltip from "$lib/components/ui/tooltip";
     import { formatINR } from "$lib/utils/currency";
     import ItemCombobox from "$lib/components/ItemCombobox.svelte";
 
@@ -199,7 +200,7 @@
             id="invoice-form"
             method="POST"
             action="/invoices/{data.invoice.id}?/update"
-            class="h-full flex flex-col md:flex-row"
+            class="h-full"
             use:enhance={() => {
                 submitting = true;
                 error = null;
@@ -220,11 +221,8 @@
                 value={pricesIncludeGst ? "true" : "false"}
             />
 
-            <!-- LEFT COLUMN: Main Details -->
-            <div
-                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
-            >
-                <div class="max-w-3xl space-y-8">
+            <div class="p-6 md:p-8">
+                <div class="max-w-5xl mx-auto space-y-8">
                     <!-- Section: Customer & Invoice Details -->
                     <section class="space-y-6">
                         <h3
@@ -241,143 +239,135 @@
                                         >*</span
                                     >
                                 </Label>
-                                <Select.Root
-                                    type="single"
-                                    name="customer_id"
-                                    bind:value={formData.customer_id}
-                                >
-                                    <Select.Trigger
-                                        id="customer_id"
-                                        class="w-full border-border-strong bg-surface-0 focus:ring-1 focus:ring-primary/20 items-start whitespace-normal data-[size=default]:h-auto data-[size=default]:min-h-[3.25rem] py-2"
-                                    >
-                                        <div
-                                            class="flex min-w-0 flex-col text-left gap-0.5"
-                                        >
-                                            <span
-                                                class="text-sm font-semibold text-text-strong truncate"
-                                            >
-                                                {selectedCustomer?.name ||
-                                                    "Select a customer"}
-                                            </span>
-                                            {#if selectedCustomer}
-                                                <span
-                                                    class="text-xs text-text-strong/80 font-medium truncate"
-                                                >
-                                                    {selectedCustomer.company_name ||
-                                                        selectedCustomer.email ||
-                                                        selectedCustomer.phone ||
-                                                        "—"}
-                                                </span>
-                                            {:else}
-                                                <span
-                                                    class="text-[11px] text-text-muted truncate"
-                                                >
-                                                    Search or add a customer
-                                                </span>
+                                {#if selectedCustomer}
+                                    <!-- Selected customer card -->
+                                    <input type="hidden" name="customer_id" value={formData.customer_id} />
+                                    <div class="flex items-start gap-4 rounded-lg border border-border bg-surface-0 p-3">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-semibold text-text-strong truncate">{selectedCustomer.name}</span>
+                                                {#if selectedCustomer.company_name}
+                                                    <span class="text-xs text-text-muted truncate">{selectedCustomer.company_name}</span>
+                                                {/if}
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-text-muted">
+                                                {#if selectedCustomer.gstin}
+                                                    <span class="font-mono">{selectedCustomer.gstin}</span>
+                                                {:else}
+                                                    <span>No GSTIN</span>
+                                                {/if}
+                                                {#if selectedCustomerAddress}
+                                                    <span class="truncate max-w-[250px]">{selectedCustomerAddress}</span>
+                                                {/if}
+                                            </div>
+                                            {#if selectedCustomer.gst_treatment || isInterState}
+                                                <div class="flex items-center gap-2 mt-1.5">
+                                                    {#if selectedCustomer.gst_treatment}
+                                                        <span class="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{selectedCustomer.gst_treatment}</span>
+                                                    {/if}
+                                                    {#if isInterState}
+                                                        <span class="rounded-sm bg-info/10 text-info px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">IGST</span>
+                                                    {/if}
+                                                </div>
                                             {/if}
                                         </div>
-                                    </Select.Trigger>
-                                    <Select.Content
-                                        class="bg-surface-1 border-border shadow-lg min-w-[22rem]"
-                                    >
-                                        <div
-                                            class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border space-y-2"
+                                        <button
+                                            type="button"
+                                            class="text-xs text-primary font-medium hover:underline shrink-0"
+                                            onclick={() => { formData.customer_id = ""; }}
                                         >
-                                            <Input
-                                                bind:value={customerSearch}
-                                                placeholder="Search customers"
-                                                class="h-8 border-border-strong text-sm"
-                                            />
-                                            <div
-                                                class="flex items-center justify-between"
-                                            >
-                                                <span
-                                                    class="text-[10px] uppercase tracking-wide text-text-subtle font-semibold"
-                                                >
-                                                    Customers
-                                                </span>
-                                                <Button
-                                                    href="/customers/new"
-                                                    variant="outline"
-                                                    size="sm"
-                                                >
-                                                    New Customer
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {#if filteredCustomers.length === 0}
-                                            <div
-                                                class="px-3 py-4 text-xs text-text-muted"
-                                            >
-                                                No customers match "{customerSearch}"
-                                            </div>
-                                        {:else}
-                                            {#each filteredCustomers as customer}
-                                                <Select.Item
-                                                    value={customer.id}
-                                                    class="hover:bg-surface-2 focus:bg-surface-2 cursor-pointer"
-                                                >
-                                                    <div
-                                                        class="flex flex-col text-left"
-                                                    >
-                                                        <span
-                                                            class="font-medium text-text-strong"
-                                                            >{customer.name}</span
-                                                        >
-                                                        {#if customer.company_name}
-                                                            <span
-                                                                class="text-[10px] text-text-muted uppercase tracking-wide"
-                                                                >{customer.company_name}</span
-                                                            >
-                                                        {/if}
-                                                        {#if customer.gstin}
-                                                            <span
-                                                                class="text-[10px] font-mono text-text-muted"
-                                                                >GSTIN {customer.gstin}</span
-                                                            >
-                                                        {/if}
-                                                        {#if customer.city || customer.state_code}
-                                                            <span
-                                                                class="text-[10px] text-text-muted"
-                                                            >
-                                                                {customer.city ||
-                                                                    "—"}{customer.state_code
-                                                                    ? `, ${customer.state_code}`
-                                                                    : ""}
-                                                            </span>
-                                                        {/if}
-                                                    </div>
-                                                </Select.Item>
-                                            {/each}
-                                        {/if}
-                                    </Select.Content>
-                                </Select.Root>
-                                {#if selectedCustomer}
-                                    <div
-                                        class="flex items-center gap-3 text-[10px] uppercase tracking-wide text-text-muted mt-2"
-                                    >
-                                        <span class="font-semibold">GSTIN</span>
-                                        <span
-                                            class="font-mono text-[11px] text-text-strong"
-                                        >
-                                            {selectedCustomer.gstin || "—"}
-                                        </span>
-                                        {#if selectedCustomer.gst_treatment}
-                                            <span
-                                                class="rounded-sm bg-surface-2 px-2 py-0.5 text-[10px] font-semibold text-text-muted"
-                                            >
-                                                {selectedCustomer.gst_treatment}
-                                            </span>
-                                        {/if}
-                                        {#if isInterState}
-                                            <span
-                                                class="rounded-sm bg-info/10 text-info px-2 py-0.5 text-[10px] font-semibold"
-                                            >
-                                                IGST
-                                            </span>
-                                        {/if}
+                                            Change
+                                        </button>
                                     </div>
+                                {:else}
+                                    <!-- Customer picker -->
+                                    <Select.Root
+                                        type="single"
+                                        name="customer_id"
+                                        bind:value={formData.customer_id}
+                                    >
+                                        <Select.Trigger
+                                            id="customer_id"
+                                            class="w-full border-border-strong bg-surface-0 focus:ring-1 focus:ring-primary/20"
+                                        >
+                                            <span class="text-sm text-text-muted">Select a customer</span>
+                                        </Select.Trigger>
+                                        <Select.Content
+                                            class="bg-surface-1 border-border shadow-lg min-w-[22rem]"
+                                        >
+                                            <div
+                                                class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border space-y-2"
+                                            >
+                                                <Input
+                                                    bind:value={customerSearch}
+                                                    placeholder="Search customers"
+                                                    class="h-8 border-border-strong text-sm"
+                                                />
+                                                <div
+                                                    class="flex items-center justify-between"
+                                                >
+                                                    <span
+                                                        class="text-[10px] uppercase tracking-wide text-text-subtle font-semibold"
+                                                    >
+                                                        Customers
+                                                    </span>
+                                                    <Button
+                                                        href="/customers/new"
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
+                                                        New Customer
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {#if filteredCustomers.length === 0}
+                                                <div
+                                                    class="px-3 py-4 text-xs text-text-muted"
+                                                >
+                                                    No customers match "{customerSearch}"
+                                                </div>
+                                            {:else}
+                                                {#each filteredCustomers as customer}
+                                                    <Select.Item
+                                                        value={customer.id}
+                                                        class="hover:bg-surface-2 focus:bg-surface-2 cursor-pointer"
+                                                    >
+                                                        <div
+                                                            class="flex flex-col text-left"
+                                                        >
+                                                            <span
+                                                                class="font-medium text-text-strong"
+                                                                >{customer.name}</span
+                                                            >
+                                                            {#if customer.company_name}
+                                                                <span
+                                                                    class="text-[10px] text-text-muted uppercase tracking-wide"
+                                                                    >{customer.company_name}</span
+                                                                >
+                                                            {/if}
+                                                            {#if customer.gstin}
+                                                                <span
+                                                                    class="text-[10px] font-mono text-text-muted"
+                                                                    >GSTIN {customer.gstin}</span
+                                                                >
+                                                            {/if}
+                                                            {#if customer.city || customer.state_code}
+                                                                <span
+                                                                    class="text-[10px] text-text-muted"
+                                                                >
+                                                                    {customer.city ||
+                                                                        "—"}{customer.state_code
+                                                                        ? `, ${customer.state_code}`
+                                                                        : ""}
+                                                                </span>
+                                                            {/if}
+                                                        </div>
+                                                    </Select.Item>
+                                                {/each}
+                                            {/if}
+                                        </Select.Content>
+                                    </Select.Root>
                                 {/if}
                             </div>
 
@@ -521,11 +511,11 @@
                                             <th class="px-4 py-3 text-left"
                                                 >Item Details</th
                                             >
-                                            <th class="px-3 py-3 text-left w-24"
+                                            <th class="px-3 py-3 text-left w-28"
                                                 >HSN/SAC</th
                                             >
                                             <th
-                                                class="px-3 py-3 text-right w-20"
+                                                class="px-3 py-3 text-right w-24"
                                                 >Qty</th
                                             >
                                             <th
@@ -715,87 +705,40 @@
                     </section>
                 </div>
             </div>
-
-            <!-- RIGHT COLUMN: Financials -->
-            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto">
-                <div class="space-y-6">
-                    <h3
-                        class="text-sm font-bold uppercase tracking-wide text-text-subtle"
-                    >
-                        Summary
-                    </h3>
-
-                    <!-- Totals Breakdown -->
-                    <div class="space-y-3 text-sm">
-                        {#if pricesIncludeGst}
-                            <div class="flex justify-between text-text-subtle">
-                                <span>Subtotal (incl. GST)</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(totals.subtotal)}</span
-                                >
-                            </div>
-                            <div class="flex justify-between text-text-subtle">
-                                <span>Taxable Amount</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(totals.taxableAmount)}</span
-                                >
-                            </div>
-                        {:else}
-                            <div class="flex justify-between text-text-subtle">
-                                <span>Subtotal</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(totals.subtotal)}</span
-                                >
-                            </div>
-                        {/if}
-                        {#if isInterState}
-                            <div class="flex justify-between text-text-subtle">
-                                <span>IGST</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(totals.igst)}</span
-                                >
-                            </div>
-                        {:else}
-                            <div class="flex justify-between text-text-subtle">
-                                <span>CGST</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(totals.cgst)}</span
-                                >
-                            </div>
-                            <div class="flex justify-between text-text-subtle">
-                                <span>SGST</span>
-                                <span
-                                    class="font-mono font-medium text-text-strong"
-                                    >{formatINR(totals.sgst)}</span
-                                >
-                            </div>
-                        {/if}
-
-                        <div
-                            class="flex justify-between items-baseline pt-3 border-t border-dashed border-border"
-                        >
-                            <span class="font-semibold text-text-strong"
-                                >Total</span
-                            >
-                            <span
-                                class="font-mono text-2xl font-bold text-primary"
-                            >
-                                {formatINR(totals.total)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </form>
     </main>
 
     <!-- Bottom Action Bar -->
     <div class="action-bar">
+        <div class="flex items-center gap-4 text-sm mr-4 pr-4 border-r border-border">
+            <Tooltip.Root openDelay={100}>
+                <Tooltip.Trigger>
+                    <span class="inline-flex items-center gap-1.5 text-text-muted cursor-help">
+                        <span>GST</span>
+                        <span class="font-mono font-medium text-text-strong border-b border-dashed border-text-muted/50">{formatINR(isInterState ? totals.igst : totals.cgst + totals.sgst)}</span>
+                    </span>
+                </Tooltip.Trigger>
+                <Tooltip.Content side="top" sideOffset={8}>
+                    <div class="space-y-1 text-xs">
+                        {#if pricesIncludeGst}
+                            <div class="flex justify-between gap-4"><span>Taxable</span><span class="font-mono">{formatINR(totals.taxableAmount)}</span></div>
+                        {:else}
+                            <div class="flex justify-between gap-4"><span>Subtotal</span><span class="font-mono">{formatINR(totals.subtotal)}</span></div>
+                        {/if}
+                        {#if isInterState}
+                            <div class="flex justify-between gap-4"><span>IGST</span><span class="font-mono">{formatINR(totals.igst)}</span></div>
+                        {:else}
+                            <div class="flex justify-between gap-4"><span>CGST</span><span class="font-mono">{formatINR(totals.cgst)}</span></div>
+                            <div class="flex justify-between gap-4"><span>SGST</span><span class="font-mono">{formatINR(totals.sgst)}</span></div>
+                        {/if}
+                    </div>
+                </Tooltip.Content>
+            </Tooltip.Root>
+            <div class="flex items-center gap-1.5 border-l border-border pl-4">
+                <span class="font-semibold text-text-strong">Total</span>
+                <span class="font-mono text-lg font-bold text-primary">{formatINR(totals.total)}</span>
+            </div>
+        </div>
         <div class="action-bar-group">
             <Button type="submit" form="invoice-form" disabled={submitting}>
                 <Save class="mr-2 size-4" />
