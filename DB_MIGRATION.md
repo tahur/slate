@@ -4,16 +4,171 @@
 
 Migrate from SQLite (better-sqlite3) to Supabase Postgres. This eliminates data loss on container restarts, removes Litestream dependency, and fixes stale session issues.
 
-**Scope**: ~55 files modified, 210 files untouched (79% of codebase). All changes are mechanical — no business logic changes.
+**Scope**: ~55 files modified, 210 files untouched (79% of codebase).
+
+**Risk acknowledgment**: This is NOT a purely mechanical migration. The sync→async transaction conversion touches core money flows (invoice creation, payment allocation, journal posting). Every transaction callback in the posting engine, receivables workflows, and invoicing workflows changes behavior from synchronous to asynchronous. Test every financial flow end-to-end.
 
 ---
 
 ## Prerequisites
 
 1. Create a Supabase project at https://supabase.com
-2. Get the connection string from: Project Settings → Database → Connection String (URI)
-3. Note the `DATABASE_URL` — format: `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`
+2. Get the connection string: Project Settings → Database → Connection String (URI)
+3. Format: `postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`
 4. Use the **Transaction pooler** (port 6543) for SvelteKit server-side code
+5. Supabase has native SvelteKit SSR support via `@supabase/ssr` — but we only use Supabase as a **Postgres host**. Auth stays with better-auth (already works with Postgres via `provider: 'pg'`). No need to install `@supabase/supabase-js` or `@supabase/ssr`.
+
+---
+
+## Phase 0: Data Migration Strategy (BEFORE any code changes)
+
+### 0a. Export existing SQLite data
+
+If production data exists, export it BEFORE any schema changes:
+
+```bash
+# Dump all data as SQL INSERT statements
+sqlite3 data/slate.db .dump > backup_full.sql
+
+# Or export each table as CSV for Postgres COPY
+sqlite3 -header -csv data/slate.db "SELECT * FROM organizations;" > export/organizations.csv
+sqlite3 -header -csv data/slate.db "SELECT * FROM users;" > export/users.csv
+# ... repeat for all 23 tables
+```
+
+### 0b. Data type conversion plan
+
+SQLite stores everything loosely typed. When importing to Postgres:
+
+| SQLite column type | Stored as | Postgres target | Conversion needed |
+|---|---|---|---|
+| `text` (timestamps) | `"2024-03-15 10:30:00"` | `timestamptz` | Cast: `TO_TIMESTAMP(col, 'YYYY-MM-DD HH24:MI:SS')` |
+| `integer` (timestamps) | Unix epoch ms | `timestamptz` | Cast: `TO_TIMESTAMP(col / 1000)` |
+| `integer` (booleans) | `0` or `1` | `boolean` | Cast: `col::boolean` or `col = 1` |
+| `real` (money) | IEEE 754 float | `numeric(15,2)` | Cast: `ROUND(col::numeric, 2)` |
+| `real` (quantities) | IEEE 754 float | `numeric(10,4)` | Cast: `ROUND(col::numeric, 4)` |
+| `real` (rates/percentages) | IEEE 754 float | `numeric(10,4)` | Cast: `ROUND(col::numeric, 4)` |
+
+### 0c. Import script template
+
+After Postgres schema is created (Step 15), import data:
+
+```bash
+# Use pgloader for automatic SQLite→Postgres migration
+pgloader sqlite:///path/to/slate.db postgresql://user:pass@host:6543/postgres
+
+# OR use a manual approach:
+# 1. Create schema via drizzle-kit push
+# 2. Import CSVs via psql \copy
+# 3. Verify row counts match
+```
+
+### 0d. Data validation after import
+
+```sql
+-- Compare row counts
+SELECT 'organizations' as tbl, count(*) FROM organizations
+UNION ALL SELECT 'users', count(*) FROM users
+UNION ALL SELECT 'invoices', count(*) FROM invoices
+UNION ALL SELECT 'payments', count(*) FROM payments
+-- ... all tables
+
+-- Verify money precision (spot check)
+SELECT id, total, balance_due FROM invoices
+WHERE ABS(total - ROUND(total, 2)) > 0.001;
+
+-- Verify journal balance invariant
+SELECT je.id, je.total_debit, je.total_credit,
+       ABS(je.total_debit - je.total_credit) as diff
+FROM journal_entries je
+WHERE ABS(je.total_debit - je.total_credit) > 0.01;
+```
+
+---
+
+## Phase 1: Money Type Strategy (CRITICAL — decide before coding)
+
+### The problem
+
+The app has **53 `real()` columns** storing money, quantities, and rates. SQLite `real` = IEEE 754 double (float). The app already uses `decimal.js` for application-level arithmetic, but:
+
+1. **Database-level arithmetic** exists in `posting-engine.ts`:
+   ```typescript
+   .set({ balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)` })
+   ```
+2. **CHECK constraints** use `ROUND()` on floats:
+   ```typescript
+   check('entry_balanced', sql`ROUND(total_debit, 2) = ROUND(total_credit, 2)`)
+   ```
+3. **Integrity check scripts** use `ROUND()` extensively
+
+### The decision: Use `numeric(15,2)` for money, `numeric(10,4)` for rates/quantities
+
+| Column purpose | Examples | Postgres type |
+|---|---|---|
+| Money amounts | `total`, `amount`, `balance`, `cgst`, `sgst`, `igst`, `subtotal`, `amount_paid`, `balance_due`, `tds_amount`, `base_currency_total` | `numeric('col', { precision: 15, scale: 2 })` |
+| Rates/percentages | `gst_rate`, `tds_rate`, `exchange_rate`, `discount_value` (when %) | `numeric('col', { precision: 10, scale: 4 })` |
+| Quantities | `quantity`, `min_quantity` | `numeric('col', { precision: 10, scale: 4 })` |
+
+### Runtime impact
+
+- `decimal.js` arithmetic is already safe — no changes needed there
+- Drizzle returns `string` for Postgres `numeric` columns by default — you MUST coerce to `number` at read time OR configure Drizzle's `numeric` mode
+- Use `{ mode: 'number' }` on numeric columns to get JS numbers back:
+  ```typescript
+  total: numeric('total', { precision: 15, scale: 2, mode: 'number' }).default(0),
+  ```
+- **Verify**: after migration, run the full integrity check to confirm all journal entries still balance
+
+### SQL arithmetic changes
+
+```diff
+# posting-engine.ts — ROUND() behavior changes with numeric
+- .set({ balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)` })
++ .set({ balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)` })
+# No change needed — ROUND() with numeric is actually MORE accurate than with float
+```
+
+### CHECK constraint changes
+
+```diff
+# journals.ts — CHECK constraints
+- check('entry_balanced', sql`ROUND(total_debit, 2) = ROUND(total_credit, 2)`)
++ check('entry_balanced', sql`total_debit = total_credit`)
+# With numeric(15,2), values are already exact to 2 decimals. ROUND() is redundant but harmless.
+```
+
+---
+
+## Phase 2: Timestamp Strategy (decide ONE approach)
+
+### Current state
+
+The app uses TWO different timestamp patterns:
+
+1. **Business tables** (invoices, customers, etc.): `text('created_at').default(sql\`CURRENT_TIMESTAMP\`)`
+   - Stored as ISO 8601 text strings: `"2024-03-15 10:30:00"`
+   - Read/written as strings throughout the app
+
+2. **Auth tables** (users, sessions): `integer('created_at', { mode: 'timestamp' })`
+   - Stored as Unix epoch integers
+   - better-auth manages these internally
+
+### The decision: Keep text timestamps as text, convert auth timestamps
+
+**Business tables**: Keep as `text()` to avoid touching every timestamp read/write. Change only the default:
+```diff
+- created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
++ created_at: text('created_at').default(sql`NOW()::text`),
+```
+
+**Auth tables**: Convert to proper Postgres timestamps. better-auth with `provider: 'pg'` expects this:
+```diff
+- created_at: integer('created_at', { mode: 'timestamp' }),
++ created_at: timestamp('created_at', { mode: 'date' }).defaultNow(),
+```
+
+**Rationale**: Touching every timestamp in business logic is high-risk for no benefit. Text timestamps work fine in Postgres. Auth tables are managed by better-auth internally, so they must match what better-auth expects for Postgres.
 
 ---
 
@@ -37,44 +192,19 @@ npm install postgres
 
 ### 2a. Replace imports in EVERY schema file
 
-In all 17 files listed below, make these changes:
-
 ```diff
 - import { sqliteTable, text, integer, real, index, unique, uniqueIndex, check } from 'drizzle-orm/sqlite-core';
 + import { pgTable, text, integer, numeric, boolean, timestamp, index, unique, uniqueIndex, check } from 'drizzle-orm/pg-core';
 ```
 
-Only import the types each file actually uses. The files are:
+Only import the types each file actually uses. The 17 files:
+`accounts.ts`, `app_settings.ts`, `audit_log.ts`, `credit_allocations.ts`, `credit_notes.ts`, `customers.ts`, `expenses.ts`, `fiscal_years.ts`, `invoices.ts`, `items.ts`, `journals.ts`, `number_series.ts`, `organizations.ts`, `payment_modes.ts`, `payments.ts`, `users.ts`, `vendors.ts`
 
-1. `accounts.ts`
-2. `app_settings.ts`
-3. `audit_log.ts`
-4. `credit_allocations.ts`
-5. `credit_notes.ts`
-6. `customers.ts`
-7. `expenses.ts`
-8. `fiscal_years.ts`
-9. `invoices.ts`
-10. `items.ts`
-11. `journals.ts`
-12. `number_series.ts`
-13. `organizations.ts`
-14. `payment_modes.ts`
-15. `payments.ts`
-16. `users.ts`
-17. `vendors.ts`
+### 2b. Replace `sqliteTable` → `pgTable`
 
-### 2b. Replace `sqliteTable` → `pgTable` in every table definition
-
-Find and replace all occurrences across all schema files:
-```diff
-- export const invoices = sqliteTable('invoices', {
-+ export const invoices = pgTable('invoices', {
-```
+Find and replace all occurrences across all schema files.
 
 ### 2c. Column type mapping
-
-Apply these type changes across ALL schema files:
 
 | SQLite (current) | Postgres (target) | Notes |
 |---|---|---|
@@ -82,36 +212,22 @@ Apply these type changes across ALL schema files:
 | `text('id').primaryKey()` | `text('id').primaryKey()` | No change |
 | `integer('col')` | `integer('col')` | No change |
 | `integer('col', { mode: 'boolean' })` | `boolean('col')` | Import `boolean` from pg-core |
-| `integer('col', { mode: 'timestamp' })` | `timestamp('col', { mode: 'date' })` | Import `timestamp` from pg-core |
-| `real('col')` | `numeric('col', { precision: 12, scale: 2 })` | For money/amounts. Import `numeric` from pg-core |
+| `integer('col', { mode: 'timestamp' })` | `timestamp('col', { mode: 'date' }).defaultNow()` | Auth tables only |
+| `real('col')` for money | `numeric('col', { precision: 15, scale: 2, mode: 'number' })` | See Phase 1 |
+| `real('col')` for rates | `numeric('col', { precision: 10, scale: 4, mode: 'number' })` | See Phase 1 |
+| `real('col')` for quantities | `numeric('col', { precision: 10, scale: 4, mode: 'number' })` | See Phase 1 |
 
 ### 2d. Default value changes
 
+Business table timestamps:
 ```diff
 - created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-+ created_at: timestamp('created_at', { mode: 'string' }).defaultNow(),
++ created_at: text('created_at').default(sql`NOW()::text`),
 ```
-
-If a column stores timestamps as ISO strings (which this app does), use:
-```typescript
-created_at: text('created_at').default(sql`NOW()::text`),
-```
-OR switch to proper timestamps:
-```typescript
-created_at: timestamp('created_at', { mode: 'string' }).defaultNow(),
-```
-
-**IMPORTANT**: Check how timestamps are used in the app. If they're stored/read as strings (`text` columns with ISO format), the safest migration is to keep them as `text()` and change `CURRENT_TIMESTAMP` → `NOW()::text`. This avoids touching every timestamp read/write in the app.
 
 ### 2e. CHECK constraints
 
-SQLite uses `check()` in the table definition. Postgres uses the same Drizzle `check()` API — no changes needed for the constraint logic itself. But verify the SQL expressions are Postgres-compatible:
-
-```typescript
-// These should work as-is in both:
-check('positive_amount', sql`${table.amount} >= 0`)
-check('single_sided', sql`(${table.debit} = 0 OR ${table.credit} = 0)`)
-```
+With `numeric(15,2)`, values are exact. `ROUND()` in CHECK constraints is redundant but harmless. Keep as-is — they'll work correctly in Postgres.
 
 ---
 
@@ -134,14 +250,13 @@ if (!connectionString) {
 }
 
 const client = postgres(connectionString, {
-    max: 10,              // connection pool size
-    idle_timeout: 20,     // close idle connections after 20s
-    connect_timeout: 10,  // connection timeout 10s
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
 });
 
 export const db = drizzle(client, { schema });
 
-// Startup check
 export interface StartupCheckSnapshot {
     checkedAt: string;
     connectionOk: boolean;
@@ -170,7 +285,6 @@ export function getStartupCheckSnapshot(): StartupCheckSnapshot {
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
     logger.info('sigterm_received', { action: 'closing_pool' });
     try {
@@ -183,7 +297,7 @@ process.on('SIGTERM', async () => {
 });
 ```
 
-**IMPORTANT**: `runStartupChecks()` is now async. Find where it's called (likely at module init) and await it. If it runs at import time, move it to a `hooks.server.ts` init block or a top-level await.
+**IMPORTANT**: `runStartupChecks()` is now async. Find where it's called and await it.
 
 ---
 
@@ -198,16 +312,10 @@ import { db, type Tx } from '$lib/server/db';
 
 type TxCallback<T> = (tx: Tx) => Promise<T>;
 
-/**
- * Run a callback inside a Postgres transaction.
- */
 export async function runInTx<T>(callback: TxCallback<T>): Promise<T> {
     return db.transaction(async (tx) => callback(tx));
 }
 
-/**
- * Reuse an existing transaction when provided, otherwise open a new one.
- */
 export async function runInExistingOrNewTx<T>(
     tx: Tx | undefined,
     callback: TxCallback<T>
@@ -219,96 +327,62 @@ export async function runInExistingOrNewTx<T>(
 }
 ```
 
-### 4b. Update ALL callers of `runInTx` and `runInExistingOrNewTx`
+### 4b. Update ALL callers
 
-Every function that calls `runInTx()` or `runInExistingOrNewTx()` must now `await` the result. Search for all usages:
+Every `runInTx()` / `runInExistingOrNewTx()` call must become `await runInTx(async (tx) => { ... })`.
 
 ```bash
 grep -rn "runInTx\|runInExistingOrNewTx" src/
 ```
 
-Each call site changes:
-```diff
-- const result = runInTx((tx) => {
-+ const result = await runInTx(async (tx) => {
-    // ... all db calls inside also need await
-- });
-+ });
-```
+**Pay extra attention to these critical money-flow callers:**
+- `src/lib/server/modules/invoicing/application/workflows.ts` — invoice creation, posting
+- `src/lib/server/modules/receivables/application/workflows.ts` — payment allocation, credit notes
+- `src/lib/server/services/posting-engine.ts` — journal entry creation
+- `src/routes/setup/+page.server.ts` — org setup with seed data
+
+All transaction callbacks must become `async` and all db calls inside them must be `await`ed.
 
 ---
 
-## Step 5: Remove `.sync()` Calls
+## Step 5: Remove `.sync()` Calls (9 instances)
 
-There are exactly 9 `.sync()` calls. These are SQLite-specific synchronous query wrappers. Remove all of them and add `await`:
-
-**Files with `.sync()` calls:**
-
+**Files:**
 1. `src/lib/server/modules/invoicing/infra/queries.ts` — lines 9, 16
 2. `src/lib/server/modules/receivables/application/workflows.ts` — line 718
 3. `src/lib/server/modules/receivables/infra/queries.ts` — lines 36, 54, 62, 76, 82, 88
 
-**Pattern:**
 ```diff
 - export function findInvoiceById(tx: Tx, orgId: string, invoiceId: string) {
--     return tx.query.invoices.findFirst({
+-     return tx.query.invoices.findFirst({ ... }).sync();
 + export async function findInvoiceById(tx: Tx, orgId: string, invoiceId: string) {
-+     return await tx.query.invoices.findFirst({
-          where: and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId)),
--     }).sync();
-+     });
++     return await tx.query.invoices.findFirst({ ... });
   }
 ```
-
-Make each function `async` and remove `.sync()`.
 
 ---
 
 ## Step 6: Remove `.run()`, `.all()`, `.get()` Calls
 
-These are better-sqlite3 execution methods. With Postgres driver, Drizzle queries return Promises directly.
-
-**Search for these patterns:**
 ```bash
 grep -rn "\.run()\|\.all()\|\.get()" src/lib/server/
 ```
 
-**Changes:**
-
-| SQLite pattern | Postgres pattern |
+| SQLite | Postgres |
 |---|---|
-| `db.insert(table).values(data).run()` | `await db.insert(table).values(data)` |
-| `db.update(table).set(data).where(cond).run()` | `await db.update(table).set(data).where(cond)` |
-| `db.delete(table).where(cond).run()` | `await db.delete(table).where(cond)` |
-| `db.select().from(table).all()` | `await db.select().from(table)` |
-| `db.select().from(table).get()` | `(await db.select().from(table).limit(1))[0]` |
-
-**Key files to check:**
-- `src/lib/server/seed.ts` — has `.run()`, `.all()`, `.get()` calls
-- Any server route files using these patterns
-- `src/lib/server/services/*.ts`
+| `.run()` | Remove (Drizzle returns Promise) |
+| `.all()` | Remove (default return is array) |
+| `.get()` | `const rows = await ...; const row = rows[0];` |
 
 ---
 
-## Step 7: Add `await` to All Database Calls
+## Step 7: Add `await` to All Database Calls (~27 files)
 
-All `db.select()`, `db.insert()`, `db.update()`, `db.delete()`, `db.query.*` calls across ~27 files need `await`.
-
-Since all SvelteKit `load()` functions and form `actions` are already `async`, this is straightforward — just add `await` before each `db.` call.
-
-**Search pattern to find all call sites:**
 ```bash
 grep -rn "db\.\(select\|insert\|update\|delete\|query\)" src/routes/ src/lib/server/
 ```
 
-**Example changes in a typical +page.server.ts:**
-```diff
-  export const load = async ({ locals }) => {
--     const items = db.select().from(itemsTable).where(eq(itemsTable.org_id, orgId));
-+     const items = await db.select().from(itemsTable).where(eq(itemsTable.org_id, orgId));
-      return { items };
-  };
-```
+All SvelteKit `load()` and `actions` are already `async` — just add `await`.
 
 ---
 
@@ -316,44 +390,27 @@ grep -rn "db\.\(select\|insert\|update\|delete\|query\)" src/routes/ src/lib/ser
 
 **File:** `src/lib/server/auth.ts`
 
-Single line change:
 ```diff
-  database: drizzleAdapter(db, {
--     provider: 'sqlite',
-+     provider: 'pg',
-      schema: { ... }
-  }),
+- provider: 'sqlite',
++ provider: 'pg',
 ```
 
 ---
 
 ## Step 9: Update Error Handling
 
-**File:** `src/lib/server/utils/sqlite-errors.ts`
-
-Rename to `src/lib/server/utils/db-errors.ts` and update:
+**File:** `src/lib/server/utils/sqlite-errors.ts` → rename to `db-errors.ts`
 
 ```diff
-  export function isUniqueConstraintError(error: unknown): boolean {
-      if (!(error instanceof Error)) return false;
--     const sqliteCode = (error as MaybeSqliteError).code;
--     if (sqliteCode === 'SQLITE_CONSTRAINT_UNIQUE' || sqliteCode === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
--         return true;
--     }
--     const message = getErrorMessage(error);
--     return message.includes('UNIQUE constraint failed');
-+     const pgCode = (error as any).code;
-+     if (pgCode === '23505') return true;
-+     const message = getErrorMessage(error);
-+     return message.includes('duplicate key value violates unique constraint');
-  }
+- if (sqliteCode === 'SQLITE_CONSTRAINT_UNIQUE' || sqliteCode === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
++ const pgCode = (error as any).code;
++ if (pgCode === '23505') return true;
+
+- return message.includes('UNIQUE constraint failed');
++ return message.includes('duplicate key value violates unique constraint');
 ```
 
-Then update ALL import paths across the codebase:
-```bash
-grep -rn "sqlite-errors" src/
-```
-Change each import from `'$lib/server/utils/sqlite-errors'` → `'$lib/server/utils/db-errors'`
+Update all imports: `grep -rn "sqlite-errors" src/` → change to `db-errors`.
 
 ---
 
@@ -361,36 +418,9 @@ Change each import from `'$lib/server/utils/sqlite-errors'` → `'$lib/server/ut
 
 **File:** `src/routes/api/health/+server.ts`
 
-Replace the `pingDatabase` function:
-
-```diff
-- import { getStartupCheckSnapshot, sqlite } from '$lib/server/db';
-+ import { getStartupCheckSnapshot, db } from '$lib/server/db';
-+ import { sql } from 'drizzle-orm';
-
-- function pingDatabase() {
-+ async function pingDatabase() {
-      const started = Date.now();
-      try {
--         const row = sqlite.prepare('SELECT 1 as ok').get() as { ok?: number } | undefined;
-+         const result = await db.execute(sql`SELECT 1 as ok`);
-          return {
--             ok: row?.ok === 1,
-+             ok: true,
-              latencyMs: Date.now() - started
-          };
-      } catch (error) {
-          // ...
-      }
-  }
-
-  export const GET: RequestHandler = async ({ locals }) => {
--     const dbPing = pingDatabase();
-+     const dbPing = await pingDatabase();
-      const startup = getStartupCheckSnapshot();
--     const healthy = dbPing.ok && startup.foreignKeysEnabled && startup.quickCheck.toLowerCase() === 'ok';
-+     const healthy = dbPing.ok && startup.connectionOk;
-```
+- Replace `sqlite.prepare('SELECT 1').get()` → `await db.execute(sql\`SELECT 1\`)`
+- Make `pingDatabase()` async
+- Remove SQLite-specific checks (pragmas, WAL, foreignKeys)
 
 ---
 
@@ -399,43 +429,21 @@ Replace the `pingDatabase` function:
 **File:** `drizzle.config.ts`
 
 ```diff
-  export default {
-      schema: './src/lib/server/db/schema/index.ts',
-      out: './migrations',
--     dialect: 'sqlite',
-+     dialect: 'postgresql',
-      dbCredentials: {
--         url: 'data/slate.db'
-+         url: process.env.DATABASE_URL || ''
-      }
-  } satisfies Config;
+- dialect: 'sqlite',
+- dbCredentials: { url: 'data/slate.db' }
++ dialect: 'postgresql',
++ dbCredentials: { url: process.env.DATABASE_URL || '' }
 ```
 
 ---
 
 ## Step 12: Update Environment Variables
 
-**File:** `.env.example`
-
+**`.env.example`:**
 ```diff
-  # Required
-  BETTER_AUTH_SECRET=change-me-to-a-random-64-char-hex
-  ORIGIN=http://localhost:3000
-
-- # Database (default: data/slate.db)
 - # SLATE_DB_PATH=data/slate.db
-+ # Database (Supabase Postgres)
-+ DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-
-- # Litestream backup (optional)
 - # LITESTREAM_REPLICA_URL=gcs://your-bucket/slate.db
-```
-
-**File:** `.env` (local development)
-
-Add the actual Supabase connection string:
-```
-DATABASE_URL=postgresql://postgres.[your-ref]:[your-password]@aws-0-[region].pooler.supabase.com:6543/postgres
++ DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
 ```
 
 ---
@@ -444,61 +452,73 @@ DATABASE_URL=postgresql://postgres.[your-ref]:[your-password]@aws-0-[region].poo
 
 **File:** `src/lib/server/seed.ts`
 
-Make all functions async and remove `.run()`, `.all()`, `.get()`:
-
-```diff
-- export function seedChartOfAccounts(orgId: string, tx?: Tx) {
-+ export async function seedChartOfAccounts(orgId: string, tx?: Tx) {
-      const values = INDIAN_COA_TEMPLATE.map((acc) => ({ ... }));
--     (tx || db).insert(accounts).values(values).run();
-+     await (tx || db).insert(accounts).values(values);
-  }
-
-- export function seedPaymentModes(orgId: string, tx?: Tx) {
-+ export async function seedPaymentModes(orgId: string, tx?: Tx) {
-      const runner = tx || db;
--     const orgAccounts = runner.select(...).from(accounts).where(...).all();
-+     const orgAccounts = await runner.select(...).from(accounts).where(...);
-      // ...
--     runner.insert(payment_modes).values(values).run();
-+     await runner.insert(payment_modes).values(values);
-  }
-
-- export function hasPaymentModes(orgId: string): boolean {
-+ export async function hasPaymentModes(orgId: string): Promise<boolean> {
--     const row = db.select(...).from(payment_modes).where(...).limit(1).get();
-+     const rows = await db.select(...).from(payment_modes).where(...).limit(1);
-+     const row = rows[0];
-      return !!row;
-  }
-```
-
-Then update ALL callers of these functions to `await` them.
+Make all functions `async`, remove `.run()`, `.all()`, `.get()`, and update all callers.
 
 ---
 
-## Step 14: Clean Up Docker & Litestream
+## Step 14: Update CI/Tooling Scripts (CRITICAL — do not skip)
 
-### 14a. Delete Litestream config
-```bash
-rm litestream.yml
+### 14a. `scripts/check-sync-transactions.mjs`
+
+This CI script ENFORCES sync transactions (line 54: `asyncPattern = /\.transaction\s*\(\s*async\b/g`). It will **fail the build** after migration because Postgres transactions ARE async.
+
+**Action:** Rewrite to enforce the OPPOSITE — all transaction callbacks MUST be async:
+
+```javascript
+// OLD: blocks async transaction callbacks
+const asyncPattern = /\.transaction\s*\(\s*async\b/g;
+// NEW: blocks SYNC transaction callbacks (should always be async now)
+const syncPattern = /\.transaction\s*\(\s*\(/g; // non-async arrow
 ```
 
-### 14b. Update Dockerfile
+Or simply delete this check and rely on TypeScript types to enforce async callbacks.
 
-Remove these lines/sections:
-- `ENV SLATE_DB_PATH=/app/data/slate.db`
-- `RUN apt-get install ... libstdc++6` (better-sqlite3 runtime dep)
-- `mkdir -p /app/data`
-- `COPY litestream.yml /etc/litestream.yml`
-- `ADD https://github.com/benbjohnson/litestream/...`
-- `RUN tar -C /usr/local/bin -xzf /tmp/litestream.tar.gz`
+### 14b. `scripts/migrate.mjs`
 
-Add:
-- `ENV DATABASE_URL=` (set via secrets/env at deploy time)
+Currently uses `better-sqlite3` and `drizzle-orm/better-sqlite3/migrator`. Rewrite for Postgres:
 
-### 14c. Update entrypoint script
-Check `scripts/docker-entrypoint.sh` — if it launches Litestream as a wrapper, simplify it to just run the Node server directly.
+```javascript
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+
+const client = postgres(process.env.DATABASE_URL);
+const db = drizzle(client);
+await migrate(db, { migrationsFolder: './migrations' });
+await client.end();
+```
+
+### 14c. `scripts/check-integrity.mjs`
+
+Uses SQLite-specific patterns:
+- `pragma('integrity_check')` → Replace with `SELECT 1` connection test
+- `ROUND(COALESCE(...), 2)` → Works in Postgres but verify behavior with `numeric` type
+- `sqlite.prepare(...)` → Use `postgres` client directly
+
+**Rewrite all queries to use `postgres` package directly.** The accounting invariant checks (balanced journals, non-negative amounts) are critical and MUST work in Postgres.
+
+### 14d. `scripts/verify-backup-restore.mjs`
+
+Uses `VACUUM INTO` (SQLite-specific). Delete this file and replace with Postgres backup/restore script (see Step 17).
+
+### 14e. `scripts/check-phase9-performance.mjs`
+
+Uses `EXPLAIN QUERY PLAN` (SQLite). Replace with `EXPLAIN ANALYZE` (Postgres) with different output parsing.
+
+### 14f. `scripts/docker-entrypoint.sh`
+
+Currently runs Litestream restore on startup (lines 10-42). Rewrite to:
+1. Run `scripts/migrate.mjs` (Postgres migrations)
+2. Start the Node server directly (no Litestream wrapper)
+
+### 14g. Update `docs/ARCHITECTURE.md` (line 86)
+
+```diff
+- 1. Transaction callbacks must be synchronous for `better-sqlite3`.
+- 2. Async work must stay outside DB transaction callbacks.
++ 1. Transaction callbacks are async (Postgres).
++ 2. All database calls inside transactions must be awaited.
+```
 
 ---
 
@@ -508,52 +528,123 @@ Check `scripts/docker-entrypoint.sh` — if it launches Litestream as a wrapper,
 # Delete old SQLite migrations
 rm -rf migrations/
 
-# Generate new Postgres migrations
+# Generate new Postgres migrations from updated schema
 npx drizzle-kit generate
 
-# Push schema to Supabase (for dev/testing)
+# Push schema to Supabase (dev/testing)
 npx drizzle-kit push
+```
+
+**If migrating existing data**, do the data import (Phase 0) AFTER `drizzle-kit push` creates the tables but BEFORE running the app.
+
+---
+
+## Step 16: Clean Up Docker & Litestream
+
+### 16a. Delete Litestream config
+```bash
+rm litestream.yml
+```
+
+### 16b. Update Dockerfile
+
+Remove:
+- `ENV SLATE_DB_PATH=...`
+- `RUN apt-get install ... libstdc++6` (better-sqlite3 dep)
+- `mkdir -p /app/data`
+- `COPY litestream.yml ...`
+- `ADD https://github.com/benbjohnson/litestream/...`
+- `RUN tar -C /usr/local/bin ...`
+
+Add:
+- `ENV DATABASE_URL=` (set via secrets at deploy time)
+
+---
+
+## Step 17: Postgres Backup & Restore Runbook (replaces Litestream)
+
+Supabase handles backups automatically (daily snapshots on Pro plan). For additional safety:
+
+### Manual backup
+```bash
+# Via Supabase CLI
+supabase db dump -p [project-ref] --data-only > backup_$(date +%Y%m%d).sql
+
+# Via pg_dump
+pg_dump $DATABASE_URL --data-only --format=custom > backup_$(date +%Y%m%d).dump
+```
+
+### Restore
+```bash
+# Via psql
+psql $DATABASE_URL < backup.sql
+
+# Via pg_restore (custom format)
+pg_restore --clean --if-exists -d $DATABASE_URL backup.dump
+```
+
+### Automated backup script (replaces verify-backup-restore.mjs)
+
+Create `scripts/backup-postgres.sh`:
+```bash
+#!/bin/bash
+set -euo pipefail
+BACKUP_DIR="${BACKUP_DIR:-./backups}"
+mkdir -p "$BACKUP_DIR"
+FILENAME="$BACKUP_DIR/slate_$(date +%Y%m%d_%H%M%S).dump"
+pg_dump "$DATABASE_URL" --format=custom > "$FILENAME"
+echo "Backup saved: $FILENAME"
+# Keep last 7 days
+find "$BACKUP_DIR" -name "slate_*.dump" -mtime +7 -delete
 ```
 
 ---
 
-## Step 16: Remove Stale Cookie Workaround (Optional)
+## Step 18: Remove Stale Cookie Workaround (Optional)
 
 **File:** `src/hooks.server.ts` (lines ~155-162)
 
-The stale session cookie fix was needed because SQLite lost data on container restarts. With Postgres, sessions persist properly. You can optionally remove:
-
-```typescript
-// Clean up stale cookie-cache cookies from before cookieCache was disabled.
-if (event.cookies.get('better-auth.session_data')) {
-    event.cookies.delete('better-auth.session_data', { path: '/' });
-}
-if (event.cookies.get('__Secure-better-auth.session_data')) {
-    event.cookies.delete('__Secure-better-auth.session_data', { path: '/' });
-}
-```
-
-Keep it for now if existing users may still have old cookies. Remove after a few weeks.
+Keep for now if existing users may have old cookies. Remove after a few weeks.
 
 ---
 
 ## Verification Checklist
 
-After completing all steps, verify:
+### Build & Schema
+- [ ] `npx vite build` passes
+- [ ] `npx drizzle-kit push` creates all tables in Supabase
+- [ ] `grep -rn "\.sync()" src/` returns nothing
+- [ ] `grep -rn "better-sqlite3" src/` returns nothing
+- [ ] `grep -rn "sqliteTable" src/` returns nothing
+- [ ] `grep -rn "sqlite-errors" src/` returns nothing
+- [ ] `grep -rn "real(" src/lib/server/db/schema/` returns nothing
 
-1. **Build passes**: `npx vite build` completes without errors
-2. **Schema push**: `npx drizzle-kit push` creates all tables in Supabase
-3. **Signup flow**: Create a new account → org setup → verify data in Supabase dashboard
-4. **CRUD operations**: Create/read/update/delete items, customers, invoices
-5. **Invoice creation**: Full flow — select customer, add line items, save → verify in DB
-6. **PDF generation**: Download invoice PDF — should work unchanged
-7. **Payments**: Record a payment, verify journal entries created
-8. **Reports**: GST reports, P&L, aging — all query-heavy pages
-9. **Auth**: Login, logout, password reset
-10. **Health check**: `GET /api/health` returns ok
-11. **No `.sync()` calls**: `grep -rn "\.sync()" src/` returns nothing
-12. **No `better-sqlite3` imports**: `grep -rn "better-sqlite3" src/` returns nothing
-13. **No `sqliteTable` references**: `grep -rn "sqliteTable" src/` returns nothing
+### Functional (test EVERY financial flow)
+- [ ] Signup → org setup → seed data created in Supabase
+- [ ] Create customer → verify in Supabase dashboard
+- [ ] Create item with HSN code → verify saved
+- [ ] Create invoice → line items → GST calculation → save
+- [ ] Verify journal entries created with balanced debits/credits
+- [ ] Record payment → verify allocation + journal entries
+- [ ] Create credit note → verify balance updates
+- [ ] Download invoice PDF → verify unchanged
+- [ ] GST reports (GSTR-1, GSTR-3B) → verify calculations
+- [ ] P&L report → verify account balances
+- [ ] Aging report → verify outstanding amounts
+- [ ] Login, logout, password reset
+
+### Integrity (run AFTER data import if migrating)
+- [ ] All journal entries balance: `total_debit = total_credit`
+- [ ] No negative money amounts where not expected
+- [ ] Invoice `balance_due = total - amount_paid`
+- [ ] Customer balances match sum of outstanding invoices
+- [ ] `GET /api/health` returns ok
+
+### CI/Scripts
+- [ ] `scripts/check-sync-transactions.mjs` updated or removed
+- [ ] `scripts/migrate.mjs` works with Postgres
+- [ ] `scripts/check-integrity.mjs` works with Postgres
+- [ ] `docs/ARCHITECTURE.md` updated (sync→async rule)
 
 ---
 
@@ -561,19 +652,40 @@ After completing all steps, verify:
 
 | Category | Files | Change Type |
 |---|---|---|
-| Schema definitions | 17 files in `src/lib/server/db/schema/` | Import + type swaps |
+| Schema definitions | 17 files in `src/lib/server/db/schema/` | Import + type swaps + numeric precision |
 | DB connection | `src/lib/server/db/index.ts` | Full rewrite |
-| Transaction wrapper | `src/lib/server/platform/db/tx.ts` | Full rewrite |
-| Auth config | `src/lib/server/auth.ts` | 1 line change |
-| Error handling | `src/lib/server/utils/sqlite-errors.ts` | Rename + update codes |
+| Transaction wrapper | `src/lib/server/platform/db/tx.ts` | Full rewrite (sync→async) |
+| Auth config | `src/lib/server/auth.ts` | `provider: 'pg'` |
+| Error handling | `src/lib/server/utils/sqlite-errors.ts` | Rename + Postgres error codes |
 | Health check | `src/routes/api/health/+server.ts` | Async + remove SQLite checks |
-| Seed data | `src/lib/server/seed.ts` | Add async/await |
+| Seed data | `src/lib/server/seed.ts` | Async conversion |
 | Query files (`.sync()`) | 3 files in `src/lib/server/modules/` | Remove `.sync()`, add async |
 | Server routes | ~27 files in `src/routes/` | Add `await` to db calls |
 | Drizzle config | `drizzle.config.ts` | Dialect + credentials |
-| Environment | `.env.example`, `.env` | New DATABASE_URL |
+| Environment | `.env.example`, `.env` | `DATABASE_URL` |
 | Docker | `Dockerfile` | Remove SQLite/Litestream |
 | Litestream | `litestream.yml` | Delete |
 | Package | `package.json` | Swap dependencies |
+| CI script | `scripts/check-sync-transactions.mjs` | Invert or remove sync check |
+| Migration script | `scripts/migrate.mjs` | Rewrite for Postgres |
+| Integrity script | `scripts/check-integrity.mjs` | Rewrite for Postgres |
+| Backup script | `scripts/verify-backup-restore.mjs` | Replace with `backup-postgres.sh` |
+| Performance script | `scripts/check-phase9-performance.mjs` | Replace EXPLAIN QUERY PLAN → EXPLAIN ANALYZE |
+| Entrypoint | `scripts/docker-entrypoint.sh` | Remove Litestream, add migrate |
+| Architecture docs | `docs/ARCHITECTURE.md` | Update sync→async rule |
 
-**Total: ~55 files modified, ~210 files untouched**
+**Total: ~60 files modified, ~205 files untouched**
+
+---
+
+## Risk Matrix
+
+| Risk | Severity | Mitigation |
+|---|---|---|
+| Sync→async transaction race conditions | HIGH | Test every money flow. Run integrity checks after each test. |
+| `real()` → `numeric()` precision drift | HIGH | Use `mode: 'number'` on all numeric columns. Run parallel comparison. |
+| CHECK constraint `ROUND()` behavior | MEDIUM | With numeric type, ROUND() is exact. Test journal entry creation. |
+| Timestamp format mismatch | MEDIUM | Keep business timestamps as text. Only convert auth tables. |
+| Data loss during migration | HIGH | Full SQLite backup before ANY changes. Verify row counts after import. |
+| CI breaks (check-sync-transactions) | LOW | Update script BEFORE merging async changes. |
+| Backup model gap (no Litestream) | MEDIUM | Supabase daily snapshots + manual pg_dump script. |
