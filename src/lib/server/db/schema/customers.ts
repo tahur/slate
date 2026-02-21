@@ -1,9 +1,9 @@
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, numeric, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
 
-export const customers = sqliteTable(
+export const customers = pgTable(
     'customers',
     {
         id: text('id').primaryKey(),
@@ -33,12 +33,12 @@ export const customers = sqliteTable(
         payment_terms: integer('payment_terms').default(0), // Days
 
         // Status
-        balance: real('balance').default(0), // Current outstanding
+        balance: numeric('balance', { precision: 14, scale: 2, mode: 'number' }).default(0), // Current outstanding
         status: text('status').default('active'),
 
         // Audit
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-        updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
+        updated_at: text('updated_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id),
         updated_by: text('updated_by').references(() => users.id)
     },

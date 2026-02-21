@@ -58,8 +58,24 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             )
         );
 
-    const outputGst = invoiceGst[0] || { cgst: 0, sgst: 0, igst: 0, taxable: 0, count: 0 };
-    const inputGst = expenseGst[0] || { cgst: 0, sgst: 0, igst: 0, total: 0, count: 0 };
+    const raw = invoiceGst[0] || { cgst: 0, sgst: 0, igst: 0, taxable: 0, count: 0 };
+    const rawInput = expenseGst[0] || { cgst: 0, sgst: 0, igst: 0, total: 0, count: 0 };
+
+    // postgres.js returns numeric columns as strings — coerce to numbers
+    const outputGst = {
+        cgst: Number(raw.cgst) || 0,
+        sgst: Number(raw.sgst) || 0,
+        igst: Number(raw.igst) || 0,
+        taxable: Number(raw.taxable) || 0,
+        count: Number(raw.count) || 0
+    };
+    const inputGst = {
+        cgst: Number(rawInput.cgst) || 0,
+        sgst: Number(rawInput.sgst) || 0,
+        igst: Number(rawInput.igst) || 0,
+        total: Number(rawInput.total) || 0,
+        count: Number(rawInput.count) || 0
+    };
 
     const outputTotal = outputGst.cgst + outputGst.sgst + outputGst.igst;
     const inputTotal = inputGst.cgst + inputGst.sgst + inputGst.igst;

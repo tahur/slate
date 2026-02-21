@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const orgId = locals.user.orgId;
 
     // Get payment with customer
-    const payment = await db
+    const paymentRows = await db
         .select({
             id: payments.id,
             payment_number: payments.payment_number,
@@ -32,51 +32,49 @@ export const load: PageServerLoad = async ({ locals, params }) => {
                 eq(payments.org_id, orgId)
             )
         )
-        .get();
+        .limit(1);
+    const payment = paymentRows[0];
 
     if (!payment) {
         redirect(302, '/payments');
     }
 
-    // Get customer
-    const customer = await db.query.customers.findFirst({
-        where: and(
-            eq(customers.id, payment.customer_id),
-            eq(customers.org_id, orgId)
-        )
-    });
-
-    // Get allocations with invoice details
-    const allocations = await db
-        .select({
-            id: payment_allocations.id,
-            amount: payment_allocations.amount,
-            invoice_id: invoices.id,
-            invoice_number: invoices.invoice_number,
-            invoice_date: invoices.invoice_date,
-            invoice_total: invoices.total
-        })
-        .from(payment_allocations)
-        .leftJoin(invoices, eq(payment_allocations.invoice_id, invoices.id))
-        .where(eq(payment_allocations.payment_id, params.id));
-
-    // Get organization
-    const org = await db.query.organizations.findFirst({
-        where: eq(organizations.id, orgId)
-    });
-
-    if (!hasPaymentModes(orgId)) {
-        seedPaymentModes(orgId);
-    }
-
-    const modesList = db
-        .select({
-            mode_key: payment_modes.mode_key,
-            label: payment_modes.label
-        })
-        .from(payment_modes)
-        .where(eq(payment_modes.org_id, orgId))
-        .all();
+    // Fetch all related data in parallel
+    const [customer, allocations, org, modesList] = await Promise.all([
+        db.query.customers.findFirst({
+            where: and(
+                eq(customers.id, payment.customer_id),
+                eq(customers.org_id, orgId)
+            )
+        }),
+        db
+            .select({
+                id: payment_allocations.id,
+                amount: payment_allocations.amount,
+                invoice_id: invoices.id,
+                invoice_number: invoices.invoice_number,
+                invoice_date: invoices.invoice_date,
+                invoice_total: invoices.total
+            })
+            .from(payment_allocations)
+            .leftJoin(invoices, eq(payment_allocations.invoice_id, invoices.id))
+            .where(eq(payment_allocations.payment_id, params.id)),
+        db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId)
+        }),
+        (async () => {
+            if (!(await hasPaymentModes(orgId))) {
+                await seedPaymentModes(orgId);
+            }
+            return db
+                .select({
+                    mode_key: payment_modes.mode_key,
+                    label: payment_modes.label
+                })
+                .from(payment_modes)
+                .where(eq(payment_modes.org_id, orgId));
+        })()
+    ]);
 
     return { payment, customer, allocations, org, paymentModes: modesList };
 };

@@ -1,8 +1,8 @@
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, boolean, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 
-export const app_settings = sqliteTable('app_settings', {
+export const app_settings = pgTable('app_settings', {
     id: text('id').primaryKey(),
     org_id: text('org_id')
         .notNull()
@@ -14,12 +14,12 @@ export const app_settings = sqliteTable('app_settings', {
     smtp_user: text('smtp_user'),
     smtp_pass: text('smtp_pass'), // Encrypted in production
     smtp_from: text('smtp_from'),
-    smtp_secure: integer('smtp_secure', { mode: 'boolean' }).default(false),
-    smtp_enabled: integer('smtp_enabled', { mode: 'boolean' }).default(false),
+    smtp_secure: boolean('smtp_secure').default(false),
+    smtp_enabled: boolean('smtp_enabled').default(false),
 
     // Timestamps
-    created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-    updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`)
+    created_at: text('created_at').default(sql`NOW()::text`),
+    updated_at: text('updated_at').default(sql`NOW()::text`)
 }, (t) => ({
     orgUniqueIdx: uniqueIndex('idx_app_settings_org_unique').on(t.org_id)
 }));

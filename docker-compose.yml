@@ -13,9 +13,8 @@ services:
       PORT: 3000
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
-      SLATE_DB_PATH: /app/data/slate.db
-    volumes:
-      - slate_data:/app/data
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      DATABASE_URL_MIGRATION: ${DATABASE_URL_MIGRATION:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
@@ -23,6 +22,3 @@ services:
       timeout: 5s
       start_period: 10s
       retries: 3
-
-volumes:
-  slate_data:

@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { accounts, invoices, expenses, audit_log, customers, payments, vendors } from '$lib/server/db/schema';
-import { eq, and, ne, sql, gte, lte, lt, desc, or, gt, inArray } from 'drizzle-orm';
+import { eq, and, ne, sql, gte, lte, desc, gt, inArray } from 'drizzle-orm';
 import { localDateStr } from '$lib/utils/date';
 
 export interface MoneyPosition {
@@ -52,219 +52,301 @@ export interface DueInvoice {
     daysOverdue: number;
 }
 
+const DASHBOARD_CACHE_TTL_MS = 30_000;
+
+const dashboardCache = new Map<
+    string,
+    {
+        expiresAt: number;
+        data: DashboardData;
+    }
+>();
+
+interface AccountMetrics {
+    cash: number;
+    bank: number;
+    payables: number;
+    gstOutputRaw: number;
+    gstInput: number;
+}
+
+interface InvoiceMetrics {
+    toCollect: number;
+    salesMonth: number;
+    overdueCount: number;
+    overdueAmount: number;
+    dueSoonCount: number;
+    dueSoonAmount: number;
+}
+
+function getCachedDashboardData(orgId: string): DashboardData | null {
+    const cached = dashboardCache.get(orgId);
+    if (!cached) return null;
+    if (Date.now() > cached.expiresAt) {
+        dashboardCache.delete(orgId);
+        return null;
+    }
+    return cached.data;
+}
+
+function cacheDashboardData(orgId: string, data: DashboardData): void {
+    dashboardCache.set(orgId, {
+        expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS,
+        data
+    });
+}
+
+export function invalidateDashboardCacheForOrg(orgId: string): void {
+    dashboardCache.delete(orgId);
+}
+
 export async function getDashboardData(orgId: string): Promise<DashboardData> {
-    const [money, monthly, alerts, recentActivity, dueInvoices] = await Promise.all([
-        getMoneyPosition(orgId),
-        getMonthlyStats(orgId),
-        getAlerts(orgId),
+    const cached = getCachedDashboardData(orgId);
+    if (cached) {
+        return cached;
+    }
+
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const startDate = localDateStr(firstDayOfMonth);
+    const endDate = localDateStr(lastDayOfMonth);
+    const todayStr = localDateStr(now);
+    const nextWeek = new Date(now);
+    nextWeek.setDate(now.getDate() + 7);
+    const nextWeekStr = localDateStr(nextWeek);
+
+    const [accountMetrics, invoiceMetrics, monthlyExpenseTotal, recentActivity, dueInvoices] = await Promise.all([
+        getAccountMetrics(orgId),
+        getInvoiceMetrics(orgId, startDate, endDate, todayStr, nextWeekStr),
+        getMonthlyExpenseTotal(orgId, startDate, endDate),
         getRecentActivity(orgId),
         getDueInvoices(orgId)
     ]);
 
-    return {
+    const outputGst = Math.abs(accountMetrics.gstOutputRaw);
+    const money: MoneyPosition = {
+        cash: accountMetrics.cash,
+        bank: accountMetrics.bank,
+        toCollect: invoiceMetrics.toCollect,
+        payables: accountMetrics.payables,
+        gstOutput: outputGst,
+        gstInput: accountMetrics.gstInput,
+        gstDue: outputGst - accountMetrics.gstInput
+    };
+
+    const monthly: MonthlyStats = {
+        sales: invoiceMetrics.salesMonth,
+        expenses: monthlyExpenseTotal,
+        profit: invoiceMetrics.salesMonth - monthlyExpenseTotal
+    };
+
+    const alerts: { overdue: Alert; dueSoon: Alert } = {
+        overdue: {
+            type: 'overdue',
+            count: invoiceMetrics.overdueCount,
+            amount: invoiceMetrics.overdueAmount
+        },
+        dueSoon: {
+            type: 'due_soon',
+            count: invoiceMetrics.dueSoonCount,
+            amount: invoiceMetrics.dueSoonAmount
+        }
+    };
+
+    const data: DashboardData = {
         money,
         monthly,
         alerts,
         recentActivity,
         dueInvoices
     };
+
+    cacheDashboardData(orgId, data);
+
+    return data;
 }
 
-async function getMoneyPosition(orgId: string): Promise<MoneyPosition> {
-    // Get Cash balance (account code 1000)
-    const cashResult = await db
-        .select({ balance: accounts.balance })
-        .from(accounts)
-        .where(and(eq(accounts.org_id, orgId), eq(accounts.account_code, '1000')));
+async function getAccountMetrics(orgId: string): Promise<AccountMetrics> {
+    const [accountResult, payablesResult] = await Promise.all([
+        db
+            .select({
+                cash: sql<number>`
+                    COALESCE(
+                        SUM(CASE WHEN ${accounts.account_code} = '1000' THEN ${accounts.balance} ELSE 0 END),
+                        0
+                    )
+                `,
+                bank: sql<number>`
+                    COALESCE(
+                        SUM(CASE WHEN ${accounts.account_code} = '1100' THEN ${accounts.balance} ELSE 0 END),
+                        0
+                    )
+                `,
+                gstOutputRaw: sql<number>`
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN ${accounts.account_code} IN ('2100', '2101', '2102')
+                                THEN ${accounts.balance}
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    )
+                `,
+                gstInput: sql<number>`
+                    COALESCE(
+                        SUM(
+                            CASE
+                                WHEN ${accounts.account_code} IN ('1300', '1301', '1302')
+                                THEN ${accounts.balance}
+                                ELSE 0
+                            END
+                        ),
+                        0
+                    )
+                `
+            })
+            .from(accounts)
+            .where(eq(accounts.org_id, orgId)),
+        db
+            .select({
+                total: sql<number>`COALESCE(SUM(${vendors.balance}), 0)`
+            })
+            .from(vendors)
+            .where(and(eq(vendors.org_id, orgId), gt(vendors.balance, 0)))
+    ]);
 
-    // Get Bank balance (account code 1100)
-    const bankResult = await db
-        .select({ balance: accounts.balance })
-        .from(accounts)
-        .where(and(eq(accounts.org_id, orgId), eq(accounts.account_code, '1100')));
-
-    // Get total receivables (unpaid invoices)
-    const receivablesResult = await db
-        .select({
-            total: sql<number>`COALESCE(SUM(${invoices.balance_due}), 0)`
-        })
-        .from(invoices)
-        .where(
-            and(
-                eq(invoices.org_id, orgId),
-                ne(invoices.status, 'draft'),
-                ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'paid')
-            )
-        );
-
-    // Get GST accounts for Output GST (2100, 2101, 2102) - liability
-    const outputGstResult = await db
-        .select({
-            total: sql<number>`COALESCE(SUM(${accounts.balance}), 0)`
-        })
-        .from(accounts)
-        .where(
-            and(
-                eq(accounts.org_id, orgId),
-                or(
-                    eq(accounts.account_code, '2100'),
-                    eq(accounts.account_code, '2101'),
-                    eq(accounts.account_code, '2102')
-                )
-            )
-        );
-
-    // Get GST accounts for Input GST (1300, 1301, 1302) - asset (credit)
-    const inputGstResult = await db
-        .select({
-            total: sql<number>`COALESCE(SUM(${accounts.balance}), 0)`
-        })
-        .from(accounts)
-        .where(
-            and(
-                eq(accounts.org_id, orgId),
-                or(
-                    eq(accounts.account_code, '1300'),
-                    eq(accounts.account_code, '1301'),
-                    eq(accounts.account_code, '1302')
-                )
-            )
-        );
-
-    const outputGst = outputGstResult[0]?.total || 0;
-    const inputGst = inputGstResult[0]?.total || 0;
-    const absOutput = Math.abs(outputGst);
-
-    // Get total payables (sum of vendor balances where balance > 0)
-    const payablesResult = await db
-        .select({
-            total: sql<number>`COALESCE(SUM(${vendors.balance}), 0)`
-        })
-        .from(vendors)
-        .where(
-            and(
-                eq(vendors.org_id, orgId),
-                gt(vendors.balance, 0)
-            )
-        );
+    const accountRow = accountResult[0];
 
     return {
-        cash: cashResult[0]?.balance || 0,
-        bank: bankResult[0]?.balance || 0,
-        toCollect: receivablesResult[0]?.total || 0,
-        payables: payablesResult[0]?.total || 0,
-        gstOutput: absOutput,
-        gstInput: inputGst,
-        gstDue: absOutput - inputGst
+        cash: Number(accountRow?.cash) || 0,
+        bank: Number(accountRow?.bank) || 0,
+        payables: Number(payablesResult[0]?.total) || 0,
+        gstOutputRaw: Number(accountRow?.gstOutputRaw) || 0,
+        gstInput: Number(accountRow?.gstInput) || 0
     };
 }
 
-async function getMonthlyStats(orgId: string): Promise<MonthlyStats> {
-    const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    const startDate = localDateStr(firstDayOfMonth);
-    const endDate = localDateStr(lastDayOfMonth);
-
-    // Sales this month (non-draft, non-cancelled invoices)
-    const salesResult = await db
+async function getInvoiceMetrics(
+    orgId: string,
+    startDate: string,
+    endDate: string,
+    todayStr: string,
+    nextWeekStr: string
+): Promise<InvoiceMetrics> {
+    const result = await db
         .select({
-            total: sql<number>`COALESCE(SUM(${invoices.total}), 0)`
+            toCollect: sql<number>`
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                            THEN ${invoices.balance_due}
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+            `,
+            salesMonth: sql<number>`
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled')
+                                AND ${invoices.invoice_date} >= ${startDate}
+                                AND ${invoices.invoice_date} <= ${endDate}
+                            THEN ${invoices.total}
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+            `,
+            overdueCount: sql<number>`
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                                AND ${invoices.due_date} < ${todayStr}
+                                AND ${invoices.balance_due} > 0
+                            THEN 1
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+            `,
+            overdueAmount: sql<number>`
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                                AND ${invoices.due_date} < ${todayStr}
+                                AND ${invoices.balance_due} > 0
+                            THEN ${invoices.balance_due}
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+            `,
+            dueSoonCount: sql<number>`
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                                AND ${invoices.due_date} >= ${todayStr}
+                                AND ${invoices.due_date} <= ${nextWeekStr}
+                                AND ${invoices.balance_due} > 0
+                            THEN 1
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+            `,
+            dueSoonAmount: sql<number>`
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                                AND ${invoices.due_date} >= ${todayStr}
+                                AND ${invoices.due_date} <= ${nextWeekStr}
+                                AND ${invoices.balance_due} > 0
+                            THEN ${invoices.balance_due}
+                            ELSE 0
+                        END
+                    ),
+                    0
+                )
+            `
         })
         .from(invoices)
-        .where(
-            and(
-                eq(invoices.org_id, orgId),
-                ne(invoices.status, 'draft'),
-                ne(invoices.status, 'cancelled'),
-                gte(invoices.invoice_date, startDate),
-                lte(invoices.invoice_date, endDate)
-            )
-        );
+        .where(eq(invoices.org_id, orgId));
 
-    // Expenses this month
-    const expensesResult = await db
+    const row = result[0];
+
+    return {
+        toCollect: Number(row?.toCollect) || 0,
+        salesMonth: Number(row?.salesMonth) || 0,
+        overdueCount: Number(row?.overdueCount) || 0,
+        overdueAmount: Number(row?.overdueAmount) || 0,
+        dueSoonCount: Number(row?.dueSoonCount) || 0,
+        dueSoonAmount: Number(row?.dueSoonAmount) || 0
+    };
+}
+
+async function getMonthlyExpenseTotal(orgId: string, startDate: string, endDate: string): Promise<number> {
+    const result = await db
         .select({
             total: sql<number>`COALESCE(SUM(${expenses.total}), 0)`
         })
         .from(expenses)
-        .where(
-            and(
-                eq(expenses.org_id, orgId),
-                gte(expenses.expense_date, startDate),
-                lte(expenses.expense_date, endDate)
-            )
-        );
+        .where(and(eq(expenses.org_id, orgId), gte(expenses.expense_date, startDate), lte(expenses.expense_date, endDate)));
 
-    const totalSales = salesResult[0]?.total || 0;
-    const totalExpenses = expensesResult[0]?.total || 0;
-
-    return {
-        sales: totalSales,
-        expenses: totalExpenses,
-        profit: totalSales - totalExpenses
-    };
-}
-
-async function getAlerts(orgId: string): Promise<{ overdue: Alert; dueSoon: Alert }> {
-    const today = new Date();
-    const todayStr = localDateStr(today);
-
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-    const nextWeekStr = localDateStr(nextWeek);
-
-    // Overdue invoices: due_date < today, balance_due > 0
-    const overdueResult = await db
-        .select({
-            count: sql<number>`COUNT(*)`,
-            total: sql<number>`COALESCE(SUM(${invoices.balance_due}), 0)`
-        })
-        .from(invoices)
-        .where(
-            and(
-                eq(invoices.org_id, orgId),
-                ne(invoices.status, 'draft'),
-                ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'paid'),
-                lt(invoices.due_date, todayStr),
-                sql`${invoices.balance_due} > 0`
-            )
-        );
-
-    // Due this week: due_date between today and +7 days
-    const dueSoonResult = await db
-        .select({
-            count: sql<number>`COUNT(*)`,
-            total: sql<number>`COALESCE(SUM(${invoices.balance_due}), 0)`
-        })
-        .from(invoices)
-        .where(
-            and(
-                eq(invoices.org_id, orgId),
-                ne(invoices.status, 'draft'),
-                ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'paid'),
-                gte(invoices.due_date, todayStr),
-                lte(invoices.due_date, nextWeekStr),
-                sql`${invoices.balance_due} > 0`
-            )
-        );
-
-    return {
-        overdue: {
-            type: 'overdue',
-            count: overdueResult[0]?.count || 0,
-            amount: overdueResult[0]?.total || 0
-        },
-        dueSoon: {
-            type: 'due_soon',
-            count: dueSoonResult[0]?.count || 0,
-            amount: dueSoonResult[0]?.total || 0
-        }
-    };
+    return Number(result[0]?.total) || 0;
 }
 
 async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
@@ -285,10 +367,10 @@ async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
     if (recentLogs.length === 0) return [];
 
     // Batch-fetch all related entities by type (instead of N+1 queries)
-    const invoiceIds = recentLogs.filter(l => l.entityType === 'invoice').map(l => l.entityId);
-    const paymentIds = recentLogs.filter(l => l.entityType === 'payment').map(l => l.entityId);
-    const expenseIds = recentLogs.filter(l => l.entityType === 'expense').map(l => l.entityId);
-    const customerEntityIds = recentLogs.filter(l => l.entityType === 'customer').map(l => l.entityId);
+    const invoiceIds = [...new Set(recentLogs.filter((l) => l.entityType === 'invoice').map((l) => l.entityId))];
+    const paymentIds = [...new Set(recentLogs.filter((l) => l.entityType === 'payment').map((l) => l.entityId))];
+    const expenseIds = [...new Set(recentLogs.filter((l) => l.entityType === 'expense').map((l) => l.entityId))];
+    const customerEntityIds = [...new Set(recentLogs.filter((l) => l.entityType === 'customer').map((l) => l.entityId))];
 
     const [invoiceRows, paymentRows, expenseRows, customerRows] = await Promise.all([
         invoiceIds.length > 0
@@ -296,8 +378,16 @@ async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
                 .from(invoices).where(inArray(invoices.id, invoiceIds))
             : Promise.resolve([]),
         paymentIds.length > 0
-            ? db.select({ id: payments.id, payment_number: payments.payment_number, amount: payments.amount, customer_id: payments.customer_id })
-                .from(payments).where(inArray(payments.id, paymentIds))
+            ? db
+                .select({
+                    id: payments.id,
+                    payment_number: payments.payment_number,
+                    amount: payments.amount,
+                    customer_name: customers.name
+                })
+                .from(payments)
+                .leftJoin(customers, eq(payments.customer_id, customers.id))
+                .where(inArray(payments.id, paymentIds))
             : Promise.resolve([]),
         expenseIds.length > 0
             ? db.select({ id: expenses.id, expense_number: expenses.expense_number, total: expenses.total })
@@ -309,18 +399,11 @@ async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
             : Promise.resolve([])
     ]);
 
-    // Also fetch customer names for payments
-    const paymentCustomerIds = paymentRows.map(p => p.customer_id).filter(Boolean);
-    const paymentCustomerRows = paymentCustomerIds.length > 0
-        ? await db.select({ id: customers.id, name: customers.name })
-            .from(customers).where(inArray(customers.id, paymentCustomerIds))
-        : [];
-
     // Build lookup maps
     const invoiceMap = new Map(invoiceRows.map(r => [r.id, r]));
     const paymentMap = new Map(paymentRows.map(r => [r.id, r]));
     const expenseMap = new Map(expenseRows.map(r => [r.id, r]));
-    const customerMap = new Map([...customerRows, ...paymentCustomerRows].map(r => [r.id, r]));
+    const customerMap = new Map(customerRows.map(r => [r.id, r]));
 
     return recentLogs.map(log => {
         let description = formatActivityDescription(log.action, log.entityType);
@@ -335,8 +418,7 @@ async function getRecentActivity(orgId: string): Promise<RecentActivityItem[]> {
         } else if (log.entityType === 'payment') {
             const pay = paymentMap.get(log.entityId);
             if (pay) {
-                const cust = customerMap.get(pay.customer_id);
-                description = `Payment received from ${cust?.name || 'Customer'}`;
+                description = `Payment received from ${pay.customer_name || 'Customer'}`;
                 amount = pay.amount;
             }
         } else if (log.entityType === 'expense') {

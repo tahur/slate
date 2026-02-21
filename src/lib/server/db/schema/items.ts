@@ -1,9 +1,9 @@
-import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, numeric, boolean, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
 
-export const items = sqliteTable(
+export const items = pgTable(
     'items',
     {
         id: text('id').primaryKey(),
@@ -23,19 +23,19 @@ export const items = sqliteTable(
 
         // Tax
         hsn_code: text('hsn_code'),
-        gst_rate: real('gst_rate').default(18).notNull(),
+        gst_rate: numeric('gst_rate', { precision: 14, scale: 4, mode: 'number' }).default(18).notNull(),
 
         // Pricing
-        rate: real('rate').default(0).notNull(),
+        rate: numeric('rate', { precision: 14, scale: 4, mode: 'number' }).default(0).notNull(),
         unit: text('unit').default('nos'),
-        min_quantity: real('min_quantity').default(1).notNull(),
+        min_quantity: numeric('min_quantity', { precision: 14, scale: 4, mode: 'number' }).default(1).notNull(),
 
         // Status
-        is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
+        is_active: boolean('is_active').default(true).notNull(),
 
         // Audit
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-        updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
+        updated_at: text('updated_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id),
         updated_by: text('updated_by').references(() => users.id)
     },

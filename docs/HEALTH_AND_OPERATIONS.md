@@ -29,10 +29,9 @@ curl -s http://localhost:5173/api/health
 ## 2. Startup Checks
 
 Startup checks run from `src/lib/server/db/index.ts` and validate:
-1. SQLite journal mode is WAL
-2. foreign key enforcement is ON
-3. `PRAGMA quick_check` returns `ok`
-4. DB ping query succeeds
+1. Postgres client is initialized with required runtime settings
+2. startup ping query succeeds
+3. startup snapshot captures connection state
 
 If any check fails, startup throws and service should not continue.
 
@@ -84,8 +83,8 @@ node scripts/verify-backup-restore.mjs
 ```
 
 This drill verifies:
-1. backup artifact creation
-2. integrity check success
+1. logical backup copy simulation
+2. restore simulation success
 3. restored DB read consistency
 
 ## 7. Operational Incident Checklist

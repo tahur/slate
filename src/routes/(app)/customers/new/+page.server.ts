@@ -33,7 +33,7 @@ export const actions: Actions = {
             const data = form.data;
             const customerId = crypto.randomUUID();
 
-            db.insert(customers).values({
+            await db.insert(customers).values({
                 id: customerId,
                 org_id: event.locals.user.orgId,
                 name: data.name,
@@ -52,7 +52,7 @@ export const actions: Actions = {
                 status: 'active',
                 created_by: event.locals.user.id,
                 updated_by: event.locals.user.id,
-            }).run();
+            });
 
         } catch (error) {
             return failActionFromError(error, 'Customer creation failed', { form });

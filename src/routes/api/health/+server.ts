@@ -1,15 +1,16 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getStartupCheckSnapshot, sqlite } from '$lib/server/db';
+import { db, getStartupCheckSnapshot } from '$lib/server/db';
 import { getReportCacheStats, logger } from '$lib/server/platform/observability';
+import { sql } from 'drizzle-orm';
 
 const serviceStartedAt = Date.now();
 
-function pingDatabase() {
+async function pingDatabase() {
     const started = Date.now();
     try {
-        const row = sqlite.prepare('SELECT 1 as ok').get() as { ok?: number } | undefined;
+        await db.execute(sql`SELECT 1 as ok`);
         return {
-            ok: row?.ok === 1,
+            ok: true,
             latencyMs: Date.now() - started
         };
     } catch (error) {
@@ -22,9 +23,9 @@ function pingDatabase() {
 }
 
 export const GET: RequestHandler = async ({ locals }) => {
-    const dbPing = pingDatabase();
+    const dbPing = await pingDatabase();
     const startup = getStartupCheckSnapshot();
-    const healthy = dbPing.ok && startup.foreignKeysEnabled && startup.quickCheck.toLowerCase() === 'ok';
+    const healthy = dbPing.ok && startup.connectionOk;
     const status = healthy ? 200 : 503;
     const reportCache = getReportCacheStats();
 

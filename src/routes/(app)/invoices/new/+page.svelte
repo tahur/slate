@@ -752,7 +752,7 @@
     <!-- Bottom Action Bar -->
     <div class="action-bar">
         <div class="flex items-center gap-4 text-sm mr-4 pr-4 border-r border-border">
-            <Tooltip.Root openDelay={100}>
+            <Tooltip.Root delayDuration={100}>
                 <Tooltip.Trigger>
                     <span class="inline-flex items-center gap-1.5 text-text-muted cursor-help">
                         <span>GST</span>

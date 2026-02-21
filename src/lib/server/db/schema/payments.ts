@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, index, unique, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, numeric, index, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { customers } from './customers';
@@ -6,7 +6,7 @@ import { users } from './users';
 import { journal_entries } from './journals';
 import { invoices } from './invoices';
 
-export const payments = sqliteTable(
+export const payments = pgTable(
     'payments',
     {
         id: text('id').primaryKey(),
@@ -22,7 +22,7 @@ export const payments = sqliteTable(
 
         // Details
         payment_date: text('payment_date').notNull(),
-        amount: real('amount').notNull(),
+        amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(),
         payment_mode: text('payment_mode').notNull(), // cash, bank, upi, cheque
         reference: text('reference'), // Cheque no, UTR, etc.
         notes: text('notes'),
@@ -37,7 +37,7 @@ export const payments = sqliteTable(
         idempotency_key: text('idempotency_key'),
 
         // Audit
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id)
     },
     (t) => ({
@@ -49,7 +49,7 @@ export const payments = sqliteTable(
     })
 );
 
-export const payment_allocations = sqliteTable(
+export const payment_allocations = pgTable(
     'payment_allocations',
     {
         id: text('id').primaryKey(),
@@ -59,8 +59,8 @@ export const payment_allocations = sqliteTable(
         invoice_id: text('invoice_id')
             .notNull()
             .references(() => invoices.id),
-        amount: real('amount').notNull(),
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+        amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+        created_at: text('created_at').default(sql`NOW()::text`)
     },
     (t) => ({
         paymentIdx: index('idx_pa_payment').on(t.payment_id),
@@ -68,7 +68,7 @@ export const payment_allocations = sqliteTable(
     })
 );
 
-export const customer_advances = sqliteTable(
+export const customer_advances = pgTable(
     'customer_advances',
     {
         id: text('id').primaryKey(),
@@ -80,12 +80,12 @@ export const customer_advances = sqliteTable(
             .references(() => customers.id),
         payment_id: text('payment_id').references(() => payments.id), // Source payment
 
-        amount: real('amount').notNull(),
-        balance: real('balance').notNull(), // Remaining unapplied amount
+        amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+        balance: numeric('balance', { precision: 14, scale: 2, mode: 'number' }).notNull(), // Remaining unapplied amount
 
         notes: text('notes'),
 
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+        created_at: text('created_at').default(sql`NOW()::text`)
     },
     (t) => ({
         custIdx: index('idx_advances_customer').on(t.org_id, t.customer_id)

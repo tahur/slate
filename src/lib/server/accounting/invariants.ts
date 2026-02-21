@@ -324,24 +324,18 @@ export async function verifyEntryTotalsMatchLines(orgId: string): Promise<{
     errors: { entryId: string; storedDebit: number; calculatedDebit: number; storedCredit: number; calculatedCredit: number }[];
 }> {
     // Get entries with calculated line totals
-    const result = await db.all<{
-        id: string;
-        total_debit: number;
-        total_credit: number;
-        line_debit: number;
-        line_credit: number;
-    }>(sql`
-        SELECT
-            je.id,
-            je.total_debit,
-            je.total_credit,
-            COALESCE(SUM(jl.debit), 0) as line_debit,
-            COALESCE(SUM(jl.credit), 0) as line_credit
-        FROM journal_entries je
-        LEFT JOIN journal_lines jl ON jl.journal_entry_id = je.id
-        WHERE je.org_id = ${orgId}
-        GROUP BY je.id
-    `);
+    const result = await db
+        .select({
+            id: journal_entries.id,
+            total_debit: journal_entries.total_debit,
+            total_credit: journal_entries.total_credit,
+            line_debit: sql<number>`COALESCE(SUM(${journal_lines.debit}), 0)::double precision`,
+            line_credit: sql<number>`COALESCE(SUM(${journal_lines.credit}), 0)::double precision`
+        })
+        .from(journal_entries)
+        .leftJoin(journal_lines, eq(journal_lines.journal_entry_id, journal_entries.id))
+        .where(eq(journal_entries.org_id, orgId))
+        .groupBy(journal_entries.id, journal_entries.total_debit, journal_entries.total_credit);
 
     const errors: { entryId: string; storedDebit: number; calculatedDebit: number; storedCredit: number; calculatedCredit: number }[] = [];
 

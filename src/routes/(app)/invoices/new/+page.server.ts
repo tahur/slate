@@ -13,7 +13,7 @@ import { setFlash } from '$lib/server/flash';
 import { logActivity } from '$lib/server/services';
 import { peekNextNumber } from '$lib/server/services/number-series';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
-import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/sqlite-errors';
+import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/db-errors';
 import { runInTx } from '$lib/server/platform/db/tx';
 import { failActionFromError } from '$lib/server/platform/errors';
 import {
@@ -31,49 +31,47 @@ export const load: PageServerLoad = async ({ locals }) => {
 
     const orgId = locals.user.orgId;
 
-    // Fetch customers for dropdown
-    const customerList = await db.query.customers.findMany({
-        where: eq(customers.org_id, orgId),
-        columns: {
-            id: true,
-            name: true,
-            company_name: true,
-            email: true,
-            phone: true,
-            billing_address: true,
-            city: true,
-            state_code: true,
-            pincode: true,
-            gstin: true,
-            gst_treatment: true
-        },
-    });
-
-    // Fetch org state for GST calculation
-    const org = await db.query.organizations.findFirst({
-        where: eq(organizations.id, orgId),
-        columns: { state_code: true, pricesIncludeGst: true },
-    });
-
-    // Fetch active catalog items
-    const catalogItems = await db
-        .select({
-            id: items.id,
-            type: items.type,
-            name: items.name,
-            description: items.description,
-            hsn_code: items.hsn_code,
-            gst_rate: items.gst_rate,
-            rate: items.rate,
-            unit: items.unit,
-        })
-        .from(items)
-        .where(and(eq(items.org_id, orgId), eq(items.is_active, true)));
-
     // Default dates (local timezone)
     const today = localDateStr();
     const dueDate = localDateStr(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-    const autoInvoiceNumber = await peekNextNumber(orgId, 'invoice');
+
+    // Fetch all data in parallel
+    const [customerList, org, catalogItems, autoInvoiceNumber] = await Promise.all([
+        db.query.customers.findMany({
+            where: eq(customers.org_id, orgId),
+            columns: {
+                id: true,
+                name: true,
+                company_name: true,
+                email: true,
+                phone: true,
+                billing_address: true,
+                city: true,
+                state_code: true,
+                pincode: true,
+                gstin: true,
+                gst_treatment: true
+            },
+        }),
+        db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId),
+            columns: { state_code: true, pricesIncludeGst: true },
+        }),
+        db
+            .select({
+                id: items.id,
+                type: items.type,
+                name: items.name,
+                description: items.description,
+                hsn_code: items.hsn_code,
+                gst_rate: items.gst_rate,
+                rate: items.rate,
+                unit: items.unit,
+            })
+            .from(items)
+            .where(and(eq(items.org_id, orgId), eq(items.is_active, true))),
+        peekNextNumber(orgId, 'invoice')
+    ]);
 
     // Generate idempotency key to prevent duplicate submissions
     const idempotencyKey = generateIdempotencyKey();
@@ -152,8 +150,8 @@ export const actions: Actions = {
         let createdTotal = 0;
 
         try {
-            runInTx((tx) => {
-                const result = createInvoiceInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await createInvoiceInTx(tx, {
                     orgId,
                     userId,
                     customerId: customer_id,
@@ -176,7 +174,7 @@ export const actions: Actions = {
             });
 
             // Log activity (outside transaction — non-critical, fire-and-forget)
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId,
                 entityType: 'invoice',

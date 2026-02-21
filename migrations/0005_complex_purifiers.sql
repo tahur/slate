@@ -1,1 +1,0 @@
-ALTER TABLE `items` ADD `min_quantity` real DEFAULT 1 NOT NULL;

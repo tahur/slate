@@ -70,7 +70,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         gst_treatment: vendor.gst_treatment as 'registered' | 'unregistered' | 'composition' | 'overseas',
         pan: vendor.pan || '',
         payment_terms: vendor.payment_terms || 30,
-        tds_applicable: vendor.tds_applicable === 1,
+        tds_applicable: vendor.tds_applicable === true,
         tds_section: vendor.tds_section || '',
         notes: vendor.notes || '',
     }, zod(vendorSchema));
@@ -103,7 +103,7 @@ export const actions: Actions = {
         try {
             const data = form.data;
 
-            db.update(vendors)
+            await db.update(vendors)
                 .set({
                     name: data.name,
                     company_name: data.company_name || null,
@@ -119,7 +119,7 @@ export const actions: Actions = {
                     gst_treatment: data.gst_treatment,
                     pan: data.pan || null,
                     payment_terms: data.payment_terms,
-                    tds_applicable: data.tds_applicable ? 1 : 0,
+                    tds_applicable: data.tds_applicable,
                     tds_section: data.tds_section || null,
                     notes: data.notes || null,
                     updated_by: event.locals.user.id,
@@ -128,8 +128,7 @@ export const actions: Actions = {
                 .where(and(
                     eq(vendors.id, event.params.id),
                     eq(vendors.org_id, event.locals.user.orgId)
-                ))
-                .run();
+                ));
 
             return { form, success: true };
         } catch (error) {

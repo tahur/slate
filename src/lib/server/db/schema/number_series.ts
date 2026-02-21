@@ -1,7 +1,7 @@
-import { sqliteTable, text, integer, unique } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, boolean, unique } from 'drizzle-orm/pg-core';
 import { organizations } from './organizations';
 
-export const number_series = sqliteTable(
+export const number_series = pgTable(
     'number_series',
     {
         id: text('id').primaryKey(),
@@ -12,7 +12,7 @@ export const number_series = sqliteTable(
         prefix: text('prefix').notNull(), // INV, PAY, EXP, JE
         current_number: integer('current_number').default(0),
         fy_year: text('fy_year').notNull(), // 2025-26
-        reset_on_fy: integer('reset_on_fy', { mode: 'boolean' }).default(true)
+        reset_on_fy: boolean('reset_on_fy').default(true)
     },
     (t) => ({
         unq: unique().on(t.org_id, t.module, t.fy_year)

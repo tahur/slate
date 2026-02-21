@@ -51,22 +51,14 @@ for (const absPath of files) {
         }
     }
 
-    const asyncPattern = /\.transaction\s*\(\s*async\b/g;
-    for (const match of content.matchAll(asyncPattern)) {
-        pushViolation(
-            relPath,
-            lineNumberForIndex(content, match.index ?? 0),
-            'Async transaction callback detected. better-sqlite3 transactions must be synchronous.'
-        );
-    }
 }
 
 if (failures.length > 0) {
-    console.error('Sync transaction guard failed:\n');
+    console.error('Transaction wrapper guard failed:\n');
     for (const failure of failures) {
         console.error(`- ${failure}`);
     }
     process.exit(1);
 }
 
-console.log('Sync transaction guard passed.');
+console.log('Transaction wrapper guard passed.');

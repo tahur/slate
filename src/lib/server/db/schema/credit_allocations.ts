@@ -1,11 +1,11 @@
-import { sqliteTable, text, real, index, check } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, numeric, index, check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { invoices } from './invoices';
 import { credit_notes } from './credit_notes';
 import { customer_advances } from './payments';
 
-export const credit_allocations = sqliteTable(
+export const credit_allocations = pgTable(
     'credit_allocations',
     {
         id: text('id').primaryKey(),
@@ -22,9 +22,9 @@ export const credit_allocations = sqliteTable(
         credit_note_id: text('credit_note_id').references(() => credit_notes.id),
         advance_id: text('advance_id').references(() => customer_advances.id),
 
-        amount: real('amount').notNull(),
+        amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(),
 
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+        created_at: text('created_at').default(sql`NOW()::text`)
     },
     (t) => ({
         invoiceIdx: index('idx_ca_invoice').on(t.invoice_id),

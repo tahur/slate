@@ -39,33 +39,29 @@ export const load: PageServerLoad = async ({ locals }) => {
         redirect(302, '/login');
     }
 
-    const nextSku = await generateNextSku(locals.user.orgId);
-
-    // Remember last used unit
-    const [lastItem] = db
-        .select({ unit: items.unit })
-        .from(items)
-        .where(eq(items.org_id, locals.user.orgId))
-        .orderBy(desc(items.created_at))
-        .limit(1)
-        .all();
-
-    const lastUsedUnit = lastItem?.unit || 'nos';
-    const form = await superValidate({ unit: lastUsedUnit }, zod(itemSchema));
-
-    // Fetch previously used HSN codes for this org
-    const usedHsnRecords = db
-        .select({ hsn_code: items.hsn_code })
-        .from(items)
-        .where(
-            and(
-                eq(items.org_id, locals.user.orgId),
-                isNotNull(items.hsn_code),
-                ne(items.hsn_code, '')
+    const [nextSku, lastItemResult, usedHsnRecords] = await Promise.all([
+        generateNextSku(locals.user.orgId),
+        db
+            .select({ unit: items.unit })
+            .from(items)
+            .where(eq(items.org_id, locals.user.orgId))
+            .orderBy(desc(items.created_at))
+            .limit(1),
+        db
+            .select({ hsn_code: items.hsn_code })
+            .from(items)
+            .where(
+                and(
+                    eq(items.org_id, locals.user.orgId),
+                    isNotNull(items.hsn_code),
+                    ne(items.hsn_code, '')
+                )
             )
-        )
-        .groupBy(items.hsn_code)
-        .all();
+            .groupBy(items.hsn_code)
+    ]);
+
+    const lastUsedUnit = lastItemResult[0]?.unit || 'nos';
+    const form = await superValidate({ unit: lastUsedUnit }, zod(itemSchema));
     const usedHsnCodes = usedHsnRecords.map(r => r.hsn_code as string);
 
     return { form, nextSku, lastUsedUnit, usedHsnCodes };
@@ -93,7 +89,7 @@ export const actions: Actions = {
 
             const itemId = crypto.randomUUID();
 
-            db.insert(items).values({
+            await db.insert(items).values({
                 id: itemId,
                 org_id: event.locals.user.orgId,
                 type: data.type,
@@ -108,9 +104,9 @@ export const actions: Actions = {
                 is_active: true,
                 created_by: event.locals.user.id,
                 updated_by: event.locals.user.id,
-            }).run();
+            });
 
-            await logActivity({
+            void logActivity({
                 orgId: event.locals.user.orgId,
                 userId: event.locals.user.id,
                 entityType: 'item',

@@ -1,7 +1,7 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-export const organizations = sqliteTable('organizations', {
+export const organizations = pgTable('organizations', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
     address: text('address'),
@@ -29,10 +29,10 @@ export const organizations = sqliteTable('organizations', {
     signature_url: text('signature_url'),
 
     // GST Pricing
-    pricesIncludeGst: integer('prices_include_gst', { mode: 'boolean' }).default(false),
+    pricesIncludeGst: boolean('prices_include_gst').default(false),
 
-    created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-    updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`)
+    created_at: text('created_at').default(sql`NOW()::text`),
+    updated_at: text('updated_at').default(sql`NOW()::text`)
 });
 
 export type Organization = typeof organizations.$inferSelect;

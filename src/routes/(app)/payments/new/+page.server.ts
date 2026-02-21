@@ -5,7 +5,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
-import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/sqlite-errors';
+import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/db-errors';
 import { round2 } from '$lib/utils/currency';
 import { failActionFromError } from '$lib/server/platform/errors';
 import {
@@ -30,13 +30,15 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const orgId = locals.user.orgId;
 
     // Auto-seed payment modes for existing orgs
-    if (!hasPaymentModes(orgId)) {
-        seedPaymentModes(orgId);
+    if (!(await hasPaymentModes(orgId))) {
+        await seedPaymentModes(orgId);
     }
 
-    const customerList = await listPaymentCustomers(orgId);
-    const depositAccounts = await listDepositAccounts(orgId);
-    const paymentModes = await listActivePaymentModes(orgId);
+    const [customerList, depositAccounts, paymentModes] = await Promise.all([
+        listPaymentCustomers(orgId),
+        listDepositAccounts(orgId),
+        listActivePaymentModes(orgId)
+    ]);
 
     // Check if a customer is pre-selected (from invoice page)
     const customerId = url.searchParams.get('customer');
@@ -123,8 +125,8 @@ export const actions: Actions = {
         let paymentNumber = '';
 
         try {
-            runInTx((tx) => {
-                const result = createCustomerPaymentInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await createCustomerPaymentInTx(tx, {
                     orgId,
                     userId: locals.user!.id,
                     customerId: customer_id,
@@ -141,7 +143,7 @@ export const actions: Actions = {
                 paymentNumber = result.paymentNumber;
             });
 
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'payment',

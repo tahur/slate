@@ -33,7 +33,7 @@ export const actions: Actions = {
         const id = crypto.randomUUID();
 
         try {
-            db.insert(vendors).values({
+            await db.insert(vendors).values({
                 id,
                 org_id: event.locals.user.orgId,
                 name: data.name,
@@ -50,11 +50,11 @@ export const actions: Actions = {
                 gst_treatment: data.gst_treatment,
                 pan: data.pan || null,
                 payment_terms: data.payment_terms,
-                tds_applicable: data.tds_applicable ? 1 : 0,
+                tds_applicable: data.tds_applicable,
                 tds_section: data.tds_section || null,
                 notes: data.notes || null,
                 created_by: event.locals.user.id,
-            }).run();
+            });
         } catch (error) {
             return failActionFromError(error, 'Vendor creation failed', { form });
         }

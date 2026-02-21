@@ -25,7 +25,7 @@ async function readText(relPath) {
 function runGuardrails() {
     const txGuard = runCommand('node', ['scripts/check-sync-transactions.mjs']);
     if (txGuard.status !== 0) {
-        failures.push(`Sync transaction guard failed.\nSTDOUT:\n${txGuard.stdout}\nSTDERR:\n${txGuard.stderr}`);
+        failures.push(`Transaction wrapper guard failed.\nSTDOUT:\n${txGuard.stdout}\nSTDERR:\n${txGuard.stderr}`);
     }
 
     const integrityGuard = runCommand('node', ['scripts/check-integrity.mjs']);
@@ -37,8 +37,9 @@ function runGuardrails() {
 async function runStaticChecks() {
     const txWrapper = await readText('src/lib/server/platform/db/tx.ts');
     assertCondition(
-        txWrapper.includes('assertSyncTxResult') && txWrapper.includes('Transaction callback must be synchronous'),
-        'Transaction wrapper must enforce sync callback policy'
+        txWrapper.includes('type TxCallback<T> = (tx: Tx) => Promise<T>')
+            && txWrapper.includes('db.transaction(async (tx) => callback(tx))'),
+        'Transaction wrapper must enforce async Promise-based callback policy'
     );
 
     const postingEngine = await readText('src/lib/server/services/posting-engine.ts');

@@ -19,7 +19,7 @@ export type OpenCustomerInvoiceRow = {
     balance_due: number;
 };
 
-export function findAvailableAdvanceInTx(
+export async function findAvailableAdvanceInTx(
     tx: Tx,
     orgId: string,
     customerId: string,
@@ -33,10 +33,10 @@ export function findAvailableAdvanceInTx(
             eq(customer_advances.customer_id, customerId),
             gt(customer_advances.balance, epsilon)
         )
-    }).sync();
+    });
 }
 
-export function findAvailableCreditNoteInTx(
+export async function findAvailableCreditNoteInTx(
     tx: Tx,
     orgId: string,
     customerId: string,
@@ -51,18 +51,22 @@ export function findAvailableCreditNoteInTx(
             eq(credit_notes.status, 'issued'),
             gt(credit_notes.balance, epsilon)
         )
-    }).sync();
+    });
 }
 
-export function findDepositAccountForModeInTx(tx: Tx, orgId: string, paymentMode: string) {
+export async function findDepositAccountForModeInTx(tx: Tx, orgId: string, paymentMode: string) {
     const accountCode = paymentMode === 'cash' ? '1000' : '1100';
 
     return tx.query.accounts.findFirst({
         where: and(eq(accounts.account_code, accountCode), eq(accounts.org_id, orgId))
-    }).sync();
+    });
 }
 
-export function findInvoiceForSettlementInTx(tx: Tx, orgId: string, invoiceId: string): InvoiceSettlementRow | undefined {
+export async function findInvoiceForSettlementInTx(
+    tx: Tx,
+    orgId: string,
+    invoiceId: string
+): Promise<InvoiceSettlementRow | undefined> {
     return tx.query.invoices.findFirst({
         where: and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId)),
         columns: {
@@ -73,27 +77,27 @@ export function findInvoiceForSettlementInTx(tx: Tx, orgId: string, invoiceId: s
             balance_due: true,
             status: true
         }
-    }).sync();
+    });
 }
 
-export function findCustomerInOrgInTx(tx: Tx, orgId: string, customerId: string) {
+export async function findCustomerInOrgInTx(tx: Tx, orgId: string, customerId: string) {
     return tx.query.customers.findFirst({
         where: and(eq(customers.id, customerId), eq(customers.org_id, orgId))
-    }).sync();
+    });
 }
 
-export function findDepositAccountByIdInTx(tx: Tx, orgId: string, accountId: string) {
+export async function findDepositAccountByIdInTx(tx: Tx, orgId: string, accountId: string) {
     return tx.query.accounts.findFirst({
         where: and(eq(accounts.id, accountId), eq(accounts.org_id, orgId))
-    }).sync();
+    });
 }
 
-export function findOpenInvoicesByIdsInTx(
+export async function findOpenInvoicesByIdsInTx(
     tx: Tx,
     orgId: string,
     customerId: string,
     invoiceIds: string[]
-): OpenCustomerInvoiceRow[] {
+): Promise<OpenCustomerInvoiceRow[]> {
     if (invoiceIds.length === 0) {
         return [];
     }
@@ -115,11 +119,10 @@ export function findOpenInvoicesByIdsInTx(
                 ne(invoices.status, 'cancelled'),
                 ne(invoices.status, 'draft')
             )
-        )
-        .all();
+        );
 }
 
-export function setInvoiceSettlementStateInTx(
+export async function setInvoiceSettlementStateInTx(
     tx: Tx,
     invoiceId: string,
     invoiceTotal: number,
@@ -131,7 +134,7 @@ export function setInvoiceSettlementStateInTx(
     const normalizedAmountPaid = round2(invoiceTotal - normalizedBalanceDue);
     const newStatus = normalizedBalanceDue <= epsilon ? 'paid' : 'partially_paid';
 
-    tx
+    await tx
         .update(invoices)
         .set({
             amount_paid: normalizedAmountPaid,
@@ -139,8 +142,7 @@ export function setInvoiceSettlementStateInTx(
             status: newStatus,
             updated_at: nowIso
         })
-        .where(eq(invoices.id, invoiceId))
-        .run();
+        .where(eq(invoices.id, invoiceId));
 
     return {
         amountPaid: normalizedAmountPaid,
@@ -149,19 +151,18 @@ export function setInvoiceSettlementStateInTx(
     };
 }
 
-export function decreaseCustomerBalanceInTx(tx: Tx, customerId: string, amount: number, nowIso: string) {
-    tx
+export async function decreaseCustomerBalanceInTx(tx: Tx, customerId: string, amount: number, nowIso: string) {
+    await tx
         .update(customers)
         .set({
             balance: sql`${customers.balance} - ${amount}`,
             updated_at: nowIso
         })
-        .where(eq(customers.id, customerId))
-        .run();
+        .where(eq(customers.id, customerId));
 }
 
 export async function listPaymentCustomers(orgId: string) {
-    return db
+    return await db
         .select({
             id: customers.id,
             name: customers.name,
@@ -174,7 +175,7 @@ export async function listPaymentCustomers(orgId: string) {
 }
 
 export async function listDepositAccounts(orgId: string) {
-    return db
+    return await db
         .select({
             id: accounts.id,
             name: accounts.account_name,
@@ -185,7 +186,7 @@ export async function listDepositAccounts(orgId: string) {
 }
 
 export async function listActivePaymentModes(orgId: string) {
-    return db
+    return await db
         .select({
             id: payment_modes.id,
             mode_key: payment_modes.mode_key,
@@ -199,7 +200,7 @@ export async function listActivePaymentModes(orgId: string) {
 }
 
 export async function listUnpaidCustomerInvoices(orgId: string, customerId: string) {
-    return db
+    return await db
         .select({
             id: invoices.id,
             invoice_number: invoices.invoice_number,

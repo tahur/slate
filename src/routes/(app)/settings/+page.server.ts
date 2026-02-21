@@ -100,12 +100,12 @@ export const load: PageServerLoad = async ({ locals }) => {
         );
 
         // Auto-seed payment modes for existing orgs
-        if (!hasPaymentModes(orgId)) {
-            seedPaymentModes(orgId);
+        if (!(await hasPaymentModes(orgId))) {
+            await seedPaymentModes(orgId);
         }
 
         // Load payment modes with linked account names
-        const paymentModesList = db
+        const paymentModesList = await db
             .select({
                 id: payment_modes.id,
                 mode_key: payment_modes.mode_key,
@@ -119,8 +119,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             .from(payment_modes)
             .leftJoin(accounts, eq(payment_modes.linked_account_id, accounts.id))
             .where(eq(payment_modes.org_id, orgId))
-            .orderBy(payment_modes.sort_order)
-            .all();
+            .orderBy(payment_modes.sort_order);
 
         const depositAccounts = await listDepositAccounts(orgId);
 
@@ -172,7 +171,7 @@ export const actions: Actions = {
             return fail(400, { form });
         }
 
-        db
+        await db
             .update(organizations)
             .set({
                 name: form.data.name,
@@ -198,8 +197,7 @@ export const actions: Actions = {
                 pricesIncludeGst: form.data.prices_include_gst,
                 updated_at: new Date().toISOString()
             } as any)
-            .where(eq(organizations.id, locals.user.orgId))
-            .run();
+            .where(eq(organizations.id, locals.user.orgId));
 
         setFlash(cookies, {
             type: 'success',
@@ -222,15 +220,14 @@ export const actions: Actions = {
         }
 
         try {
-            db
+            await db
                 .update(users)
                 .set({
                     name: form.data.name,
                     email: form.data.email,
                     updatedAt: new Date()
                 })
-                .where(eq(users.id, locals.user.id))
-                .run();
+                .where(eq(users.id, locals.user.id));
         } catch (error) {
             return failActionFromError(error, 'Profile update failed', { form });
         }
@@ -276,13 +273,12 @@ export const actions: Actions = {
             });
 
             if (existing) {
-                db
+                await db
                     .update(number_series)
                     .set({ prefix: entry.prefix })
-                    .where(eq(number_series.id, existing.id))
-                    .run();
+                    .where(eq(number_series.id, existing.id));
             } else {
-                db.insert(number_series).values({
+                await db.insert(number_series).values({
                     id: crypto.randomUUID(),
                     org_id: orgId,
                     module: entry.module,
@@ -290,7 +286,7 @@ export const actions: Actions = {
                     fy_year: fy,
                     current_number: 0,
                     reset_on_fy: true
-                }).run();
+                });
             }
         }
 
@@ -324,7 +320,7 @@ export const actions: Actions = {
             });
 
             if (existing) {
-                db
+                await db
                     .update(app_settings)
                     .set({
                         smtp_host: form.data.smtp_host,
@@ -336,10 +332,9 @@ export const actions: Actions = {
                         smtp_enabled: true,
                         updated_at: new Date().toISOString()
                     })
-                    .where(eq(app_settings.id, existing.id))
-                    .run();
+                    .where(eq(app_settings.id, existing.id));
             } else {
-                db.insert(app_settings).values({
+                await db.insert(app_settings).values({
                     id: crypto.randomUUID(),
                     org_id: orgId,
                     smtp_host: form.data.smtp_host,
@@ -349,7 +344,7 @@ export const actions: Actions = {
                     smtp_from: form.data.smtp_from || form.data.smtp_user,
                     smtp_secure: form.data.smtp_secure,
                     smtp_enabled: true
-                }).run();
+                });
             }
 
             setFlash(cookies, {
@@ -395,14 +390,13 @@ export const actions: Actions = {
 
         const orgId = locals.user.orgId;
 
-        db
+        await db
             .update(app_settings)
             .set({
                 smtp_enabled: false,
                 updated_at: new Date().toISOString()
             })
-            .where(eq(app_settings.org_id, orgId))
-            .run();
+            .where(eq(app_settings.org_id, orgId));
 
         setFlash(cookies, {
             type: 'success',
@@ -430,15 +424,14 @@ export const actions: Actions = {
         const mode_key = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
         // Get max sort_order
-        const maxOrder = db
+        const maxOrder = await db
             .select({ sort_order: payment_modes.sort_order })
             .from(payment_modes)
             .where(eq(payment_modes.org_id, orgId))
-            .orderBy(payment_modes.sort_order)
-            .all();
+            .orderBy(payment_modes.sort_order);
         const nextOrder = (maxOrder.length > 0 ? Math.max(...maxOrder.map(r => r.sort_order || 0)) : 0) + 1;
 
-        db.insert(payment_modes).values({
+        await db.insert(payment_modes).values({
             id: crypto.randomUUID(),
             org_id: orgId,
             mode_key,
@@ -447,7 +440,7 @@ export const actions: Actions = {
             is_default: false,
             sort_order: nextOrder,
             is_active: true
-        }).run();
+        });
 
         setFlash(cookies, {
             type: 'success',
@@ -474,14 +467,13 @@ export const actions: Actions = {
 
         const mode_key = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-        db.update(payment_modes)
+        await db.update(payment_modes)
             .set({
                 label,
                 mode_key,
                 linked_account_id: linked_account_id || null
             })
-            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)))
-            .run();
+            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)));
 
         setFlash(cookies, {
             type: 'success',
@@ -505,21 +497,20 @@ export const actions: Actions = {
         }
 
         // Prevent deleting the last active mode
-        const activeCount = db
+        const activeCount = await db
             .select({ id: payment_modes.id })
             .from(payment_modes)
             .where(and(eq(payment_modes.org_id, orgId), eq(payment_modes.is_active, true)))
-            .all();
+            ;
 
         if (activeCount.length <= 1) {
             return fail(400, { error: 'Cannot delete the last active payment mode' });
         }
 
         // Soft-delete
-        db.update(payment_modes)
+        await db.update(payment_modes)
             .set({ is_active: false })
-            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)))
-            .run();
+            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)));
 
         setFlash(cookies, {
             type: 'success',
@@ -543,15 +534,13 @@ export const actions: Actions = {
         }
 
         // Unset all defaults, then set the chosen one
-        db.update(payment_modes)
+        await db.update(payment_modes)
             .set({ is_default: false })
-            .where(eq(payment_modes.org_id, orgId))
-            .run();
+            .where(eq(payment_modes.org_id, orgId));
 
-        db.update(payment_modes)
+        await db.update(payment_modes)
             .set({ is_default: true })
-            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)))
-            .run();
+            .where(and(eq(payment_modes.id, id), eq(payment_modes.org_id, orgId)));
 
         setFlash(cookies, {
             type: 'success',

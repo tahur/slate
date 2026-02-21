@@ -134,10 +134,10 @@ interface ApplyRequestedCreditsInTxResult {
     remainingBalanceDue: number;
 }
 
-export function applyRequestedCreditsInTx(
+export async function applyRequestedCreditsInTx(
     tx: Tx,
     input: ApplyRequestedCreditsInTxInput
-): ApplyRequestedCreditsInTxResult {
+): Promise<ApplyRequestedCreditsInTxResult> {
     let currentBalanceDue = round2(input.startingBalanceDue);
     let totalApplied = 0;
 
@@ -145,7 +145,7 @@ export function applyRequestedCreditsInTx(
         if (currentBalanceDue <= MONEY_EPSILON) break;
 
         if (requested.type === 'advance') {
-            const advance = findAvailableAdvanceInTx(
+            const advance = await findAvailableAdvanceInTx(
                 tx,
                 input.orgId,
                 input.customerId,
@@ -165,7 +165,7 @@ export function applyRequestedCreditsInTx(
             const amountToApply = round2(Math.min(requested.amount, currentBalanceDue));
             if (amountToApply <= MONEY_EPSILON) continue;
 
-            tx.insert(credit_allocations).values({
+            await tx.insert(credit_allocations).values({
                 id: crypto.randomUUID(),
                 org_id: input.orgId,
                 credit_note_id: null,
@@ -173,21 +173,20 @@ export function applyRequestedCreditsInTx(
                 invoice_id: input.invoiceId,
                 amount: amountToApply,
                 created_at: new Date().toISOString()
-            }).run();
+            });
 
             const remaining = round2(available - amountToApply);
-            tx
+            await tx
                 .update(customer_advances)
                 .set({ balance: remaining })
-                .where(eq(customer_advances.id, advance.id))
-                .run();
+                .where(eq(customer_advances.id, advance.id));
 
             currentBalanceDue = round2(currentBalanceDue - amountToApply);
             totalApplied = round2(totalApplied + amountToApply);
             continue;
         }
 
-        const creditNote = findAvailableCreditNoteInTx(
+        const creditNote = await findAvailableCreditNoteInTx(
             tx,
             input.orgId,
             input.customerId,
@@ -207,7 +206,7 @@ export function applyRequestedCreditsInTx(
         const amountToApply = round2(Math.min(requested.amount, currentBalanceDue));
         if (amountToApply <= MONEY_EPSILON) continue;
 
-        tx.insert(credit_allocations).values({
+        await tx.insert(credit_allocations).values({
             id: crypto.randomUUID(),
             org_id: input.orgId,
             credit_note_id: creditNote.id,
@@ -215,17 +214,16 @@ export function applyRequestedCreditsInTx(
             invoice_id: input.invoiceId,
             amount: amountToApply,
             created_at: new Date().toISOString()
-        }).run();
+        });
 
         const remaining = round2(available - amountToApply);
-        tx
+        await tx
             .update(credit_notes)
             .set({
                 balance: remaining,
                 status: remaining <= MONEY_EPSILON ? 'applied' : 'issued'
             })
-            .where(eq(credit_notes.id, creditNote.id))
-            .run();
+            .where(eq(credit_notes.id, creditNote.id));
 
         currentBalanceDue = round2(currentBalanceDue - amountToApply);
         totalApplied = round2(totalApplied + amountToApply);
@@ -256,10 +254,10 @@ interface RecordInvoicePaymentInTxInput {
     reference?: string;
 }
 
-export function recordInvoicePaymentInTx(
+export async function recordInvoicePaymentInTx(
     tx: Tx,
     input: RecordInvoicePaymentInTxInput
-): { paymentNumber: string; paymentId: string } {
+): Promise<{ paymentNumber: string; paymentId: string }> {
     const amount = round2(input.amount);
 
     if (input.invoice.status === 'paid' || input.invoice.status === 'cancelled') {
@@ -272,16 +270,16 @@ export function recordInvoicePaymentInTx(
         throw new ValidationError('Amount exceeds balance due');
     }
 
-    const depositAccount = findDepositAccountForModeInTx(tx, input.orgId, input.paymentMode);
+    const depositAccount = await findDepositAccountForModeInTx(tx, input.orgId, input.paymentMode);
     if (!depositAccount) {
         throw new InvariantError('Deposit account is not configured');
     }
 
-    const paymentNumber = getNextNumberTx(tx, input.orgId, 'payment');
+    const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
     const paymentId = crypto.randomUUID();
     const paymentModeForPosting = input.paymentMode === 'cash' ? 'cash' : 'bank';
 
-    const postingResult = postPaymentReceipt(
+    const postingResult = await postPaymentReceipt(
         input.orgId,
         {
             paymentId,
@@ -295,7 +293,7 @@ export function recordInvoicePaymentInTx(
         tx
     );
 
-    tx.insert(payments).values({
+    await tx.insert(payments).values({
         id: paymentId,
         org_id: input.orgId,
         customer_id: input.invoice.customer_id,
@@ -307,20 +305,20 @@ export function recordInvoicePaymentInTx(
         reference: input.reference || '',
         journal_entry_id: postingResult.journalEntryId,
         created_by: input.userId
-    }).run();
+    });
 
-    tx.insert(payment_allocations).values({
+    await tx.insert(payment_allocations).values({
         id: crypto.randomUUID(),
         payment_id: paymentId,
         invoice_id: input.invoice.id,
         amount
-    }).run();
+    });
 
     const newAmountPaid = round2((input.invoice.amount_paid || 0) + amount);
     const newBalanceDue = round2(input.invoice.total - newAmountPaid);
     const nowIso = new Date().toISOString();
 
-    setInvoiceSettlementStateInTx(
+    await setInvoiceSettlementStateInTx(
         tx,
         input.invoice.id,
         input.invoice.total,
@@ -328,7 +326,7 @@ export function recordInvoicePaymentInTx(
         MONEY_EPSILON,
         nowIso
     );
-    decreaseCustomerBalanceInTx(tx, input.invoice.customer_id, amount, nowIso);
+    await decreaseCustomerBalanceInTx(tx, input.invoice.customer_id, amount, nowIso);
 
     logDomainEvent('receivables.invoice_payment_recorded', {
         orgId: input.orgId,
@@ -347,11 +345,11 @@ interface ApplyCreditsToInvoiceInTxInput {
     requestedCredits: RequestedCredit[];
 }
 
-export function applyCreditsToInvoiceInTx(
+export async function applyCreditsToInvoiceInTx(
     tx: Tx,
     input: ApplyCreditsToInvoiceInTxInput
-): { totalApplied: number; newStatus: 'paid' | 'partially_paid' } {
-    const invoice = findInvoiceForSettlementInTx(tx, input.orgId, input.invoiceId);
+): Promise<{ totalApplied: number; newStatus: 'paid' | 'partially_paid' }> {
+    const invoice = await findInvoiceForSettlementInTx(tx, input.orgId, input.invoiceId);
 
     if (!invoice) {
         throw new NotFoundError('Invoice not found');
@@ -363,7 +361,7 @@ export function applyCreditsToInvoiceInTx(
         throw new ValidationError('Invoice has no balance due');
     }
 
-    const applied = applyRequestedCreditsInTx(tx, {
+    const applied = await applyRequestedCreditsInTx(tx, {
         orgId: input.orgId,
         customerId: invoice.customer_id,
         invoiceId: input.invoiceId,
@@ -376,7 +374,7 @@ export function applyCreditsToInvoiceInTx(
         throw new ValidationError('No credits were applied');
     }
 
-    const settlement = setInvoiceSettlementStateInTx(
+    const settlement = await setInvoiceSettlementStateInTx(
         tx,
         input.invoiceId,
         invoice.total,
@@ -406,16 +404,16 @@ interface SettleInvoiceInTxInput {
     paymentReference?: string;
 }
 
-export function settleInvoiceInTx(
+export async function settleInvoiceInTx(
     tx: Tx,
     input: SettleInvoiceInTxInput
-): {
+): Promise<{
     totalSettled: number;
     creditSettled: number;
     paymentSettled: number;
     resultingStatus: 'paid' | 'partially_paid';
-} {
-    const invoice = findInvoiceForSettlementInTx(tx, input.orgId, input.invoiceId);
+}> {
+    const invoice = await findInvoiceForSettlementInTx(tx, input.orgId, input.invoiceId);
 
     if (!invoice) {
         throw new NotFoundError('Invoice not found');
@@ -432,7 +430,7 @@ export function settleInvoiceInTx(
     let paymentSettled = 0;
 
     if (input.requestedCredits.length > 0) {
-        const appliedCredits = applyRequestedCreditsInTx(tx, {
+        const appliedCredits = await applyRequestedCreditsInTx(tx, {
             orgId: input.orgId,
             customerId: invoice.customer_id,
             invoiceId: input.invoiceId,
@@ -452,17 +450,17 @@ export function settleInvoiceInTx(
             throw new ValidationError('Payment amount exceeds remaining balance due');
         }
 
-        const depositAccount = findDepositAccountForModeInTx(tx, input.orgId, input.paymentMode);
+        const depositAccount = await findDepositAccountForModeInTx(tx, input.orgId, input.paymentMode);
         if (!depositAccount) {
             throw new InvariantError('Deposit account is not configured');
         }
 
         const paymentAmount = round2(input.paymentAmount);
-        const paymentNumber = getNextNumberTx(tx, input.orgId, 'payment');
+        const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
         const paymentId = crypto.randomUUID();
         const paymentModeForPosting = input.paymentMode === 'cash' ? 'cash' : 'bank';
 
-        const postingResult = postPaymentReceipt(
+        const postingResult = await postPaymentReceipt(
             input.orgId,
             {
                 paymentId,
@@ -476,7 +474,7 @@ export function settleInvoiceInTx(
             tx
         );
 
-        tx.insert(payments).values({
+        await tx.insert(payments).values({
             id: paymentId,
             org_id: input.orgId,
             customer_id: invoice.customer_id,
@@ -488,16 +486,16 @@ export function settleInvoiceInTx(
             reference: input.paymentReference || '',
             journal_entry_id: postingResult.journalEntryId,
             created_by: input.userId
-        }).run();
+        });
 
-        tx.insert(payment_allocations).values({
+        await tx.insert(payment_allocations).values({
             id: crypto.randomUUID(),
             payment_id: paymentId,
             invoice_id: input.invoiceId,
             amount: paymentAmount
-        }).run();
+        });
 
-        decreaseCustomerBalanceInTx(tx, invoice.customer_id, paymentAmount, new Date().toISOString());
+        await decreaseCustomerBalanceInTx(tx, invoice.customer_id, paymentAmount, new Date().toISOString());
 
         paymentSettled = paymentAmount;
         currentBalanceDue = round2(currentBalanceDue - paymentAmount);
@@ -508,7 +506,7 @@ export function settleInvoiceInTx(
         throw new ValidationError('No settlement was applied');
     }
 
-    const settlement = setInvoiceSettlementStateInTx(
+    const settlement = await setInvoiceSettlementStateInTx(
         tx,
         input.invoiceId,
         invoice.total,
@@ -548,10 +546,10 @@ interface CreateCustomerPaymentInTxInput {
     idempotencyKey?: string | null;
 }
 
-export function createCustomerPaymentInTx(
+export async function createCustomerPaymentInTx(
     tx: Tx,
     input: CreateCustomerPaymentInTxInput
-): { paymentId: string; paymentNumber: string; totalAllocated: number; excessAmount: number } {
+): Promise<{ paymentId: string; paymentNumber: string; totalAllocated: number; excessAmount: number }> {
     if (input.amount <= MONEY_EPSILON) {
         throw new ValidationError('Amount must be positive');
     }
@@ -561,12 +559,12 @@ export function createCustomerPaymentInTx(
         throw new ValidationError('Allocated amount cannot exceed payment amount');
     }
 
-    const customer = findCustomerInOrgInTx(tx, input.orgId, input.customerId);
+    const customer = await findCustomerInOrgInTx(tx, input.orgId, input.customerId);
     if (!customer) {
         throw new NotFoundError('Customer not found');
     }
 
-    const depositAccount = findDepositAccountByIdInTx(tx, input.orgId, input.depositTo);
+    const depositAccount = await findDepositAccountByIdInTx(tx, input.orgId, input.depositTo);
     if (!depositAccount) {
         throw new ValidationError('Invalid deposit account');
     }
@@ -583,7 +581,7 @@ export function createCustomerPaymentInTx(
 
     const invoiceIds = input.allocations.map((allocation) => allocation.invoice_id);
     if (invoiceIds.length > 0) {
-        const invoiceRows = findOpenInvoicesByIdsInTx(tx, input.orgId, input.customerId, invoiceIds);
+        const invoiceRows = await findOpenInvoicesByIdsInTx(tx, input.orgId, input.customerId, invoiceIds);
 
         for (const invoice of invoiceRows) {
             invoiceMap.set(invoice.id, invoice);
@@ -601,10 +599,10 @@ export function createCustomerPaymentInTx(
     }
 
     const paymentId = crypto.randomUUID();
-    const paymentNumber = getNextNumberTx(tx, input.orgId, 'payment');
+    const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
     const paymentModeForPosting = input.paymentMode === 'cash' ? 'cash' : 'bank';
 
-    const postingResult = postPaymentReceipt(
+    const postingResult = await postPaymentReceipt(
         input.orgId,
         {
             paymentId,
@@ -618,7 +616,7 @@ export function createCustomerPaymentInTx(
         tx
     );
 
-    tx.insert(payments).values({
+    await tx.insert(payments).values({
         id: paymentId,
         org_id: input.orgId,
         customer_id: input.customerId,
@@ -632,7 +630,7 @@ export function createCustomerPaymentInTx(
         journal_entry_id: postingResult.journalEntryId,
         idempotency_key: input.idempotencyKey || null,
         created_by: input.userId
-    }).run();
+    });
 
     for (const allocation of input.allocations) {
         const invoice = invoiceMap.get(allocation.invoice_id);
@@ -640,14 +638,14 @@ export function createCustomerPaymentInTx(
             throw new ValidationError('One or more allocations reference invalid invoices');
         }
 
-        tx.insert(payment_allocations).values({
+        await tx.insert(payment_allocations).values({
             id: crypto.randomUUID(),
             payment_id: paymentId,
             invoice_id: allocation.invoice_id,
             amount: allocation.amount
-        }).run();
+        });
 
-        setInvoiceSettlementStateInTx(
+        await setInvoiceSettlementStateInTx(
             tx,
             allocation.invoice_id,
             invoice.total,
@@ -659,7 +657,7 @@ export function createCustomerPaymentInTx(
 
     const excessAmount = round2(input.amount - totalAllocated);
     if (excessAmount > MONEY_EPSILON) {
-        tx.insert(customer_advances).values({
+        await tx.insert(customer_advances).values({
             id: crypto.randomUUID(),
             org_id: input.orgId,
             customer_id: input.customerId,
@@ -667,10 +665,10 @@ export function createCustomerPaymentInTx(
             amount: excessAmount,
             balance: excessAmount,
             notes: `Advance from payment ${paymentNumber}`
-        }).run();
+        });
     }
 
-    decreaseCustomerBalanceInTx(tx, input.customerId, input.amount, new Date().toISOString());
+    await decreaseCustomerBalanceInTx(tx, input.customerId, input.amount, new Date().toISOString());
 
     logDomainEvent('receivables.customer_payment_recorded', {
         orgId: input.orgId,
@@ -702,29 +700,29 @@ interface CreateCreditNoteInTxInput {
     idempotencyKey?: string | null;
 }
 
-export function createCreditNoteInTx(
+export async function createCreditNoteInTx(
     tx: Tx,
     input: CreateCreditNoteInTxInput
-): { creditNoteId: string; creditNoteNumber: string; total: number } {
+): Promise<{ creditNoteId: string; creditNoteNumber: string; total: number }> {
     const creditNoteId = crypto.randomUUID();
     let creditNoteNumber = (input.providedNumber || '').trim();
 
     if (creditNoteNumber) {
-        const existing = tx.query.credit_notes.findFirst({
+        const existing = await tx.query.credit_notes.findFirst({
             where: and(
                 eq(credit_notes.org_id, input.orgId),
                 eq(credit_notes.credit_note_number, creditNoteNumber)
             )
-        }).sync();
+        });
 
         if (existing) {
-            creditNoteNumber = getNextNumberTx(tx, input.orgId, 'credit_note');
+            creditNoteNumber = await getNextNumberTx(tx, input.orgId, 'credit_note');
         }
     } else {
-        creditNoteNumber = getNextNumberTx(tx, input.orgId, 'credit_note');
+        creditNoteNumber = await getNextNumberTx(tx, input.orgId, 'credit_note');
     }
 
-    const postingResult = postCreditNote(
+    const postingResult = await postCreditNote(
         input.orgId,
         {
             creditNoteId,
@@ -741,7 +739,7 @@ export function createCreditNoteInTx(
         tx
     );
 
-    tx.insert(credit_notes).values({
+    await tx.insert(credit_notes).values({
         id: creditNoteId,
         org_id: input.orgId,
         customer_id: input.customerId,
@@ -756,11 +754,11 @@ export function createCreditNoteInTx(
         journal_entry_id: postingResult.journalEntryId,
         idempotency_key: input.idempotencyKey || null,
         created_by: input.userId
-    }).run();
+    });
 
-    decreaseCustomerBalanceInTx(tx, input.customerId, input.amount, new Date().toISOString());
+    await decreaseCustomerBalanceInTx(tx, input.customerId, input.amount, new Date().toISOString());
 
-    bumpNumberSeriesIfHigher(input.orgId, 'credit_note', creditNoteNumber, tx);
+    await bumpNumberSeriesIfHigher(input.orgId, 'credit_note', creditNoteNumber, tx);
 
     logDomainEvent('receivables.credit_note_issued', {
         orgId: input.orgId,

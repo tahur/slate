@@ -43,65 +43,64 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         redirect(302, '/items');
     }
 
-    // Usage stats: count of invoices, total quantity, total revenue
-    const [stats] = await db
-        .select({
-            invoiceCount: count(sql`DISTINCT ${invoice_items.invoice_id}`),
-            totalQuantity: sum(invoice_items.quantity),
-            totalRevenue: sum(invoice_items.amount),
-        })
-        .from(invoice_items)
-        .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
-        .where(
-            and(
-                eq(invoice_items.item_id, itemId),
-                eq(invoices.org_id, orgId)
+    // Fetch all data in parallel
+    const [statsResult, recentInvoices, usedHsnRecords] = await Promise.all([
+        db
+            .select({
+                invoiceCount: count(sql`DISTINCT ${invoice_items.invoice_id}`),
+                totalQuantity: sum(invoice_items.quantity),
+                totalRevenue: sum(invoice_items.amount),
+            })
+            .from(invoice_items)
+            .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
+            .where(
+                and(
+                    eq(invoice_items.item_id, itemId),
+                    eq(invoices.org_id, orgId)
+                )
+            ),
+        db
+            .select({
+                invoiceId: invoices.id,
+                invoiceNumber: invoices.invoice_number,
+                invoiceDate: invoices.invoice_date,
+                customerName: customers.name,
+                quantity: invoice_items.quantity,
+                amount: invoice_items.amount,
+                status: invoices.status,
+            })
+            .from(invoice_items)
+            .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
+            .innerJoin(customers, eq(invoices.customer_id, customers.id))
+            .where(
+                and(
+                    eq(invoice_items.item_id, itemId),
+                    eq(invoices.org_id, orgId)
+                )
             )
-        );
+            .orderBy(desc(invoices.invoice_date))
+            .limit(10),
+        db
+            .select({ hsn_code: items.hsn_code })
+            .from(items)
+            .where(
+                and(
+                    eq(items.org_id, orgId),
+                    isNotNull(items.hsn_code),
+                    ne(items.hsn_code, '')
+                )
+            )
+            .groupBy(items.hsn_code)
+    ]);
 
+    const stats = statsResult[0];
     const usageStats = {
         invoiceCount: Number(stats?.invoiceCount ?? 0),
         totalQuantity: Number(stats?.totalQuantity ?? 0),
         totalRevenue: Number(stats?.totalRevenue ?? 0),
     };
 
-    // Recent invoices using this item (last 10)
-    const recentInvoices = await db
-        .select({
-            invoiceId: invoices.id,
-            invoiceNumber: invoices.invoice_number,
-            invoiceDate: invoices.invoice_date,
-            customerName: customers.name,
-            quantity: invoice_items.quantity,
-            amount: invoice_items.amount,
-            status: invoices.status,
-        })
-        .from(invoice_items)
-        .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
-        .innerJoin(customers, eq(invoices.customer_id, customers.id))
-        .where(
-            and(
-                eq(invoice_items.item_id, itemId),
-                eq(invoices.org_id, orgId)
-            )
-        )
-        .orderBy(desc(invoices.invoice_date))
-        .limit(10);
-
     const isUsedInInvoices = usageStats.invoiceCount > 0;
-
-    // Fetch previously used HSN codes for this org
-    const usedHsnRecords = await db
-        .select({ hsn_code: items.hsn_code })
-        .from(items)
-        .where(
-            and(
-                eq(items.org_id, orgId),
-                isNotNull(items.hsn_code),
-                ne(items.hsn_code, '')
-            )
-        )
-        .groupBy(items.hsn_code);
     const usedHsnCodes = usedHsnRecords.map(r => r.hsn_code as string);
 
     const form = await superValidate({
@@ -146,7 +145,7 @@ export const actions: Actions = {
                 return fail(400, { form, error: 'An item with this SKU already exists.' });
             }
 
-            db.update(items)
+            await db.update(items)
                 .set({
                     type: data.type,
                     sku,
@@ -163,10 +162,9 @@ export const actions: Actions = {
                 .where(and(
                     eq(items.id, event.params.id),
                     eq(items.org_id, event.locals.user.orgId)
-                ))
-                .run();
+                ));
 
-            await logActivity({
+            void logActivity({
                 orgId: event.locals.user.orgId,
                 userId: event.locals.user.id,
                 entityType: 'item',
@@ -192,7 +190,7 @@ export const actions: Actions = {
         const formData = await event.request.formData();
         const newStatus = formData.get('is_active') === 'true';
 
-        db.update(items)
+        await db.update(items)
             .set({
                 is_active: newStatus,
                 updated_by: event.locals.user.id,
@@ -201,10 +199,9 @@ export const actions: Actions = {
             .where(and(
                 eq(items.id, event.params.id),
                 eq(items.org_id, event.locals.user.orgId)
-            ))
-            .run();
+            ));
 
-        await logActivity({
+        void logActivity({
             orgId: event.locals.user.orgId,
             userId: event.locals.user.id,
             entityType: 'item',
@@ -234,14 +231,13 @@ export const actions: Actions = {
             return fail(400, { error: 'Cannot delete item that is used in invoices. Deactivate it instead.' });
         }
 
-        db.delete(items)
+        await db.delete(items)
             .where(and(
                 eq(items.id, event.params.id),
                 eq(items.org_id, event.locals.user.orgId)
-            ))
-            .run();
+            ));
 
-        await logActivity({
+        void logActivity({
             orgId: event.locals.user.orgId,
             userId: event.locals.user.id,
             entityType: 'item',

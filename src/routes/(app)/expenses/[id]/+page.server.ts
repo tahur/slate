@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const orgId = locals.user.orgId;
 
     // Get expense
-    const expense = await db
+    const expenseRows = await db
         .select({
             id: expenses.id,
             expense_number: expenses.expense_number,
@@ -39,7 +39,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
                 eq(expenses.org_id, orgId)
             )
         )
-        .get();
+        .limit(1);
+    const expense = expenseRows[0];
 
     if (!expense) {
         redirect(302, '/expenses');

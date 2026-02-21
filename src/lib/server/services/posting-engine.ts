@@ -52,14 +52,14 @@ export interface PostingResult {
 }
 
 // Map account codes to their IDs for a given org
-function getAccountIdsByCode(tx: Tx, orgId: string, codes: string[]): Map<string, string> {
+async function getAccountIdsByCode(tx: Tx, orgId: string, codes: string[]): Promise<Map<string, string>> {
     const result = new Map<string, string>();
 
     if (codes.length === 0) {
         return result;
     }
 
-    const accountRows = tx
+    const accountRows = await tx
         .select({
             id: accounts.id,
             code: accounts.account_code
@@ -70,8 +70,7 @@ function getAccountIdsByCode(tx: Tx, orgId: string, codes: string[]): Map<string
                 eq(accounts.org_id, orgId),
                 inArray(accounts.account_code, codes)
             )
-        )
-        .all();
+        );
 
     for (const row of accountRows) {
         result.set(row.code, row.id);
@@ -91,11 +90,11 @@ function getAccountIdsByCode(tx: Tx, orgId: string, codes: string[]): Map<string
  *
  * See docs/ACCOUNTING_INVARIANTS.md for details.
  */
-function postInTx(
+async function postInTx(
     tx: Tx,
     orgId: string,
     input: PostingInput
-): PostingResult {
+): Promise<PostingResult> {
     // Convert to JournalLineData format for validation
     const lineData: JournalLineData[] = input.lines.map(l => ({
         debit: l.debit || 0,
@@ -113,7 +112,7 @@ function postInTx(
 
     // Get account IDs
     const codes = input.lines.map(l => l.accountCode);
-    const accountMap = getAccountIdsByCode(tx, orgId, codes);
+    const accountMap = await getAccountIdsByCode(tx, orgId, codes);
 
     // Validate all accounts exist
     for (const code of codes) {
@@ -123,11 +122,11 @@ function postInTx(
     }
 
     // Generate entry number (transaction-aware so it rolls back on failure)
-    const entryNumber = getNextNumberTx(tx, orgId, 'journal');
+    const entryNumber = await getNextNumberTx(tx, orgId, 'journal');
     const journalEntryId = crypto.randomUUID();
 
     // Create journal entry
-    tx.insert(journal_entries).values({
+    await tx.insert(journal_entries).values({
         id: journalEntryId,
         org_id: orgId,
         entry_number: entryNumber,
@@ -139,7 +138,7 @@ function postInTx(
         total_credit: totalCredit,
         status: 'posted',
         created_by: input.userId
-    }).run();
+    });
 
     // Create journal lines and update account balances
     const lineResults: PostingResult['lines'] = [];
@@ -149,7 +148,7 @@ function postInTx(
         const debit = round2(line.debit || 0);
         const credit = round2(line.credit || 0);
 
-        tx.insert(journal_lines).values({
+        await tx.insert(journal_lines).values({
             id: crypto.randomUUID(),
             journal_entry_id: journalEntryId,
             account_id: accountId,
@@ -158,18 +157,18 @@ function postInTx(
             party_type: line.partyType,
             party_id: line.partyId,
             narration: line.narration
-        }).run();
+        });
 
         // Update account balance
         const balanceChange = round2(debit - credit);
 
-        tx
+        await tx
             .update(accounts)
             .set({
-                balance: sql`ROUND(${accounts.balance} + ${balanceChange}, 2)`
+                // Keep 2-decimal semantics across legacy float8 and new numeric schemas.
+                balance: sql`ROUND((${accounts.balance})::numeric + (${balanceChange})::numeric, 2)::double precision`
             })
-            .where(eq(accounts.id, accountId))
-            .run();
+            .where(eq(accounts.id, accountId));
 
         lineResults.push({
             accountId,
@@ -201,12 +200,12 @@ function postInTx(
  * Post a journal entry.
  * If a transaction is provided, runs within it. Otherwise wraps in a new transaction.
  */
-export function post(
+export async function post(
     orgId: string,
     input: PostingInput,
     tx?: Tx
-): PostingResult {
-    return runInExistingOrNewTx(tx, (t) => postInTx(t, orgId, input));
+): Promise<PostingResult> {
+    return runInExistingOrNewTx(tx, async (t) => postInTx(t, orgId, input));
 }
 
 /**
@@ -215,19 +214,20 @@ export function post(
  * ⚠️ ACCOUNTING INVARIANT: Posted entries are IMMUTABLE
  * This is the ONLY way to "undo" a posted entry - by creating a reversal.
  */
-function reverseInTx(
+async function reverseInTx(
     tx: Tx,
     orgId: string,
     journalEntryId: string,
     reversalDate: string,
     userId?: string
-): PostingResult {
+): Promise<PostingResult> {
     // Get original entry
-    const original = tx
+    const originalRows = await tx
         .select()
         .from(journal_entries)
         .where(eq(journal_entries.id, journalEntryId))
-        .get();
+        .limit(1);
+    const original = originalRows[0];
 
     if (!original) {
         throw new AccountingInvariantError(
@@ -246,7 +246,7 @@ function reverseInTx(
     }
 
     // Get original lines
-    const originalLines = tx
+    const originalLines = await tx
         .select({
             accountId: journal_lines.account_id,
             debit: journal_lines.debit,
@@ -256,19 +256,17 @@ function reverseInTx(
             narration: journal_lines.narration
         })
         .from(journal_lines)
-        .where(eq(journal_lines.journal_entry_id, journalEntryId))
-        .all();
+        .where(eq(journal_lines.journal_entry_id, journalEntryId));
 
     // Get account codes for these IDs
     const accountIds = originalLines.map(l => l.accountId);
-    const accountRows = tx
+    const accountRows = await tx
         .select({
             id: accounts.id,
             code: accounts.account_code
         })
         .from(accounts)
-        .where(inArray(accounts.id, accountIds))
-        .all();
+        .where(inArray(accounts.id, accountIds));
 
     const idToCode = new Map(accountRows.map(r => [r.id, r.code]));
 
@@ -283,7 +281,7 @@ function reverseInTx(
     }));
 
     // Post reversal in same transaction
-    const result = postInTx(tx, orgId, {
+    const result = await postInTx(tx, orgId, {
         type: (original.reference_type + '_REVERSED') as PostingType,
         date: reversalDate,
         referenceId: original.reference_id || undefined,
@@ -293,14 +291,13 @@ function reverseInTx(
     });
 
     // Mark original as reversed
-    tx
+    await tx
         .update(journal_entries)
         .set({
             status: 'reversed',
             reversed_by: result.journalEntryId
         })
-        .where(eq(journal_entries.id, journalEntryId))
-        .run();
+        .where(eq(journal_entries.id, journalEntryId));
 
     logDomainEvent('ledger.entry.reversed', {
         orgId,
@@ -313,14 +310,17 @@ function reverseInTx(
     return result;
 }
 
-export function reverse(
+export async function reverse(
     orgId: string,
     journalEntryId: string,
     reversalDate: string,
     userId?: string,
     tx?: Tx
-): PostingResult {
-    return runInExistingOrNewTx(tx, (t) => reverseInTx(t, orgId, journalEntryId, reversalDate, userId));
+): Promise<PostingResult> {
+    return runInExistingOrNewTx(
+        tx,
+        async (t) => reverseInTx(t, orgId, journalEntryId, reversalDate, userId)
+    );
 }
 
 // ============================================================
@@ -349,11 +349,11 @@ interface InvoicePostingInput {
  * Credit: Output SGST (2101) - if intra-state
  * Credit: Output IGST (2102) - if inter-state
  */
-export function postInvoiceIssuance(
+export async function postInvoiceIssuance(
     orgId: string,
     input: InvoicePostingInput,
     tx?: Tx
-): PostingResult {
+): Promise<PostingResult> {
     const totalTax = addCurrency(input.cgst || 0, input.sgst || 0, input.igst || 0);
     // Revenue should always be net of output taxes, regardless of UI pricing mode.
     // This prevents double-crediting tax when invoice prices include GST.
@@ -432,11 +432,11 @@ interface PaymentPostingInput {
  * Debit: Cash (1000) or Bank (1100) - Payment amount
  * Credit: Accounts Receivable (1200) - Payment amount
  */
-export function postPaymentReceipt(
+export async function postPaymentReceipt(
     orgId: string,
     input: PaymentPostingInput,
     tx?: Tx
-): PostingResult {
+): Promise<PostingResult> {
     const cashAccountCode = input.paymentMode === 'cash' ? '1000' : '1100';
 
     const lines: JournalLineInput[] = [
@@ -490,11 +490,11 @@ interface ExpensePostingInput {
  * Debit: Input IGST (1302) - if applicable
  * Credit: Cash (1000) or Bank (1100) - Total paid
  */
-export function postExpense(
+export async function postExpense(
     orgId: string,
     input: ExpensePostingInput,
     tx?: Tx
-): PostingResult {
+): Promise<PostingResult> {
     const totalPaid = round2(input.amount + input.inputCgst + input.inputSgst + input.inputIgst);
     const cashAccountCode = input.paidThrough === 'cash' ? '1000' : '1100';
 
@@ -572,11 +572,11 @@ interface CreditNotePostingInput {
  * Debit: Output IGST (2102) - if inter-state
  * Credit: Accounts Receivable (1200) - Total (reducing customer balance)
  */
-export function postCreditNote(
+export async function postCreditNote(
     orgId: string,
     input: CreditNotePostingInput,
     tx?: Tx
-): PostingResult {
+): Promise<PostingResult> {
     const lines: JournalLineInput[] = [
         {
             accountCode: '4000',

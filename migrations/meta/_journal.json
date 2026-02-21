@@ -1,48 +1,13 @@
 {
-    "version": "7",
-    "dialect": "sqlite",
-    "entries": [
-        {
-            "idx": 0,
-            "version": "6",
-            "when": 1770831794488,
-            "tag": "0000_faithful_the_fury",
-            "breakpoints": true
-        },
-        {
-            "idx": 1,
-            "version": "6",
-            "when": 1770884163798,
-            "tag": "0001_tearful_kang",
-            "breakpoints": true
-        },
-        {
-            "idx": 2,
-            "version": "6",
-            "when": 1770975770403,
-            "tag": "0002_majestic_weapon_omega",
-            "breakpoints": true
-        },
-        {
-            "idx": 3,
-            "version": "6",
-            "when": 1771015800000,
-            "tag": "0003_honorable_archangel",
-            "breakpoints": true
-        },
-        {
-            "idx": 4,
-            "version": "6",
-            "when": 1771038370904,
-            "tag": "0004_curved_cyclops",
-            "breakpoints": true
-        },
-        {
-            "idx": 5,
-            "version": "6",
-            "when": 1771100000000,
-            "tag": "0005_complex_purifiers",
-            "breakpoints": true
-        }
-    ]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1771652034911,
+      "tag": "0000_complete_dazzler",
+      "breakpoints": true
+    }
+  ]
 }

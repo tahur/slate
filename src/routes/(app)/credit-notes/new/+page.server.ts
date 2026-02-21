@@ -4,7 +4,7 @@ import { credit_notes, customers } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { peekNextNumber, logActivity } from '$lib/server/services';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
-import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/sqlite-errors';
+import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/db-errors';
 import type { Actions, PageServerLoad } from './$types';
 import { createCreditNoteInTx } from '$lib/server/modules/receivables/application/workflows';
 import { runInTx } from '$lib/server/platform/db/tx';
@@ -74,8 +74,8 @@ export const actions: Actions = {
         let creditNoteId = '';
 
         try {
-            runInTx((tx) => {
-                const result = createCreditNoteInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await createCreditNoteInTx(tx, {
                     orgId,
                     userId: locals.user!.id,
                     customerId: customer_id,
@@ -91,7 +91,7 @@ export const actions: Actions = {
             });
 
             // Log activity (outside transaction — non-critical)
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'credit_note',

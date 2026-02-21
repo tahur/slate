@@ -9,6 +9,23 @@ import { eq } from 'drizzle-orm';
 import type { Handle, HandleServerError, RequestEvent } from '@sveltejs/kit';
 import { building, dev } from '$app/environment';
 
+// Cache user org/role to avoid DB lookup on every request (TTL: 5 min)
+const USER_CACHE_TTL_MS = 5 * 60 * 1000;
+const userOrgCache = new Map<string, { orgId: string; role: string; expiresAt: number }>();
+
+function getCachedUserOrg(userId: string) {
+    const cached = userOrgCache.get(userId);
+    if (!cached || Date.now() > cached.expiresAt) {
+        userOrgCache.delete(userId);
+        return null;
+    }
+    return cached;
+}
+
+function cacheUserOrg(userId: string, orgId: string, role: string) {
+    userOrgCache.set(userId, { orgId, role, expiresAt: Date.now() + USER_CACHE_TTL_MS });
+}
+
 const API_CORS_ALLOWED_METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
 const API_CORS_ALLOWED_HEADERS = 'Content-Type, Authorization, X-Requested-With, X-Request-Id';
 const CONTENT_SECURITY_POLICY = [
@@ -163,18 +180,24 @@ export const handle: Handle = async ({ event, resolve }) => {
 
             const session = await auth.api.getSession({ headers: event.request.headers });
             if (session) {
-                // Always read orgId/role from DB — single source of truth
-                const persistedUser = await db.query.users.findFirst({
-                    where: eq(users.id, session.user.id),
-                    columns: { orgId: true, role: true }
-                });
+                let userOrg = getCachedUserOrg(session.user.id);
+                if (!userOrg) {
+                    const persistedUser = await db.query.users.findFirst({
+                        where: eq(users.id, session.user.id),
+                        columns: { orgId: true, role: true }
+                    });
+                    const orgId = persistedUser?.orgId || '';
+                    const role = persistedUser?.role || 'admin';
+                    cacheUserOrg(session.user.id, orgId, role);
+                    userOrg = { orgId, role, expiresAt: 0 };
+                }
 
                 event.locals.user = {
                     id: session.user.id,
                     email: session.user.email,
                     name: session.user.name,
-                    role: persistedUser?.role || 'admin',
-                    orgId: persistedUser?.orgId || ''
+                    role: userOrg.role,
+                    orgId: userOrg.orgId
                 };
                 event.locals.session = session.session;
 

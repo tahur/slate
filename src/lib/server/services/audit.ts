@@ -43,7 +43,7 @@ export interface LogActivityParams {
  */
 export async function logActivity(params: LogActivityParams): Promise<void> {
     try {
-        db.insert(audit_log).values({
+        await db.insert(audit_log).values({
             id: crypto.randomUUID(),
             org_id: params.orgId,
             entity_type: params.entityType,
@@ -53,7 +53,7 @@ export async function logActivity(params: LogActivityParams): Promise<void> {
             user_id: params.userId,
             ip_address: params.ipAddress || null,
             user_agent: params.userAgent || null
-        }).run();
+        });
 
         logDomainEvent('audit.activity.logged', {
             entityType: params.entityType,

@@ -66,9 +66,9 @@ export const actions: Actions = {
             const fyStartYear = new Date().getFullYear();
             const fyEndYear = fyStartYear + 1;
 
-            runInTx((tx) => {
+            await runInTx(async (tx) => {
                 // 1. Create Organization
-                tx.insert(organizations).values({
+                await tx.insert(organizations).values({
                     id: orgId,
                     name: data.name,
                     email: data.email || null,
@@ -78,30 +78,29 @@ export const actions: Actions = {
                     pincode: data.pincode,
                     gstin: data.gstin || null,
                     fy_start_month: data.fy_start_month
-                }).run();
+                });
 
                 // 2. Link User to Org
-                tx
+                await tx
                     .update(users)
                     .set({ orgId: orgId, role: 'admin' })
-                    .where(eq(users.id, userId))
-                    .run();
+                    .where(eq(users.id, userId));
 
                 // 3. Create Fiscal Year
-                tx.insert(fiscal_years).values({
+                await tx.insert(fiscal_years).values({
                     id: crypto.randomUUID(),
                     org_id: orgId,
                     name: `FY ${fyStartYear}-${String(fyEndYear).slice(-2)}`,
                     start_date: `${fyStartYear}-04-01`,
                     end_date: `${fyEndYear}-03-31`,
                     is_locked: false
-                }).run();
+                });
 
                 // 4. Seed Chart of Accounts
-                seedChartOfAccounts(orgId, tx);
+                await seedChartOfAccounts(orgId, tx);
 
                 // 5. Seed Payment Modes
-                seedPaymentModes(orgId, tx);
+                await seedPaymentModes(orgId, tx);
             });
 
             const linkedUser = await db.query.users.findFirst({

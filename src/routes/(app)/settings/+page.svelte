@@ -789,6 +789,7 @@
                     <button
                         type="button"
                         class="absolute inset-0 bg-black/50"
+                        aria-label="Close payment mode modal"
                         onclick={closePaymentModeModal}
                         tabindex="-1"
                     ></button>

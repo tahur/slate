@@ -54,17 +54,17 @@ function padNumber(num: number, length: number = 4): string {
  * @param fyYear - Fiscal year (optional, defaults to current)
  * @returns Formatted number like "INV-2025-26-0001"
  */
-export function getNextNumberTx(
+export async function getNextNumberTx(
     tx: DbTransaction,
     orgId: string,
     module: NumberSeriesModule,
     fyYear?: string
-): string {
+): Promise<string> {
     const fy = fyYear || getCurrentFiscalYear();
     const prefix = MODULE_PREFIXES[module];
 
     // Try to get existing series
-    const existing = tx
+    const existingRows = await tx
         .select()
         .from(number_series)
         .where(
@@ -74,22 +74,22 @@ export function getNextNumberTx(
                 eq(number_series.fy_year, fy)
             )
         )
-        .get();
+        .limit(1);
+    const existing = existingRows[0];
 
     let nextNumber: number;
 
     if (existing) {
         // Increment atomically
         nextNumber = (existing.current_number || 0) + 1;
-        tx
+        await tx
             .update(number_series)
             .set({ current_number: nextNumber })
-            .where(eq(number_series.id, existing.id))
-            .run();
+            .where(eq(number_series.id, existing.id));
     } else {
         // Create new series
         nextNumber = 1;
-        tx.insert(number_series).values({
+        await tx.insert(number_series).values({
             id: crypto.randomUUID(),
             org_id: orgId,
             module,
@@ -97,7 +97,7 @@ export function getNextNumberTx(
             fy_year: fy,
             current_number: nextNumber,
             reset_on_fy: true
-        }).run();
+        });
     }
 
     const finalPrefix = existing?.prefix || prefix;
@@ -114,16 +114,16 @@ export function getNextNumberTx(
  * @param fyYear - Fiscal year (optional, defaults to current)
  * @returns Formatted number like "INV-2025-26-0001"
  */
-export function getNextNumber(
+export async function getNextNumber(
     orgId: string,
     module: NumberSeriesModule,
     fyYear?: string
-): string {
+): Promise<string> {
     const fy = fyYear || getCurrentFiscalYear();
     const prefix = MODULE_PREFIXES[module];
 
     // Try to get existing series
-    const existing = db
+    const existingRows = await db
         .select()
         .from(number_series)
         .where(
@@ -133,22 +133,22 @@ export function getNextNumber(
                 eq(number_series.fy_year, fy)
             )
         )
-        .get();
+        .limit(1);
+    const existing = existingRows[0];
 
     let nextNumber: number;
 
     if (existing) {
         // Increment atomically
         nextNumber = (existing.current_number || 0) + 1;
-        db
+        await db
             .update(number_series)
             .set({ current_number: nextNumber })
-            .where(eq(number_series.id, existing.id))
-            .run();
+            .where(eq(number_series.id, existing.id));
     } else {
         // Create new series
         nextNumber = 1;
-        db.insert(number_series).values({
+        await db.insert(number_series).values({
             id: crypto.randomUUID(),
             org_id: orgId,
             module,
@@ -156,7 +156,7 @@ export function getNextNumber(
             fy_year: fy,
             current_number: nextNumber,
             reset_on_fy: true
-        }).run();
+        });
     }
 
     const finalPrefix = existing?.prefix || prefix;
@@ -183,15 +183,15 @@ export function getDraftNumber(
 /**
  * Peek at what the next number would be without incrementing
  */
-export function peekNextNumber(
+export async function peekNextNumber(
     orgId: string,
     module: NumberSeriesModule,
     fyYear?: string
-): string {
+): Promise<string> {
     const fy = fyYear || getCurrentFiscalYear();
     const prefix = MODULE_PREFIXES[module];
 
-    const existing = db
+    const existingRows = await db
         .select()
         .from(number_series)
         .where(
@@ -201,7 +201,8 @@ export function peekNextNumber(
                 eq(number_series.fy_year, fy)
             )
         )
-        .get();
+        .limit(1);
+    const existing = existingRows[0];
 
     const nextNumber = (existing?.current_number || 0) + 1;
     const finalPrefix = existing?.prefix || prefix;
@@ -228,19 +229,19 @@ function parseSeriesNumber(value: string): ParsedSeriesNumber | null {
  * Bump the number series when a manual number is higher than the current counter.
  * Only applies when the manual number matches the standard series format.
  */
-export function bumpNumberSeriesIfHigher(
+export async function bumpNumberSeriesIfHigher(
     orgId: string,
     module: NumberSeriesModule,
     manualNumber: string,
     tx?: Tx
-): void {
+): Promise<void> {
     const parsed = parseSeriesNumber(manualNumber);
     if (!parsed || Number.isNaN(parsed.sequence)) return;
 
     const defaultPrefix = MODULE_PREFIXES[module];
     const q = tx || db;
 
-    const existing = q
+    const existingRows = await q
         .select()
         .from(number_series)
         .where(
@@ -250,7 +251,8 @@ export function bumpNumberSeriesIfHigher(
                 eq(number_series.fy_year, parsed.fy)
             )
         )
-        .get();
+        .limit(1);
+    const existing = existingRows[0];
 
     if (existing) {
         if (existing.prefix !== parsed.prefix) {
@@ -259,11 +261,10 @@ export function bumpNumberSeriesIfHigher(
         if ((existing.current_number || 0) >= parsed.sequence) {
             return;
         }
-        q
+        await q
             .update(number_series)
             .set({ current_number: parsed.sequence })
-            .where(eq(number_series.id, existing.id))
-            .run();
+            .where(eq(number_series.id, existing.id));
         return;
     }
 
@@ -271,7 +272,7 @@ export function bumpNumberSeriesIfHigher(
         return;
     }
 
-    q.insert(number_series).values({
+    await q.insert(number_series).values({
         id: crypto.randomUUID(),
         org_id: orgId,
         module,
@@ -279,5 +280,5 @@ export function bumpNumberSeriesIfHigher(
         fy_year: parsed.fy,
         current_number: parsed.sequence,
         reset_on_fy: true
-    }).run();
+    });
 }

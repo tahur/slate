@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, index, unique, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, numeric, index, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { customers } from './customers';
@@ -6,7 +6,7 @@ import { invoices } from './invoices';
 import { journal_entries } from './journals';
 import { users } from './users';
 
-export const credit_notes = sqliteTable(
+export const credit_notes = pgTable(
     'credit_notes',
     {
         id: text('id').primaryKey(),
@@ -22,12 +22,12 @@ export const credit_notes = sqliteTable(
         credit_note_date: text('credit_note_date').notNull(),
 
         // Amounts
-        subtotal: real('subtotal').notNull(),
-        cgst: real('cgst').default(0),
-        sgst: real('sgst').default(0),
-        igst: real('igst').default(0),
-        total: real('total').notNull(),
-        balance: real('balance').default(0),
+        subtotal: numeric('subtotal', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+        cgst: numeric('cgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        sgst: numeric('sgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        igst: numeric('igst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+        balance: numeric('balance', { precision: 14, scale: 2, mode: 'number' }).default(0),
 
         reason: text('reason').notNull(), // return, discount, error, etc.
         notes: text('notes'),
@@ -41,11 +41,17 @@ export const credit_notes = sqliteTable(
         idempotency_key: text('idempotency_key'),
 
         // Audit
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id)
     },
     (t) => ({
         unq: unique().on(t.org_id, t.credit_note_number),
+        customerStatusBalanceIdx: index('idx_credit_notes_org_customer_status_balance').on(
+            t.org_id,
+            t.customer_id,
+            t.status,
+            t.balance
+        ),
         invoiceIdx: index('idx_credit_notes_invoice').on(t.invoice_id),
         idempotencyIdx: uniqueIndex('idx_credit_notes_org_idempotency').on(t.org_id, t.idempotency_key)
     })

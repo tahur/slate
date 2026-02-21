@@ -12,9 +12,7 @@ Date: February 13, 2026
    - `x-request-id` response header
    - error logs include trace/correlation metadata
 3. Startup checks are implemented in `src/lib/server/db/index.ts`:
-   - WAL mode validation
-   - foreign key enforcement validation
-   - SQLite `quick_check`
+   - Postgres runtime config validation
    - DB ping (`SELECT 1`)
 4. Health endpoint added at `src/routes/api/health/+server.ts`:
    - startup snapshot

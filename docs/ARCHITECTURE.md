@@ -10,13 +10,13 @@ This document is the source of truth for how Slate is structured and how critica
 
 Slate is a modular monolith:
 1. One deployable SvelteKit app.
-2. One SQLite database.
+2. One Postgres database (Supabase).
 3. Clear in-process module boundaries.
 4. No distributed transactions.
 
 Why this model:
 1. Financial workflows are consistency-critical.
-2. SQLite + `better-sqlite3` favors simple synchronous transaction boundaries.
+2. Postgres + transaction wrappers keep cross-module writes atomic.
 3. The team can move faster with explicit module boundaries before any service split.
 
 ## 2. Engineering Philosophy
@@ -62,7 +62,7 @@ Why this model:
 3. `modules/reporting`:
    - GST report query orchestration + cache invalidation
 4. `platform/db`:
-   - transaction wrappers for `better-sqlite3`
+   - async transaction wrappers for shared write boundaries
 5. `platform/errors`:
    - typed domain errors and HTTP/action mappers
 6. `platform/observability`:
@@ -70,23 +70,21 @@ Why this model:
 
 ## 4. Persistence and Transaction Semantics
 
-### 4.1 SQLite baseline
+### 4.1 Postgres baseline
 
 Startup safety checks in `src/lib/server/db/index.ts` enforce:
-1. `journal_mode = WAL`
-2. `foreign_keys = ON`
-3. `quick_check = ok`
-4. ping query success
+1. DB client configuration is valid (`ssl`, pool, timeout settings).
+2. startup ping query succeeds (`SELECT 1`).
+3. startup snapshot is exposed for health checks.
 
 ### 4.2 Transaction rule
 
 All write workflows must use `runInTx`/`runInExistingOrNewTx` from `src/lib/server/platform/db/tx.ts`.
 
 Important rule:
-1. Transaction callbacks must be synchronous for `better-sqlite3`.
-2. Async work must stay outside DB transaction callbacks.
-
-This prevents runtime failures like "Transaction function cannot return a promise".
+1. Transaction callbacks are async Promise-based.
+2. External I/O (email/HTTP/files/queue) should stay outside DB callbacks.
+3. All critical writes must flow through `runInTx`/`runInExistingOrNewTx`.
 
 ## 5. Money, Tax, and Precision
 
@@ -188,7 +186,7 @@ See:
 ## 11. Deployment and Operations
 
 1. App deploys as one Node process (SvelteKit adapter-node build).
-2. SQLite is file-backed (`SLATE_DB_PATH`).
+2. Database is Postgres via `DATABASE_URL` (`DATABASE_URL_MIGRATION` for migration jobs).
 3. Backup/restore runbook is documented and validated by restore drill script.
 4. Production incidents are diagnosed with trace IDs + health snapshot + integrity checks.
 

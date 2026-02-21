@@ -54,8 +54,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         )
         .groupBy(accounts.account_name);
 
-    const totalRevenue = revenue[0]?.total || 0;
-    const totalExpenses = expensesByCategory.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalRevenue = Number(revenue[0]?.total) || 0;
+    const totalExpenses = expensesByCategory.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const netProfit = totalRevenue - totalExpenses;
 
     return {

@@ -4,13 +4,13 @@ Date: February 13, 2026
 
 ## Purpose
 
-This runbook defines the SQLite backup and restore drill process for Slate.
+This runbook defines the Postgres backup and restore drill process for Slate.
 
 ## Backup Policy
 
 1. Keep daily backups of the database file.
 2. Keep at least 14 daily restore points.
-3. Store backups outside the runtime host volume.
+3. Store backups outside the runtime host.
 4. Keep backup artifacts encrypted at rest.
 
 ## Restore Drill Frequency
@@ -28,20 +28,20 @@ node scripts/verify-backup-restore.mjs
 ```
 
 What it validates:
-1. backup artifact creation
-2. integrity check (`PRAGMA integrity_check`)
+1. logical backup copy simulation
+2. restore simulation into primary table
 3. restored DB readability and data consistency
 
 ## Production Restore Procedure
 
 1. Stop write traffic to the app.
-2. Snapshot current DB files (`.db`, `.db-wal`, `.db-shm`).
-3. Copy selected backup artifact to restore location.
+2. Select restore point in managed Postgres backups.
+3. Restore into target environment/database.
 4. Start app in maintenance mode.
 5. Run integrity check and health endpoint verification:
 
 ```bash
-sqlite3 /path/to/slate.db "PRAGMA integrity_check;"
+node scripts/check-integrity.mjs
 curl -s http://localhost:3000/api/health
 ```
 
@@ -54,6 +54,6 @@ curl -s http://localhost:3000/api/health
 ## Rollback
 
 1. If restore verification fails, stop traffic again.
-2. Re-attach the pre-restore snapshot.
+2. Revert to previous restore point/snapshot.
 3. Re-run health checks and critical flow smoke tests.
 4. Escalate incident with logs and request IDs.

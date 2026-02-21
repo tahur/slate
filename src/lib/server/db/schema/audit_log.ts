@@ -1,8 +1,8 @@
-import { sqliteTable, text, index } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { users } from './users';
 
-export const audit_log = sqliteTable(
+export const audit_log = pgTable(
     'audit_log',
     {
         id: text('id').primaryKey(),
@@ -16,7 +16,7 @@ export const audit_log = sqliteTable(
             .references(() => users.id),
         ip_address: text('ip_address'),
         user_agent: text('user_agent'),
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`)
+        created_at: text('created_at').default(sql`NOW()::text`)
     },
     (t) => ({
         entityIdx: index('idx_audit_entity').on(t.org_id, t.entity_type, t.entity_id),

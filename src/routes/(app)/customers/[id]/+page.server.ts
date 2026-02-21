@@ -28,78 +28,74 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         redirect(302, '/customers');
     }
 
-    // Fetch all invoices for this customer
-    const customerInvoices = await db
-        .select({
-            id: invoices.id,
-            invoice_number: invoices.invoice_number,
-            invoice_date: invoices.invoice_date,
-            due_date: invoices.due_date,
-            total: invoices.total,
-            amount_paid: invoices.amount_paid,
-            balance_due: invoices.balance_due,
-            status: invoices.status
-        })
-        .from(invoices)
-        .where(and(
-            eq(invoices.org_id, orgId),
-            eq(invoices.customer_id, customerId)
-        ))
-        .orderBy(desc(invoices.invoice_date));
-
-    // Fetch all payments for this customer
-    const customerPayments = await db
-        .select({
-            id: payments.id,
-            payment_number: payments.payment_number,
-            payment_date: payments.payment_date,
-            amount: payments.amount,
-            payment_mode: payments.payment_mode,
-            reference: payments.reference
-        })
-        .from(payments)
-        .where(and(
-            eq(payments.org_id, orgId),
-            eq(payments.customer_id, customerId)
-        ))
-        .orderBy(desc(payments.payment_date));
-
-    // Fetch all credit notes for this customer
-    const customerCreditNotes = await db
-        .select({
-            id: credit_notes.id,
-            credit_note_number: credit_notes.credit_note_number,
-            credit_note_date: credit_notes.credit_note_date,
-            total: credit_notes.total,
-            balance: credit_notes.balance,
-            reason: credit_notes.reason,
-            status: credit_notes.status
-        })
-        .from(credit_notes)
-        .where(and(
-            eq(credit_notes.org_id, orgId),
-            eq(credit_notes.customer_id, customerId)
-        ))
-        .orderBy(desc(credit_notes.credit_note_date));
-
-    // Fetch available advances (join with payments for friendly number)
-    const customerAdvances = await db
-        .select({
-            id: customer_advances.id,
-            payment_id: customer_advances.payment_id,
-            payment_number: payments.payment_number,
-            amount: customer_advances.amount,
-            balance: customer_advances.balance,
-            created_at: customer_advances.created_at,
-            notes: customer_advances.notes
-        })
-        .from(customer_advances)
-        .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
-        .where(and(
-            eq(customer_advances.org_id, orgId),
-            eq(customer_advances.customer_id, customerId)
-        ))
-        .orderBy(desc(customer_advances.created_at));
+    // Fetch all related data in parallel
+    const [customerInvoices, customerPayments, customerCreditNotes, customerAdvances] = await Promise.all([
+        db
+            .select({
+                id: invoices.id,
+                invoice_number: invoices.invoice_number,
+                invoice_date: invoices.invoice_date,
+                due_date: invoices.due_date,
+                total: invoices.total,
+                amount_paid: invoices.amount_paid,
+                balance_due: invoices.balance_due,
+                status: invoices.status
+            })
+            .from(invoices)
+            .where(and(
+                eq(invoices.org_id, orgId),
+                eq(invoices.customer_id, customerId)
+            ))
+            .orderBy(desc(invoices.invoice_date)),
+        db
+            .select({
+                id: payments.id,
+                payment_number: payments.payment_number,
+                payment_date: payments.payment_date,
+                amount: payments.amount,
+                payment_mode: payments.payment_mode,
+                reference: payments.reference
+            })
+            .from(payments)
+            .where(and(
+                eq(payments.org_id, orgId),
+                eq(payments.customer_id, customerId)
+            ))
+            .orderBy(desc(payments.payment_date)),
+        db
+            .select({
+                id: credit_notes.id,
+                credit_note_number: credit_notes.credit_note_number,
+                credit_note_date: credit_notes.credit_note_date,
+                total: credit_notes.total,
+                balance: credit_notes.balance,
+                reason: credit_notes.reason,
+                status: credit_notes.status
+            })
+            .from(credit_notes)
+            .where(and(
+                eq(credit_notes.org_id, orgId),
+                eq(credit_notes.customer_id, customerId)
+            ))
+            .orderBy(desc(credit_notes.credit_note_date)),
+        db
+            .select({
+                id: customer_advances.id,
+                payment_id: customer_advances.payment_id,
+                payment_number: payments.payment_number,
+                amount: customer_advances.amount,
+                balance: customer_advances.balance,
+                created_at: customer_advances.created_at,
+                notes: customer_advances.notes
+            })
+            .from(customer_advances)
+            .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
+            .where(and(
+                eq(customer_advances.org_id, orgId),
+                eq(customer_advances.customer_id, customerId)
+            ))
+            .orderBy(desc(customer_advances.created_at))
+    ]);
 
     // Calculate summary stats
     const totalInvoiced = customerInvoices
@@ -242,7 +238,7 @@ export const actions: Actions = {
         try {
             const data = form.data;
 
-            db.update(customers)
+            await db.update(customers)
                 .set({
                     name: data.name,
                     company_name: data.company_name || null,
@@ -262,8 +258,7 @@ export const actions: Actions = {
                 .where(and(
                     eq(customers.id, event.params.id),
                     eq(customers.org_id, event.locals.user.orgId)
-                ))
-                .run();
+                ));
 
             return { form, success: true };
         } catch (error) {

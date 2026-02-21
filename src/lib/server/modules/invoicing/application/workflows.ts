@@ -69,19 +69,19 @@ export function parseInvoiceLineItemsFromFormData(formData: FormData): InvoiceLi
     return lineItems;
 }
 
-function resolveTaxContextInTx(
+async function resolveTaxContextInTx(
     tx: Tx,
     orgId: string,
     customerId: string,
     requestedPricesIncludeGst: ParsedPricesIncludeGst
 ) {
-    const customer = findCustomerTaxContextInTx(tx, orgId, customerId);
+    const customer = await findCustomerTaxContextInTx(tx, orgId, customerId);
 
     if (!customer) {
         throw new NotFoundError('Customer not found');
     }
 
-    const org = findOrganizationTaxContextInTx(tx, orgId);
+    const org = await findOrganizationTaxContextInTx(tx, orgId);
 
     if (!org) {
         throw new InvariantError('Organization not found');
@@ -134,8 +134,8 @@ export interface CreateInvoiceInTxResult {
     pricesIncludeGst: boolean;
 }
 
-export function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): CreateInvoiceInTxResult {
-    const { isInterState, pricesIncludeGst } = resolveTaxContextInTx(
+export async function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): Promise<CreateInvoiceInTxResult> {
+    const { isInterState, pricesIncludeGst } = await resolveTaxContextInTx(
         tx,
         input.orgId,
         input.customerId,
@@ -151,20 +151,20 @@ export function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): Create
             throw new ValidationError('Invoice number is required');
         }
 
-        const duplicate = findInvoiceByNumberInTx(tx, input.orgId, invoiceNumber);
+        const duplicate = await findInvoiceByNumberInTx(tx, input.orgId, invoiceNumber);
 
         if (duplicate) {
             throw new ConflictError('Invoice number already exists');
         }
 
-        bumpNumberSeriesIfHigher(input.orgId, 'invoice', invoiceNumber, tx);
+        await bumpNumberSeriesIfHigher(input.orgId, 'invoice', invoiceNumber, tx);
     } else {
         invoiceNumber = input.issue
-            ? getNextNumberTx(tx, input.orgId, 'invoice')
+            ? await getNextNumberTx(tx, input.orgId, 'invoice')
             : `DRAFT-${invoiceId.substring(0, 8).toUpperCase()}`;
     }
 
-    tx.insert(invoices).values({
+    await tx.insert(invoices).values({
         id: invoiceId,
         org_id: input.orgId,
         customer_id: input.customerId,
@@ -189,13 +189,13 @@ export function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): Create
         issued_at: input.issue ? new Date().toISOString() : null,
         created_by: input.userId,
         updated_by: input.userId
-    }).run();
+    });
 
     for (let idx = 0; idx < input.lineItems.length; idx++) {
         const item = input.lineItems[idx];
         const calc = totals.lines[idx];
 
-        tx.insert(invoice_items).values({
+        await tx.insert(invoice_items).values({
             id: crypto.randomUUID(),
             invoice_id: invoiceId,
             item_id: item.item_id || null,
@@ -211,11 +211,11 @@ export function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): Create
             amount: calc.amount,
             total: calc.total,
             sort_order: idx
-        }).run();
+        });
     }
 
     if (input.issue) {
-        const postingResult = postInvoiceIssuance(
+        const postingResult = await postInvoiceIssuance(
             input.orgId,
             {
                 invoiceId,
@@ -232,13 +232,12 @@ export function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): Create
             tx
         );
 
-        tx
+        await tx
             .update(invoices)
             .set({ journal_entry_id: postingResult.journalEntryId })
-            .where(eq(invoices.id, invoiceId))
-            .run();
+            .where(eq(invoices.id, invoiceId));
 
-        applyCustomerBalanceDeltaInTx(tx, input.customerId, totals.total, new Date().toISOString());
+        await applyCustomerBalanceDeltaInTx(tx, input.customerId, totals.total, new Date().toISOString());
 
         logDomainEvent('invoicing.invoice.issued_on_create', {
             orgId: input.orgId,
@@ -294,8 +293,11 @@ export interface UpdateDraftInvoiceInTxResult {
     pricesIncludeGst: boolean;
 }
 
-export function updateDraftInvoiceInTx(tx: Tx, input: UpdateDraftInvoiceInTxInput): UpdateDraftInvoiceInTxResult {
-    const { isInterState, pricesIncludeGst } = resolveTaxContextInTx(
+export async function updateDraftInvoiceInTx(
+    tx: Tx,
+    input: UpdateDraftInvoiceInTxInput
+): Promise<UpdateDraftInvoiceInTxResult> {
+    const { isInterState, pricesIncludeGst } = await resolveTaxContextInTx(
         tx,
         input.orgId,
         input.customerId,
@@ -303,7 +305,7 @@ export function updateDraftInvoiceInTx(tx: Tx, input: UpdateDraftInvoiceInTxInpu
     );
     const totals = calculateTotals(input.lineItems, isInterState, pricesIncludeGst);
 
-    tx
+    await tx
         .update(invoices)
         .set({
             customer_id: input.customerId,
@@ -324,16 +326,15 @@ export function updateDraftInvoiceInTx(tx: Tx, input: UpdateDraftInvoiceInTxInpu
             updated_at: new Date().toISOString(),
             updated_by: input.userId
         })
-        .where(eq(invoices.id, input.invoiceId))
-        .run();
+        .where(eq(invoices.id, input.invoiceId));
 
-    tx.delete(invoice_items).where(eq(invoice_items.invoice_id, input.invoiceId)).run();
+    await tx.delete(invoice_items).where(eq(invoice_items.invoice_id, input.invoiceId));
 
     for (let idx = 0; idx < input.lineItems.length; idx++) {
         const item = input.lineItems[idx];
         const calc = totals.lines[idx];
 
-        tx.insert(invoice_items).values({
+        await tx.insert(invoice_items).values({
             id: crypto.randomUUID(),
             invoice_id: input.invoiceId,
             item_id: item.item_id || null,
@@ -349,7 +350,7 @@ export function updateDraftInvoiceInTx(tx: Tx, input: UpdateDraftInvoiceInTxInpu
             amount: calc.amount,
             total: calc.total,
             sort_order: idx
-        }).run();
+        });
     }
 
     return {
@@ -376,18 +377,18 @@ interface InvoiceIssueInput {
     total: number;
 }
 
-export function issueDraftInvoiceInTx(
+export async function issueDraftInvoiceInTx(
     tx: Tx,
     orgId: string,
     userId: string,
     invoice: InvoiceIssueInput
-): { invoiceNumber: string } {
+): Promise<{ invoiceNumber: string }> {
     let invoiceNumber = invoice.invoice_number;
     if (invoiceNumber.startsWith('DRAFT-')) {
-        invoiceNumber = getNextNumberTx(tx, orgId, 'invoice');
+        invoiceNumber = await getNextNumberTx(tx, orgId, 'invoice');
     }
 
-    const postingResult = postInvoiceIssuance(
+    const postingResult = await postInvoiceIssuance(
         orgId,
         {
             invoiceId: invoice.id,
@@ -404,7 +405,7 @@ export function issueDraftInvoiceInTx(
         tx
     );
 
-    tx
+    await tx
         .update(invoices)
         .set({
             invoice_number: invoiceNumber,
@@ -414,10 +415,9 @@ export function issueDraftInvoiceInTx(
             updated_at: new Date().toISOString(),
             updated_by: userId
         })
-        .where(eq(invoices.id, invoice.id))
-        .run();
+        .where(eq(invoices.id, invoice.id));
 
-    applyCustomerBalanceDeltaInTx(tx, invoice.customer_id, invoice.total, new Date().toISOString());
+    await applyCustomerBalanceDeltaInTx(tx, invoice.customer_id, invoice.total, new Date().toISOString());
 
     logDomainEvent('invoicing.invoice.issued', {
         orgId,
@@ -436,7 +436,7 @@ interface InvoiceCancelInput {
     journal_entry_id: string | null;
 }
 
-export function cancelInvoiceInTx(
+export async function cancelInvoiceInTx(
     tx: Tx,
     orgId: string,
     userId: string,
@@ -450,12 +450,12 @@ export function cancelInvoiceInTx(
             throw new InvariantError('Issued invoice is missing journal entry');
         }
 
-        reverse(orgId, invoice.journal_entry_id, reversalDate, userId, tx);
+        await reverse(orgId, invoice.journal_entry_id, reversalDate, userId, tx);
 
-        applyCustomerBalanceDeltaInTx(tx, invoice.customer_id, -invoice.total, nowIso);
+        await applyCustomerBalanceDeltaInTx(tx, invoice.customer_id, -invoice.total, nowIso);
     }
 
-    tx
+    await tx
         .update(invoices)
         .set({
             status: 'cancelled',
@@ -463,8 +463,7 @@ export function cancelInvoiceInTx(
             updated_at: nowIso,
             updated_by: userId
         })
-        .where(eq(invoices.id, invoice.id))
-        .run();
+        .where(eq(invoices.id, invoice.id));
 
     logDomainEvent('invoicing.invoice.cancelled', {
         orgId,
@@ -473,9 +472,9 @@ export function cancelInvoiceInTx(
     });
 }
 
-export function deleteDraftInvoiceInTx(tx: Tx, invoiceId: string) {
-    tx.delete(invoice_items).where(eq(invoice_items.invoice_id, invoiceId)).run();
-    tx.delete(invoices).where(eq(invoices.id, invoiceId)).run();
+export async function deleteDraftInvoiceInTx(tx: Tx, invoiceId: string) {
+    await tx.delete(invoice_items).where(eq(invoice_items.invoice_id, invoiceId));
+    await tx.delete(invoices).where(eq(invoices.id, invoiceId));
 
     logDomainEvent('invoicing.invoice.draft_deleted', {
         invoiceId

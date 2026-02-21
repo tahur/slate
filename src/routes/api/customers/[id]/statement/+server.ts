@@ -111,7 +111,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
                 )
             );
 
-        const openingBalance = (priorInvoices[0]?.total || 0) - (priorPayments[0]?.total || 0);
+        const openingBalance = (Number(priorInvoices[0]?.total) || 0) - (Number(priorPayments[0]?.total) || 0);
 
         const entries = [
             ...invoicesInPeriod.map((inv) => ({

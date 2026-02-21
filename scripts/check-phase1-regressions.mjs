@@ -30,6 +30,10 @@ function assertCondition(condition, message) {
     }
 }
 
+function escapeRegex(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 const invoiceShowPath = 'src/routes/(app)/invoices/[id]/+page.server.ts';
 const invoiceWorkflowsPath = 'src/lib/server/modules/invoicing/application/workflows.ts';
 const receivablesWorkflowsPath = 'src/lib/server/modules/receivables/application/workflows.ts';
@@ -46,7 +50,7 @@ const reset = await readText(resetPath);
 
 const routeCancelsViaWorkflow = /cancel:\s*async[\s\S]*?cancelInvoiceInTx\(/.test(invoiceShow);
 const routeCancelsViaReverse = /cancel:\s*async[\s\S]*?reverse\(orgId,\s*invoice\.journal_entry_id/.test(invoiceShow);
-const workflowCancelsViaReverse = /export function cancelInvoiceInTx[\s\S]*?reverse\(orgId,\s*invoice\.journal_entry_id/.test(invoiceWorkflows);
+const workflowCancelsViaReverse = /export\s+async\s+function\s+cancelInvoiceInTx[\s\S]*?reverse\(\s*orgId,\s*invoice\.journal_entry_id/.test(invoiceWorkflows);
 
 assertCondition(
     routeCancelsViaReverse || (routeCancelsViaWorkflow && workflowCancelsViaReverse),
@@ -96,15 +100,24 @@ for (const [filePath, regex] of idempotencySchemaChecks) {
     );
 }
 
-const migration = await readText('migrations/0002_majestic_weapon_omega.sql');
+const migrationFiles = (await walk(path.join(process.cwd(), 'migrations')))
+    .filter((filePath) => filePath.endsWith('.sql'));
+const migration = (await Promise.all(
+    migrationFiles.map((absPath) => fs.readFile(absPath, 'utf8'))
+)).join('\n');
+
 for (const indexName of [
     'idx_invoices_org_idempotency',
     'idx_payments_org_idempotency',
     'idx_expenses_org_idempotency',
     'idx_credit_notes_org_idempotency'
 ]) {
+    const pattern = new RegExp(
+        `CREATE\\s+UNIQUE\\s+INDEX(?:\\s+IF\\s+NOT\\s+EXISTS)?\\s+[\\\`"']?${escapeRegex(indexName)}[\\\`"']?`,
+        'i'
+    );
     assertCondition(
-        migration.includes(`CREATE UNIQUE INDEX IF NOT EXISTS \`${indexName}\``),
+        pattern.test(migration),
         `Missing idempotency unique index migration for ${indexName}.`
     );
 }

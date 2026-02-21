@@ -1,16 +1,24 @@
-
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import { customers } from '../src/lib/server/db/schema/customers';
 import { vendors } from '../src/lib/server/db/schema/vendors';
 import { organizations } from '../src/lib/server/db/schema/organizations';
 import { users } from '../src/lib/server/db/schema/users';
-import { eq } from 'drizzle-orm';
-import path from 'path';
 
-const dbPath = path.resolve('data/slate.db');
-const sqlite = new Database(dbPath);
-const db = drizzle(sqlite);
+const connectionString = process.env.DATABASE_URL_MIGRATION || process.env.DATABASE_URL;
+
+if (!connectionString) {
+    throw new Error('DATABASE_URL_MIGRATION or DATABASE_URL is required');
+}
+
+const client = postgres(connectionString, {
+    ssl: 'require',
+    max: 1,
+    idle_timeout: 10,
+    connect_timeout: 10,
+    prepare: false
+});
+const db = drizzle(client);
 
 async function seed() {
     console.log('Seeding data...');
@@ -191,4 +199,10 @@ async function seed() {
     console.log('Seeding completed!');
 }
 
-seed().catch(console.error);
+try {
+    await seed();
+} catch (error) {
+    console.error(error);
+} finally {
+    await client.end({ timeout: 5 });
+}

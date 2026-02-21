@@ -11,7 +11,7 @@ import {
     payments,
     payment_allocations
 } from '$lib/server/db/schema';
-import { eq, and, gt, desc } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { logActivity } from '$lib/server/services';
 import { runInTx } from '$lib/server/platform/db/tx';
@@ -34,7 +34,7 @@ import {
 } from '$lib/server/modules/receivables/application/workflows';
 import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
 import { listActivePaymentModes } from '$lib/server/modules/receivables/infra/queries';
-import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
+import { seedPaymentModes } from '$lib/server/seed';
 import { round2 } from '$lib/utils/currency';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -42,10 +42,13 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
         redirect(302, '/login');
     }
 
+    const orgId = locals.user.orgId;
+    const invoiceId = params.id;
+
     const invoice = await db.query.invoices.findFirst({
         where: and(
-            eq(invoices.id, params.id),
-            eq(invoices.org_id, locals.user.orgId)
+            eq(invoices.id, invoiceId),
+            eq(invoices.org_id, orgId)
         )
     });
 
@@ -53,127 +56,123 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
         redirect(302, '/invoices');
     }
 
-    // Get items
-    const items = await db.query.invoice_items.findMany({
-        where: eq(invoice_items.invoice_id, params.id),
-        orderBy: invoice_items.sort_order,
-    });
-
-    // Get customer
-    const customer = await db.query.customers.findFirst({
-        where: eq(customers.id, invoice.customer_id),
-    });
-
-    const org = await db.query.organizations.findFirst({
-        where: eq(organizations.id, locals.user.orgId)
-    });
-
     const justRecordedPayment = url.searchParams.get('payment') === 'recorded';
-
-    // Fetch available credits (advances + credit notes)
-    const advances = await db
-        .select({
-            id: customer_advances.id,
-            amount: customer_advances.balance,
-            date: customer_advances.created_at,
-            number: payments.payment_number
-        })
-        .from(customer_advances)
-        .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
-        .where(
-            and(
-                eq(customer_advances.org_id, locals.user.orgId),
-                eq(customer_advances.customer_id, invoice.customer_id),
-                gt(customer_advances.balance, MONEY_EPSILON)
-            )
-        );
-
-    const cnList = await db
-        .select({
-            id: credit_notes.id,
-            amount: credit_notes.balance, // Use balance, not total
-            date: credit_notes.credit_note_date,
-            number: credit_notes.credit_note_number
-        })
-        .from(credit_notes)
-        .where(
-            and(
-                eq(credit_notes.org_id, locals.user.orgId),
-                eq(credit_notes.customer_id, invoice.customer_id),
-                eq(credit_notes.status, 'issued'),
-                gt(credit_notes.balance, MONEY_EPSILON) // Ensure positive balance
-            )
-        );
+    const [items, customer, org, advances, cnList, paymentAllocations, creditAllocations] = await Promise.all([
+        db.query.invoice_items.findMany({
+            where: eq(invoice_items.invoice_id, invoiceId),
+            orderBy: invoice_items.sort_order
+        }),
+        db.query.customers.findFirst({
+            where: eq(customers.id, invoice.customer_id)
+        }),
+        db.query.organizations.findFirst({
+            where: eq(organizations.id, orgId)
+        }),
+        db
+            .select({
+                id: customer_advances.id,
+                amount: customer_advances.balance,
+                date: customer_advances.created_at,
+                number: payments.payment_number
+            })
+            .from(customer_advances)
+            .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
+            .where(
+                and(
+                    eq(customer_advances.org_id, orgId),
+                    eq(customer_advances.customer_id, invoice.customer_id),
+                    gt(customer_advances.balance, MONEY_EPSILON)
+                )
+            ),
+        db
+            .select({
+                id: credit_notes.id,
+                amount: credit_notes.balance,
+                date: credit_notes.credit_note_date,
+                number: credit_notes.credit_note_number
+            })
+            .from(credit_notes)
+            .where(
+                and(
+                    eq(credit_notes.org_id, orgId),
+                    eq(credit_notes.customer_id, invoice.customer_id),
+                    eq(credit_notes.status, 'issued'),
+                    gt(credit_notes.balance, MONEY_EPSILON)
+                )
+            ),
+        db
+            .select({
+                id: payment_allocations.id,
+                amount: payment_allocations.amount,
+                date: payments.payment_date,
+                number: payments.payment_number,
+                mode: payments.payment_mode
+            })
+            .from(payment_allocations)
+            .innerJoin(payments, eq(payment_allocations.payment_id, payments.id))
+            .where(eq(payment_allocations.invoice_id, invoiceId)),
+        db
+            .select({
+                id: credit_allocations.id,
+                amount: credit_allocations.amount,
+                credit_note_id: credit_allocations.credit_note_id,
+                advance_id: credit_allocations.advance_id,
+                created_at: credit_allocations.created_at,
+                cn_number: credit_notes.credit_note_number,
+                cn_date: credit_notes.credit_note_date,
+                adv_date: customer_advances.created_at,
+                adv_payment_number: payments.payment_number
+            })
+            .from(credit_allocations)
+            .leftJoin(credit_notes, eq(credit_allocations.credit_note_id, credit_notes.id))
+            .leftJoin(customer_advances, eq(credit_allocations.advance_id, customer_advances.id))
+            .leftJoin(payments, eq(customer_advances.payment_id, payments.id))
+            .where(eq(credit_allocations.invoice_id, invoiceId))
+    ]);
 
     const availableCredits = [
-        ...advances.map(a => ({ ...a, type: 'advance' as const })),
-        ...cnList.map(c => ({ ...c, type: 'credit_note' as const }))
+        ...advances.map((a) => ({ ...a, type: 'advance' as const })),
+        ...cnList.map((c) => ({ ...c, type: 'credit_note' as const }))
     ];
 
-    // Fetch payment history for this invoice
-    // 1. Regular payments
-    const paymentAllocations = await db
-        .select({
-            id: payment_allocations.id,
-            amount: payment_allocations.amount,
-            date: payments.payment_date,
-            number: payments.payment_number,
-            mode: payments.payment_mode
-        })
-        .from(payment_allocations)
-        .innerJoin(payments, eq(payment_allocations.payment_id, payments.id))
-        .where(eq(payment_allocations.invoice_id, params.id));
+    const enrichedCreditAllocations = creditAllocations.map((ca) => {
+        if (ca.credit_note_id) {
+            return {
+                id: ca.id,
+                amount: ca.amount,
+                credit_note_id: ca.credit_note_id,
+                advance_id: ca.advance_id,
+                created_at: ca.created_at,
+                type: 'credit_note' as const,
+                number: ca.cn_number || 'Unknown',
+                date: ca.cn_date || ca.created_at
+            };
+        }
 
-    // 2. Credit allocations (credit notes + advances)
-    const creditAllocations = await db
-        .select({
-            id: credit_allocations.id,
-            amount: credit_allocations.amount,
-            credit_note_id: credit_allocations.credit_note_id,
-            advance_id: credit_allocations.advance_id,
-            created_at: credit_allocations.created_at
-        })
-        .from(credit_allocations)
-        .where(eq(credit_allocations.invoice_id, params.id));
+        if (ca.advance_id) {
+            return {
+                id: ca.id,
+                amount: ca.amount,
+                credit_note_id: ca.credit_note_id,
+                advance_id: ca.advance_id,
+                created_at: ca.created_at,
+                type: 'advance' as const,
+                number: ca.adv_payment_number || 'Advance',
+                date: ca.adv_date || ca.created_at
+            };
+        }
 
-    // Enrich credit allocations with details
-    const enrichedCreditAllocations = await Promise.all(
-        creditAllocations.map(async (ca) => {
-            if (ca.credit_note_id) {
-                const cn = await db.query.credit_notes.findFirst({
-                    where: eq(credit_notes.id, ca.credit_note_id),
-                    columns: { credit_note_number: true, credit_note_date: true }
-                });
-                return {
-                    ...ca,
-                    type: 'credit_note' as const,
-                    number: cn?.credit_note_number || 'Unknown',
-                    date: cn?.credit_note_date || ca.created_at
-                };
-            } else if (ca.advance_id) {
-                const adv = await db.query.customer_advances.findFirst({
-                    where: eq(customer_advances.id, ca.advance_id),
-                    columns: { payment_id: true, created_at: true }
-                });
-                // Get payment number for reference
-                let paymentNumber = 'Advance';
-                if (adv?.payment_id) {
-                    const pmt = await db.query.payments.findFirst({
-                        where: eq(payments.id, adv.payment_id),
-                        columns: { payment_number: true }
-                    });
-                    paymentNumber = pmt?.payment_number || 'Advance';
-                }
-                return {
-                    ...ca,
-                    type: 'advance' as const,
-                    number: paymentNumber,
-                    date: adv?.created_at || ca.created_at
-                };
-            }
-            return { ...ca, type: 'unknown' as const, number: 'Unknown', date: ca.created_at };
-        })
-    );
+        return {
+            id: ca.id,
+            amount: ca.amount,
+            credit_note_id: ca.credit_note_id,
+            advance_id: ca.advance_id,
+            created_at: ca.created_at,
+            type: 'unknown' as const,
+            number: 'Unknown',
+            date: ca.created_at
+        };
+    });
 
     // Combine all transactions for payment history
     const paymentHistory = [
@@ -195,11 +194,11 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
         }))
     ].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
 
-    // Load payment modes for settle modal
-    if (!hasPaymentModes(locals.user.orgId)) {
-        seedPaymentModes(locals.user.orgId);
+    let paymentModes = await listActivePaymentModes(orgId);
+    if (paymentModes.length === 0) {
+        await seedPaymentModes(orgId);
+        paymentModes = await listActivePaymentModes(orgId);
     }
-    const paymentModes = await listActivePaymentModes(locals.user.orgId);
 
     return { invoice, items, customer, org, justRecordedPayment, availableCredits, paymentHistory, paymentModes };
 };
@@ -232,13 +231,13 @@ export const actions: Actions = {
         let invoiceNumber = invoice.invoice_number;
 
         try {
-            runInTx((tx) => {
-                const result = issueDraftInvoiceInTx(tx, orgId, userId, invoice);
+            await runInTx(async (tx) => {
+                const result = await issueDraftInvoiceInTx(tx, orgId, userId, invoice);
                 invoiceNumber = result.invoiceNumber;
             });
 
             // Log activity (outside tx)
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId,
                 entityType: 'invoice',
@@ -291,11 +290,11 @@ export const actions: Actions = {
         try {
             const now = new Date().toISOString();
 
-            runInTx((tx) => {
-                cancelInvoiceInTx(tx, orgId, locals.user!.id, invoice, now);
+            await runInTx(async (tx) => {
+                await cancelInvoiceInTx(tx, orgId, locals.user!.id, invoice, now);
             });
 
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'invoice',
@@ -334,8 +333,8 @@ export const actions: Actions = {
         let totalApplied = 0;
 
         try {
-            runInTx((tx) => {
-                const result = applyCreditsToInvoiceInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await applyCreditsToInvoiceInTx(tx, {
                     orgId,
                     invoiceId,
                     requestedCredits
@@ -385,8 +384,8 @@ export const actions: Actions = {
         let paymentNumber = '';
 
         try {
-            runInTx((tx) => {
-                const result = recordInvoicePaymentInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await recordInvoicePaymentInTx(tx, {
                     orgId,
                     userId: locals.user!.id,
                     invoice: {
@@ -447,8 +446,8 @@ export const actions: Actions = {
         let resultingStatus: 'paid' | 'partially_paid' = 'partially_paid';
 
         try {
-            runInTx((tx) => {
-                const result = settleInvoiceInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await settleInvoiceInTx(tx, {
                     orgId,
                     userId: locals.user!.id,
                     invoiceId,
@@ -465,7 +464,7 @@ export const actions: Actions = {
                 resultingStatus = result.resultingStatus;
             });
 
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'invoice',
@@ -530,8 +529,8 @@ export const actions: Actions = {
         let updatedTotal = invoice.total;
 
         try {
-            runInTx((tx) => {
-                const result = updateDraftInvoiceInTx(tx, {
+            await runInTx(async (tx) => {
+                const result = await updateDraftInvoiceInTx(tx, {
                     orgId,
                     userId: locals.user!.id,
                     invoiceId: params.id,
@@ -549,7 +548,7 @@ export const actions: Actions = {
             });
 
             // Log activity (outside tx)
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'invoice',
@@ -590,12 +589,12 @@ export const actions: Actions = {
         }
 
         try {
-            runInTx((tx) => {
-                deleteDraftInvoiceInTx(tx, params.id);
+            await runInTx(async (tx) => {
+                await deleteDraftInvoiceInTx(tx, params.id);
             });
 
             // Log activity (outside tx)
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'invoice',

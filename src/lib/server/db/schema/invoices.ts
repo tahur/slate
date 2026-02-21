@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, unique, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, integer, numeric, boolean, unique, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { customers } from './customers';
@@ -6,7 +6,7 @@ import { users } from './users';
 import { journal_entries } from './journals';
 import { items } from './items';
 
-export const invoices = sqliteTable(
+export const invoices = pgTable(
     'invoices',
     {
         id: text('id').primaryKey(),
@@ -30,25 +30,25 @@ export const invoices = sqliteTable(
         // draft, issued, partially_paid, paid, cancelled
 
         // Amounts
-        subtotal: real('subtotal').default(0).notNull(),
+        subtotal: numeric('subtotal', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
         discount_type: text('discount_type'), // percent, fixed
-        discount_value: real('discount_value').default(0),
-        discount_amount: real('discount_amount').default(0),
-        taxable_amount: real('taxable_amount').default(0).notNull(),
-        cgst: real('cgst').default(0),
-        sgst: real('sgst').default(0),
-        igst: real('igst').default(0),
-        total: real('total').default(0).notNull(),
-        amount_paid: real('amount_paid').default(0),
-        balance_due: real('balance_due').default(0).notNull(),
+        discount_value: numeric('discount_value', { precision: 14, scale: 4, mode: 'number' }).default(0),
+        discount_amount: numeric('discount_amount', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        taxable_amount: numeric('taxable_amount', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
+        cgst: numeric('cgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        sgst: numeric('sgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        igst: numeric('igst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
+        amount_paid: numeric('amount_paid', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        balance_due: numeric('balance_due', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
 
         // GST
-        is_inter_state: integer('is_inter_state', { mode: 'boolean' }).default(false), // 0 = intra, 1 = inter
-        prices_include_gst: integer('prices_include_gst', { mode: 'boolean' }).default(false),
+        is_inter_state: boolean('is_inter_state').default(false), // 0 = intra, 1 = inter
+        prices_include_gst: boolean('prices_include_gst').default(false),
 
         // TDS (Phase 2 - columns added for future)
-        tds_rate: real('tds_rate').default(0),
-        tds_amount: real('tds_amount').default(0),
+        tds_rate: numeric('tds_rate', { precision: 14, scale: 4, mode: 'number' }).default(0),
+        tds_amount: numeric('tds_amount', { precision: 14, scale: 2, mode: 'number' }).default(0),
 
         // E-Way Bill (Phase 2 - for goods > ₹50k interstate)
         eway_bill_no: text('eway_bill_no'),
@@ -58,8 +58,8 @@ export const invoices = sqliteTable(
 
         // Multi-currency (Phase 3 - future-proof)
         currency: text('currency').default('INR'),
-        exchange_rate: real('exchange_rate').default(1),
-        base_currency_total: real('base_currency_total'), // Converted to org currency
+        exchange_rate: numeric('exchange_rate', { precision: 14, scale: 4, mode: 'number' }).default(1),
+        base_currency_total: numeric('base_currency_total', { precision: 14, scale: 2, mode: 'number' }), // Converted to org currency
 
         // Content
         notes: text('notes'),
@@ -74,8 +74,8 @@ export const invoices = sqliteTable(
         // Audit
         issued_at: text('issued_at'),
         cancelled_at: text('cancelled_at'),
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-        updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
+        updated_at: text('updated_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id),
         updated_by: text('updated_by').references(() => users.id)
     },
@@ -85,12 +85,13 @@ export const invoices = sqliteTable(
         custIdx: index('idx_invoices_org_customer').on(t.org_id, t.customer_id),
         statusIdx: index('idx_invoices_org_status').on(t.org_id, t.status),
         dateIdx: index('idx_invoices_org_date').on(t.org_id, t.invoice_date),
+        dueStatusIdx: index('idx_invoices_org_status_due').on(t.org_id, t.status, t.due_date),
         journalEntryIdx: index('idx_invoices_journal_entry').on(t.journal_entry_id),
         idempotencyIdx: uniqueIndex('idx_invoices_org_idempotency').on(t.org_id, t.idempotency_key)
     })
 );
 
-export const invoice_items = sqliteTable('invoice_items', {
+export const invoice_items = pgTable('invoice_items', {
     id: text('id').primaryKey(),
     invoice_id: text('invoice_id')
         .notNull()
@@ -104,19 +105,19 @@ export const invoice_items = sqliteTable('invoice_items', {
     hsn_code: text('hsn_code'),
 
     // Quantity & Rate
-    quantity: real('quantity').default(1).notNull(),
+    quantity: numeric('quantity', { precision: 14, scale: 4, mode: 'number' }).default(1).notNull(),
     unit: text('unit').default('nos'),
-    rate: real('rate').notNull(),
+    rate: numeric('rate', { precision: 14, scale: 4, mode: 'number' }).notNull(),
 
     // GST
-    gst_rate: real('gst_rate').default(18).notNull(), // 0, 5, 12, 18, 28
-    cgst: real('cgst').default(0),
-    sgst: real('sgst').default(0),
-    igst: real('igst').default(0),
+    gst_rate: numeric('gst_rate', { precision: 14, scale: 4, mode: 'number' }).default(18).notNull(), // 0, 5, 12, 18, 28
+    cgst: numeric('cgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+    sgst: numeric('sgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+    igst: numeric('igst', { precision: 14, scale: 2, mode: 'number' }).default(0),
 
     // Totals
-    amount: real('amount').notNull(), // quantity * rate
-    total: real('total').notNull(), // amount + gst
+    amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(), // quantity * rate
+    total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).notNull(), // amount + gst
 
     sort_order: integer('sort_order').default(0)
 });

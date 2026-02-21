@@ -7,12 +7,12 @@ Date: February 13, 2026
 1. Standard transaction entrypoint is implemented in `src/lib/server/platform/db/tx.ts`:
    - `runInTx`
    - `runInExistingOrNewTx`
-2. Sync-only callback enforcement for better-sqlite3 is implemented in the transaction wrapper.
+2. Async Promise-based callback policy is implemented in the transaction wrapper.
 3. Posting/reversal operations run through shared transaction boundaries in `src/lib/server/services/posting-engine.ts`.
 4. Critical write routes use `runInTx` consistently.
 5. Static transaction guard implemented in `scripts/check-sync-transactions.mjs`:
    - blocks direct `db.transaction(...)` usage outside the tx wrapper
-   - blocks async transaction callbacks
+   - allows async callbacks only through the wrapper
 6. Data integrity guard implemented in `scripts/check-integrity.mjs`:
    - journal imbalance checks
    - orphan link checks
@@ -20,11 +20,11 @@ Date: February 13, 2026
    - invalid negative/overpaid balances
 7. Phase 4 aggregate guard added in `scripts/check-phase4-transaction-model.mjs`.
 
-## Rules (SQLite + better-sqlite3)
+## Rules (Postgres)
 
-1. Transaction callbacks must be synchronous.
-2. No Promise-returning work inside transaction callbacks.
-3. External I/O (email/HTTP/files/queue) must run after commit.
+1. Transaction callbacks are async and must be awaited.
+2. Direct `db.transaction(...)` usage outside the wrapper is disallowed.
+3. External I/O (email/HTTP/files/queue) should run after commit.
 4. Domain write workflows should require `tx` or use `runInExistingOrNewTx`.
 5. Ledger posting/reversal must share transaction boundaries with document-state mutations.
 
@@ -37,5 +37,5 @@ Date: February 13, 2026
 ## Deploy Readiness Note
 
 Phase 4 exit criteria are met:
-1. No async transaction misuse in guarded code paths.
+1. No direct transaction misuse in guarded code paths.
 2. Integrity guard is mandatory in CI through Phase 4 aggregate guard.

@@ -1,68 +1,54 @@
-import os from 'node:os';
-import path from 'node:path';
-import fs from 'node:fs/promises';
-import Database from 'better-sqlite3';
+import postgres from 'postgres';
 
-function escapeSqlString(value) {
-    return value.replace(/'/g, "''");
+const connectionString = process.env.DATABASE_URL_MIGRATION || process.env.DATABASE_URL;
+
+if (!connectionString) {
+    console.log('Backup/restore drill skipped: DATABASE_URL_MIGRATION or DATABASE_URL is not configured');
+    process.exit(0);
 }
 
-function validateDatabase(dbPath, label) {
-    const db = new Database(dbPath, { readonly: true });
-    try {
-        const integrity = String(db.pragma('integrity_check', { simple: true }) || '');
-        if (integrity.toLowerCase() !== 'ok') {
-            throw new Error(`${label} integrity_check failed: ${integrity}`);
-        }
+const sql = postgres(connectionString, {
+    ssl: 'require',
+    max: 1,
+    idle_timeout: 10,
+    connect_timeout: 10,
+    prepare: false
+});
 
-        const summary = db
-            .prepare('SELECT COUNT(*) AS count, ROUND(COALESCE(SUM(amount), 0), 2) AS total FROM drill_entries')
-            .get();
-
-        if (!summary || summary.count !== 3 || Number(summary.total) !== 1300) {
-            throw new Error(
-                `${label} content mismatch: expected count=3,total=1300.00, got ${JSON.stringify(summary)}`
-            );
-        }
-    } finally {
-        db.close();
-    }
-}
-
-const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'slate-restore-drill-'));
-const sourcePath = path.join(tempRoot, 'source.db');
-const backupPath = path.join(tempRoot, 'backup.db');
-const restoredPath = path.join(tempRoot, 'restored.db');
+const tableName = `drill_entries_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+const backupTableName = `${tableName}_backup`;
 
 try {
-    const sourceDb = new Database(sourcePath);
-    try {
-        sourceDb.pragma('journal_mode = WAL');
-        sourceDb.pragma('foreign_keys = ON');
+    await sql.unsafe(`CREATE TABLE ${tableName} (id text primary key, amount numeric(14,2) not null)`);
+    await sql.unsafe(`INSERT INTO ${tableName} (id, amount) VALUES ('a', 500), ('b', 250), ('c', 550)`);
 
-        sourceDb.exec(`
-            CREATE TABLE drill_entries (
-                id TEXT PRIMARY KEY,
-                amount REAL NOT NULL
-            );
-        `);
+    // Simulate backup artifact by taking a logical copy in DB.
+    await sql.unsafe(`CREATE TABLE ${backupTableName} AS TABLE ${tableName}`);
 
-        const insert = sourceDb.prepare('INSERT INTO drill_entries (id, amount) VALUES (?, ?)');
-        insert.run('a', 500);
-        insert.run('b', 250);
-        insert.run('c', 550);
+    // Simulate data loss.
+    await sql.unsafe(`TRUNCATE TABLE ${tableName}`);
 
-        sourceDb.exec(`VACUUM INTO '${escapeSqlString(backupPath)}'`);
-    } finally {
-        sourceDb.close();
+    // Simulate restore operation.
+    await sql.unsafe(`INSERT INTO ${tableName} (id, amount) SELECT id, amount FROM ${backupTableName}`);
+
+    const summaryRows = await sql.unsafe(
+        `SELECT COUNT(*)::int AS count, ROUND(COALESCE(SUM(amount), 0), 2) AS total FROM ${tableName}`
+    );
+    const summary = summaryRows[0];
+
+    if (!summary || summary.count !== 3 || Number(summary.total) !== 1300) {
+        throw new Error(
+            `Restore verification mismatch: expected count=3,total=1300.00, got ${JSON.stringify(summary)}`
+        );
     }
-
-    validateDatabase(backupPath, 'Backup database');
-
-    await fs.copyFile(backupPath, restoredPath);
-    validateDatabase(restoredPath, 'Restored database');
 
     console.log('Backup/restore verification drill passed.');
 } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
+    try {
+        await sql.unsafe(`DROP TABLE IF EXISTS ${backupTableName}`);
+        await sql.unsafe(`DROP TABLE IF EXISTS ${tableName}`);
+    } catch {
+        // Best-effort cleanup.
+    }
+    await sql.end({ timeout: 5 });
 }

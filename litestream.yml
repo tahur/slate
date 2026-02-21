@@ -1,7 +1,0 @@
-dbs:
-  - path: /app/data/slate.db
-    replicas:
-      - url: ${LITESTREAM_REPLICA_URL}
-        sync-interval: 200ms
-        snapshot-interval: 1h
-        retention: 72h

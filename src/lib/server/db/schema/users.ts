@@ -1,27 +1,27 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, boolean, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { organizations } from './organizations';
 
-export const users = sqliteTable('users', {
+export const users = pgTable('users', {
     id: text('id').primaryKey(),
     orgId: text('org_id')
         .references(() => organizations.id),
     email: text('email').notNull().unique(),
-    emailVerified: integer('email_verified', { mode: 'boolean' }).default(false),
+    emailVerified: boolean('email_verified').default(false),
     name: text('name').notNull(),
     image: text('image'),
     role: text('role').default('admin'),
-    isActive: integer('is_active', { mode: 'boolean' }).default(true),
-    createdAt: integer('created_at', { mode: 'timestamp' }),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
+    isActive: boolean('is_active').default(true),
+    createdAt: timestamp('created_at', { mode: 'date' }),
+    updatedAt: timestamp('updated_at', { mode: 'date' })
 });
 
-export const sessions = sqliteTable('sessions', {
+export const sessions = pgTable('sessions', {
     id: text('id').primaryKey(),
-    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
     token: text('token').notNull().unique(),
-    createdAt: integer('created_at', { mode: 'timestamp' }),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }),
+    createdAt: timestamp('created_at', { mode: 'date' }),
+    updatedAt: timestamp('updated_at', { mode: 'date' }),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     userId: text('user_id')
@@ -29,7 +29,7 @@ export const sessions = sqliteTable('sessions', {
         .references(() => users.id)
 });
 
-export const auth_accounts = sqliteTable('auth_accounts', {
+export const auth_accounts = pgTable('auth_accounts', {
     id: text('id').primaryKey(),
     userId: text('user_id')
         .notNull()
@@ -38,19 +38,19 @@ export const auth_accounts = sqliteTable('auth_accounts', {
     providerId: text('provider_id').notNull(),
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
-    expiresAt: integer('expires_at', { mode: 'timestamp' }),
+    expiresAt: timestamp('expires_at', { mode: 'date' }),
     password: text('password'),
-    createdAt: integer('created_at', { mode: 'timestamp' }),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
+    createdAt: timestamp('created_at', { mode: 'date' }),
+    updatedAt: timestamp('updated_at', { mode: 'date' })
 });
 
-export const verification = sqliteTable('verification', {
+export const verification = pgTable('verification', {
     id: text('id').primaryKey(),
     identifier: text('identifier').notNull(),
     value: text('value').notNull(),
-    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' }),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
+    expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }),
+    updatedAt: timestamp('updated_at', { mode: 'date' })
 });
 
 // Relations for better-auth joins

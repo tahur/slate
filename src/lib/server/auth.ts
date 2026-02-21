@@ -9,7 +9,7 @@ function createAuth() {
     const { env } = process;
     return betterAuth({
         database: drizzleAdapter(db, {
-            provider: 'sqlite',
+            provider: 'pg',
             schema: {
                 user: schema.users,
                 session: schema.sessions,
@@ -40,7 +40,10 @@ function createAuth() {
         session: {
             expiresIn: 60 * 60 * 24 * 30,       // 30 days
             updateAge: 60 * 60 * 24,             // refresh DB session daily
-            // cookieCache disabled — SQLite lookups are sub-ms; eliminates stale orgId bugs
+            cookieCache: {
+                enabled: true,
+                maxAge: 60 * 5,                  // 5 minutes — avoids DB hit on every request
+            },
         },
         advanced: {
             useSecureCookies: !!env.ORIGIN?.startsWith('https'),

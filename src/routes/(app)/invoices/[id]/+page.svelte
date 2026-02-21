@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from "$lib/components/ui/button";
+    import { Button, buttonVariants } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Badge } from "$lib/components/ui/badge";
@@ -193,10 +193,14 @@
 
                 <!-- Delete with AlertDialog -->
                 <AlertDialog.Root>
-                    <AlertDialog.Trigger>
-                        <Button variant="destructive" size="icon-sm">
-                            <Trash2 class="size-4" />
-                        </Button>
+                    <AlertDialog.Trigger
+                        class={buttonVariants({
+                            variant: "destructive",
+                            size: "icon-sm",
+                        })}
+                        aria-label="Delete draft invoice"
+                    >
+                        <Trash2 class="size-4" />
                     </AlertDialog.Trigger>
                     <AlertDialog.Content>
                         <AlertDialog.Header>

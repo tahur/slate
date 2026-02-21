@@ -6,7 +6,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { getNextNumberTx, postExpense, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
-import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/sqlite-errors';
+import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/db-errors';
 import { calculateLineTax } from '$lib/tax/gst';
 import { runInTx } from '$lib/server/platform/db/tx';
 import { failActionFromError } from '$lib/server/platform/errors';
@@ -21,55 +21,53 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     const orgId = locals.user.orgId;
 
-    // Get expense categories (expense accounts)
-    const expenseAccounts = await db
-        .select({
-            id: accounts.id,
-            name: accounts.account_name,
-            code: accounts.account_code
-        })
-        .from(accounts)
-        .where(
-            and(
-                eq(accounts.org_id, orgId),
-                eq(accounts.account_type, 'expense'),
-                eq(accounts.is_active, true)
+    // Fetch all data in parallel
+    const [expenseAccounts, paymentAccounts, vendorList] = await Promise.all([
+        db
+            .select({
+                id: accounts.id,
+                name: accounts.account_name,
+                code: accounts.account_code
+            })
+            .from(accounts)
+            .where(
+                and(
+                    eq(accounts.org_id, orgId),
+                    eq(accounts.account_type, 'expense'),
+                    eq(accounts.is_active, true)
+                )
             )
-        )
-        .orderBy(accounts.account_code);
-
-    // Get payment accounts (Cash, Bank)
-    const paymentAccounts = await db
-        .select({
-            id: accounts.id,
-            name: accounts.account_name,
-            code: accounts.account_code
-        })
-        .from(accounts)
-        .where(
-            and(
-                eq(accounts.org_id, orgId),
-                sql`${accounts.account_code} IN ('1000', '1100')`
+            .orderBy(accounts.account_code),
+        db
+            .select({
+                id: accounts.id,
+                name: accounts.account_name,
+                code: accounts.account_code
+            })
+            .from(accounts)
+            .where(
+                and(
+                    eq(accounts.org_id, orgId),
+                    sql`${accounts.account_code} IN ('1000', '1100')`
+                )
+            ),
+        db
+            .select({
+                id: vendors.id,
+                name: vendors.name,
+                display_name: vendors.display_name,
+                gstin: vendors.gstin,
+                state_code: vendors.state_code,
+            })
+            .from(vendors)
+            .where(
+                and(
+                    eq(vendors.org_id, orgId),
+                    eq(vendors.is_active, true)
+                )
             )
-        );
-
-    // Get vendors list
-    const vendorList = await db
-        .select({
-            id: vendors.id,
-            name: vendors.name,
-            display_name: vendors.display_name,
-            gstin: vendors.gstin,
-            state_code: vendors.state_code,
-        })
-        .from(vendors)
-        .where(
-            and(
-                eq(vendors.org_id, orgId),
-                eq(vendors.is_active, 1)
-            )
-        )
-        .orderBy(vendors.name);
+            .orderBy(vendors.name)
+    ]);
 
     // Check for pre-selected vendor from URL
     const selectedVendorId = url.searchParams.get('vendor');
@@ -145,30 +143,28 @@ export const actions: Actions = {
         const igst = taxBreakdown.igst;
         const total = taxBreakdown.total;
 
-        // Pre-fetch account info (read-only, safe outside transaction)
-        const categoryAccount = await db.query.accounts.findFirst({
-            where: eq(accounts.id, category)
-        });
+        // Pre-fetch account info in parallel (read-only, safe outside transaction)
+        const [categoryAccount, paymentAccount] = await Promise.all([
+            db.query.accounts.findFirst({ where: eq(accounts.id, category) }),
+            db.query.accounts.findFirst({ where: eq(accounts.id, paid_through) })
+        ]);
 
         if (!categoryAccount) {
             return fail(400, { error: 'Invalid category' });
         }
 
-        const paymentAccount = await db.query.accounts.findFirst({
-            where: eq(accounts.id, paid_through)
-        });
         const paidThrough = paymentAccount?.account_code === '1000' ? 'cash' : 'bank';
 
         const expenseId = crypto.randomUUID();
         let expenseNumber = '';
 
         try {
-            runInTx((tx) => {
+            await runInTx(async (tx) => {
                 // Generate expense number
-                expenseNumber = getNextNumberTx(tx, orgId, 'expense');
+                expenseNumber = await getNextNumberTx(tx, orgId, 'expense');
 
                 // Post to journal
-                const postingResult = postExpense(orgId, {
+                const postingResult = await postExpense(orgId, {
                     expenseId,
                     date: expense_date,
                     expenseAccountCode: categoryAccount.account_code,
@@ -182,7 +178,7 @@ export const actions: Actions = {
                 }, tx);
 
                 // Create expense record
-                tx.insert(expenses).values({
+                await tx.insert(expenses).values({
                     id: expenseId,
                     org_id: orgId,
                     expense_number: expenseNumber,
@@ -202,11 +198,11 @@ export const actions: Actions = {
                     journal_entry_id: postingResult.journalEntryId,
                     idempotency_key: idempotencyKey || null,
                     created_by: locals.user!.id
-                }).run();
+                });
             });
 
             // Log activity (outside transaction — non-critical)
-            await logActivity({
+            void logActivity({
                 orgId,
                 userId: locals.user.id,
                 entityType: 'expense',

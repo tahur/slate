@@ -1,4 +1,4 @@
-import { sqliteTable, text, real, index, unique, check } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, numeric, index, unique, check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
@@ -11,7 +11,7 @@ import { accounts } from './accounts';
  * See docs/ACCOUNTING_INVARIANTS.md for details.
  */
 
-export const journal_entries = sqliteTable(
+export const journal_entries = pgTable(
     'journal_entries',
     {
         id: text('id').primaryKey(),
@@ -23,11 +23,11 @@ export const journal_entries = sqliteTable(
         reference_type: text('reference_type').notNull(), // invoice, payment, expense, etc.
         reference_id: text('reference_id'), // ID of source document
         narration: text('narration'),
-        total_debit: real('total_debit').notNull(),
-        total_credit: real('total_credit').notNull(),
+        total_debit: numeric('total_debit', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+        total_credit: numeric('total_credit', { precision: 14, scale: 2, mode: 'number' }).notNull(),
         status: text('status').default('posted'), // draft, posted, reversed
         reversed_by: text('reversed_by'), // Self-reference ID
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id)
     },
     (t) => ({
@@ -36,11 +36,14 @@ export const journal_entries = sqliteTable(
         dateIdx: index('idx_journals_date').on(t.org_id, t.entry_date),
 
         // ⚠️ ACCOUNTING INVARIANT: Journal entry totals must balance
-        entryBalanced: check('entry_balanced', sql`ROUND(total_debit, 2) = ROUND(total_credit, 2)`)
+        entryBalanced: check(
+            'entry_balanced',
+            sql`ROUND(total_debit::numeric, 2) = ROUND(total_credit::numeric, 2)`
+        )
     })
 );
 
-export const journal_lines = sqliteTable(
+export const journal_lines = pgTable(
     'journal_lines',
     {
         id: text('id').primaryKey(),
@@ -50,8 +53,8 @@ export const journal_lines = sqliteTable(
         account_id: text('account_id')
             .notNull()
             .references(() => accounts.id),
-        debit: real('debit').default(0),
-        credit: real('credit').default(0),
+        debit: numeric('debit', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        credit: numeric('credit', { precision: 14, scale: 2, mode: 'number' }).default(0),
         party_type: text('party_type'), // customer, vendor
         party_id: text('party_id'), // customer_id or vendor_id
         narration: text('narration')

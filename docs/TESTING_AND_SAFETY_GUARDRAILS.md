@@ -54,7 +54,7 @@ Current mandatory guardrails:
 
 Additional useful checks:
 1. `npm run check:tx`
-   - explicit sync-transaction static guard
+   - transaction-wrapper static guard (no direct `db.transaction` outside wrapper)
 2. `npm run check:integrity`
    - DB integrity drift/orphan/imbalance checks
 

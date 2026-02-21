@@ -13,11 +13,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     const orgId = locals.user.orgId;
 
     // Fetch invoice
-    const invoice = await db
+    const invoiceRows = await db
         .select()
         .from(invoices)
         .where(and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId)))
-        .get();
+        .limit(1);
+    const invoice = invoiceRows[0];
 
     if (!invoice) {
         redirect(302, '/invoices');

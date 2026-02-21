@@ -1,19 +1,20 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import Database from 'better-sqlite3';
+import postgres from 'postgres';
 
 const MONEY_EPSILON = 0.01;
-const DEFAULT_DB_PATH = 'data/slate.db';
-const dbPath = process.env.SLATE_DB_PATH || DEFAULT_DB_PATH;
-const absDbPath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
+const databaseUrl = process.env.DATABASE_URL;
 
-if (!fs.existsSync(absDbPath)) {
-    console.log(`Integrity check skipped: database not found at ${absDbPath}`);
+if (!databaseUrl) {
+    console.log('Integrity check skipped: DATABASE_URL is not configured');
     process.exit(0);
 }
 
-const sqlite = new Database(absDbPath, { readonly: true, fileMustExist: true });
-sqlite.pragma('foreign_keys = ON');
+const sql = postgres(databaseUrl, {
+    ssl: 'require',
+    max: 1,
+    idle_timeout: 10,
+    connect_timeout: 10,
+    prepare: false
+});
 
 /** @type {Array<{name:string, sql:string, params?:unknown[]}>} */
 const checks = [
@@ -23,15 +24,15 @@ const checks = [
             SELECT
                 je.id,
                 je.entry_number,
-                ROUND(COALESCE(SUM(jl.debit), 0), 2) AS total_debit,
-                ROUND(COALESCE(SUM(jl.credit), 0), 2) AS total_credit
+                ROUND(COALESCE(SUM(jl.debit), 0)::numeric, 2) AS total_debit,
+                ROUND(COALESCE(SUM(jl.credit), 0)::numeric, 2) AS total_credit
             FROM journal_entries je
             LEFT JOIN journal_lines jl ON jl.journal_entry_id = je.id
             GROUP BY je.id
             HAVING ABS(
-                ROUND(COALESCE(SUM(jl.debit), 0), 2)
-                - ROUND(COALESCE(SUM(jl.credit), 0), 2)
-            ) > ?
+                ROUND(COALESCE(SUM(jl.debit), 0)::numeric, 2)
+                - ROUND(COALESCE(SUM(jl.credit), 0)::numeric, 2)
+            ) > $1
         `,
         params: [MONEY_EPSILON]
     },
@@ -114,12 +115,12 @@ const checks = [
             SELECT
                 p.id,
                 p.payment_number,
-                ROUND(p.amount, 2) AS payment_amount,
-                ROUND(COALESCE(SUM(pa.amount), 0), 2) AS total_allocated
+                ROUND(p.amount::numeric, 2) AS payment_amount,
+                ROUND(COALESCE(SUM(pa.amount), 0)::numeric, 2) AS total_allocated
             FROM payments p
             LEFT JOIN payment_allocations pa ON pa.payment_id = p.id
             GROUP BY p.id
-            HAVING ROUND(COALESCE(SUM(pa.amount), 0), 2) > ROUND(p.amount, 2) + ?
+            HAVING ROUND(COALESCE(SUM(pa.amount), 0)::numeric, 2) > ROUND(p.amount::numeric, 2) + $1
         `,
         params: [MONEY_EPSILON]
     },
@@ -127,12 +128,12 @@ const checks = [
         name: 'Invoice amount_paid drift vs allocations',
         sql: `
             WITH payment_totals AS (
-                SELECT invoice_id, ROUND(COALESCE(SUM(amount), 0), 2) AS paid_via_payment
+                SELECT invoice_id, ROUND(COALESCE(SUM(amount), 0)::numeric, 2) AS paid_via_payment
                 FROM payment_allocations
                 GROUP BY invoice_id
             ),
             credit_totals AS (
-                SELECT invoice_id, ROUND(COALESCE(SUM(amount), 0), 2) AS paid_via_credit
+                SELECT invoice_id, ROUND(COALESCE(SUM(amount), 0)::numeric, 2) AS paid_via_credit
                 FROM credit_allocations
                 GROUP BY invoice_id
             ),
@@ -140,7 +141,7 @@ const checks = [
                 SELECT
                     i.id,
                     i.invoice_number,
-                    ROUND(COALESCE(i.amount_paid, 0), 2) AS recorded_paid,
+                    ROUND(COALESCE(i.amount_paid, 0)::numeric, 2) AS recorded_paid,
                     ROUND(
                         COALESCE(pt.paid_via_payment, 0)
                         + COALESCE(ct.paid_via_credit, 0),
@@ -158,7 +159,7 @@ const checks = [
                 allocated_paid,
                 ROUND(ABS(recorded_paid - allocated_paid), 2) AS drift
             FROM invoice_totals
-            WHERE ABS(recorded_paid - allocated_paid) > ?
+            WHERE ABS(recorded_paid - allocated_paid) > $1
         `,
         params: [MONEY_EPSILON]
     },
@@ -167,8 +168,8 @@ const checks = [
         sql: `
             SELECT id, payment_id, amount, balance
             FROM customer_advances
-            WHERE balance < -?
-               OR balance > amount + ?
+            WHERE balance < -$1::double precision
+               OR balance > amount + $2::double precision
         `,
         params: [MONEY_EPSILON, MONEY_EPSILON]
     },
@@ -177,8 +178,8 @@ const checks = [
         sql: `
             SELECT id, credit_note_number, total, balance, status
             FROM credit_notes
-            WHERE balance < -?
-               OR balance > total + ?
+            WHERE balance < -$1::double precision
+               OR balance > total + $2::double precision
         `,
         params: [MONEY_EPSILON, MONEY_EPSILON]
     }
@@ -186,29 +187,40 @@ const checks = [
 
 let failureCount = 0;
 
-for (const check of checks) {
-    const stmt = sqlite.prepare(check.sql);
-    const rows = check.params ? stmt.all(...check.params) : stmt.all();
+try {
+    for (const check of checks) {
+        const rows = check.params
+            ? await sql.unsafe(check.sql, check.params)
+            : await sql.unsafe(check.sql);
 
-    if (rows.length === 0) {
-        console.log(`OK   ${check.name}`);
-        continue;
-    }
+        if (rows.length === 0) {
+            console.log(`OK   ${check.name}`);
+            continue;
+        }
 
-    failureCount++;
-    console.log(`FAIL ${check.name} (${rows.length} rows)`);
-    for (const row of rows.slice(0, 10)) {
-        console.log(`     ${JSON.stringify(row)}`);
+        failureCount++;
+        console.log(`FAIL ${check.name} (${rows.length} rows)`);
+        for (const row of rows.slice(0, 10)) {
+            console.log(`     ${JSON.stringify(row)}`);
+        }
+        if (rows.length > 10) {
+            console.log(`     ...and ${rows.length - 10} more`);
+        }
     }
-    if (rows.length > 10) {
-        console.log(`     ...and ${rows.length - 10} more`);
-    }
+} catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Integrity check execution failed: ${message}`);
+    process.exitCode = 1;
+} finally {
+    await sql.end({ timeout: 5 });
 }
-
-sqlite.close();
 
 if (failureCount > 0) {
     console.error(`\nIntegrity check failed with ${failureCount} failing check(s).`);
+    process.exit(1);
+}
+
+if (process.exitCode === 1) {
     process.exit(1);
 }
 

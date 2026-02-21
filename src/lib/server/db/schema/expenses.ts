@@ -1,11 +1,11 @@
-import { sqliteTable, text, real, index, unique, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { pgTable, text, numeric, index, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { organizations } from './organizations';
 import { users } from './users';
 import { journal_entries } from './journals';
 import { vendors } from './vendors';
 
-export const expenses = sqliteTable(
+export const expenses = pgTable(
     'expenses',
     {
         id: text('id').primaryKey(),
@@ -24,12 +24,12 @@ export const expenses = sqliteTable(
         description: text('description'),
 
         // Amounts
-        amount: real('amount').notNull(),
-        gst_rate: real('gst_rate').default(0),
-        cgst: real('cgst').default(0),
-        sgst: real('sgst').default(0),
-        igst: real('igst').default(0),
-        total: real('total').notNull(),
+        amount: numeric('amount', { precision: 14, scale: 2, mode: 'number' }).notNull(),
+        gst_rate: numeric('gst_rate', { precision: 14, scale: 4, mode: 'number' }).default(0),
+        cgst: numeric('cgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        sgst: numeric('sgst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        igst: numeric('igst', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).notNull(),
 
         // Payment
         paid_through: text('paid_through').notNull(), // Account ID (Cash, Bank)
@@ -45,8 +45,8 @@ export const expenses = sqliteTable(
         idempotency_key: text('idempotency_key'),
 
         // Audit
-        created_at: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-        updated_at: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+        created_at: text('created_at').default(sql`NOW()::text`),
+        updated_at: text('updated_at').default(sql`NOW()::text`),
         created_by: text('created_by').references(() => users.id)
     },
     (t) => ({
