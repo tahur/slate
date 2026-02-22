@@ -23,6 +23,11 @@ function getCachedUserOrg(userId: string) {
 }
 
 function cacheUserOrg(userId: string, orgId: string, role: string) {
+    // Never cache unlinked users (empty org); setup updates would otherwise be hidden behind stale cache.
+    if (!orgId) {
+        userOrgCache.delete(userId);
+        return;
+    }
     userOrgCache.set(userId, { orgId, role, expiresAt: Date.now() + USER_CACHE_TTL_MS });
 }
 
@@ -181,7 +186,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             const session = await auth.api.getSession({ headers: event.request.headers });
             if (session) {
                 let userOrg = getCachedUserOrg(session.user.id);
-                if (!userOrg) {
+                if (!userOrg || !userOrg.orgId) {
                     const persistedUser = await db.query.users.findFirst({
                         where: eq(users.id, session.user.id),
                         columns: { orgId: true, role: true }

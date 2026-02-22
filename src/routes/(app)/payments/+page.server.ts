@@ -1,14 +1,14 @@
 import { db } from '$lib/server/db';
-import { payments, customers, payment_modes } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
+import { payments, customers, payment_methods } from '$lib/server/db/schema';
+import { and, eq } from 'drizzle-orm';
+import { hasPaymentConfiguration, seedPaymentConfiguration } from '$lib/server/seed';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
     const orgId = locals.user!.orgId;
 
-    if (!(await hasPaymentModes(orgId))) {
-        await seedPaymentModes(orgId);
+    if (!(await hasPaymentConfiguration(orgId))) {
+        await seedPaymentConfiguration(orgId);
     }
 
     const paymentList = await db
@@ -29,11 +29,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 
     const modesList = await db
         .select({
-            mode_key: payment_modes.mode_key,
-            label: payment_modes.label
+            mode_key: payment_methods.method_key,
+            label: payment_methods.label
         })
-        .from(payment_modes)
-        .where(eq(payment_modes.org_id, orgId));
+        .from(payment_methods)
+        .where(and(eq(payment_methods.org_id, orgId), eq(payment_methods.is_active, true)));
 
     return {
         payments: paymentList.reverse(), // Most recent first

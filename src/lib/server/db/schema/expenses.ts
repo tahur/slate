@@ -4,6 +4,8 @@ import { organizations } from './organizations';
 import { users } from './users';
 import { journal_entries } from './journals';
 import { vendors } from './vendors';
+import { payment_accounts } from './payment_accounts';
+import { payment_methods } from './payment_methods';
 
 export const expenses = pgTable(
     'expenses',
@@ -33,6 +35,8 @@ export const expenses = pgTable(
 
         // Payment
         paid_through: text('paid_through').notNull(), // Account ID (Cash, Bank)
+        payment_account_id: text('payment_account_id').references(() => payment_accounts.id),
+        payment_method_id: text('payment_method_id').references(() => payment_methods.id),
         reference: text('reference'),
 
         // Attachments

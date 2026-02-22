@@ -46,4 +46,11 @@ fix_*.ts
 # Research notes
 research.md
 itemline.md
-dist-electron
+dist-electron/
+
+# HSN data artifacts
+HSN_SAC.xlsx
+hsn_all.json
+hsn_data.*
+hsn-codes-history.txt
+parse_lite.mjs

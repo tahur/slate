@@ -10,6 +10,7 @@
         FileSpreadsheet,
         Receipt,
         Info,
+        Landmark,
     } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
 
@@ -51,6 +52,16 @@
                     icon: Users,
                     color: "text-emerald-600",
                     bg: "bg-emerald-500",
+                },
+                {
+                    title: "Cash & Bank Statement",
+                    description: "Track money received and paid by account",
+                    simpleDescription:
+                        "Verify deposits and spending account-wise",
+                    href: "/reports/cashbook",
+                    icon: Landmark,
+                    color: "text-sky-600",
+                    bg: "bg-sky-500",
                 },
             ],
         },

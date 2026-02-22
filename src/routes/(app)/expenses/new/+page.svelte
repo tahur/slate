@@ -3,6 +3,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check, Plus } from "lucide-svelte";
+    import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance } from "$app/forms";
     import { toast } from "svelte-sonner";
     import { formatINR } from "$lib/utils/currency";
@@ -17,6 +18,18 @@
     let isInterState = $state(false);
     let selectedVendorId = $state(initVendorId || "");
     let vendorName = $state("");
+    const defaultOption = data.paymentOptions.find((o: any) => o.isDefault) || data.paymentOptions[0];
+    let selectedOptionKey = $state(
+        defaultOption ? `${defaultOption.methodKey}::${defaultOption.accountId}` : "",
+    );
+    let paymentMode = $state(defaultOption?.methodKey || "");
+    let paidThrough = $state(defaultOption?.accountId || "");
+
+    function selectOption(option: any) {
+        selectedOptionKey = `${option.methodKey}::${option.accountId}`;
+        paymentMode = option.methodKey;
+        paidThrough = option.accountId;
+    }
 
     // When vendor is selected, update the display name
     const selectedVendor = $derived(
@@ -183,40 +196,28 @@
                         ></textarea>
                     </div>
 
-                    <div class="grid gap-4 grid-cols-2">
-                        <!-- Paid Through -->
-                        <div class="space-y-2">
-                            <Label for="paid_through" variant="form"
-                                >Paid Through <span class="text-destructive"
-                                    >*</span
-                                ></Label
-                            >
-                            <select
-                                id="paid_through"
-                                name="paid_through"
-                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                                required
-                            >
-                                {#each data.paymentAccounts as account}
-                                    <option value={account.id}
-                                        >{account.name}</option
-                                    >
-                                {/each}
-                            </select>
-                        </div>
+                    <div class="space-y-2">
+                        <Label variant="form">Paid via <span class="text-destructive">*</span></Label>
+                        <input type="hidden" name="payment_mode" value={paymentMode} />
+                        <input type="hidden" name="paid_through" value={paidThrough} />
+                        <PaymentOptionChips
+                            options={data.paymentOptions}
+                            selectedOptionKey={selectedOptionKey}
+                            onSelect={selectOption}
+                        />
+                    </div>
 
-                        <!-- Reference -->
-                        <div class="space-y-2">
-                            <Label for="reference" variant="form"
-                                >Reference</Label
-                            >
-                            <Input
-                                type="text"
-                                id="reference"
-                                name="reference"
-                                placeholder="Ref Number"
-                            />
-                        </div>
+                    <!-- Reference -->
+                    <div class="space-y-2">
+                        <Label for="reference" variant="form"
+                            >Reference</Label
+                        >
+                        <Input
+                            type="text"
+                            id="reference"
+                            name="reference"
+                            placeholder="Ref Number"
+                        />
                     </div>
                 </div>
             </div>

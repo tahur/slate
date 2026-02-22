@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { forwardAuthCookies } from '$lib/server/utils/cookies';
+import { isRegistrationOpen } from '$lib/server/utils/registration';
 
 const schema = z.object({
     email: z.string().email(),
@@ -17,12 +18,23 @@ export const load: PageServerLoad = async (event) => {
     if (event.locals.user) {
         redirect(302, '/dashboard');
     }
+
+    const open = await isRegistrationOpen();
+    if (!open) {
+        redirect(302, '/login');
+    }
+
     const form = await superValidate(zod(schema));
     return { form };
 };
 
 export const actions: Actions = {
     default: async (event) => {
+        const open = await isRegistrationOpen();
+        if (!open) {
+            redirect(302, '/login');
+        }
+
         const form = await superValidate(event, zod(schema));
         if (!form.valid) {
             return fail(400, { form });

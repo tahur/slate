@@ -14,6 +14,7 @@
         Pencil,
         Trash2,
     } from "lucide-svelte";
+    import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance } from "$app/forms";
     import { toast } from "svelte-sonner";
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
@@ -64,10 +65,20 @@
 
     // Payment Form State
     let paymentAmount = $state(0);
-    const defaultPaymentMode = data.paymentModes.find((m: any) => m.is_default) || data.paymentModes[0];
-    let paymentMode = $state(defaultPaymentMode?.mode_key || "bank");
+    const defaultPaymentOption = data.paymentOptions.find((o: any) => o.isDefault) || data.paymentOptions[0];
+    let selectedOptionKey = $state(
+        defaultPaymentOption ? `${defaultPaymentOption.methodKey}::${defaultPaymentOption.accountId}` : "",
+    );
+    let paymentMode = $state(defaultPaymentOption?.methodKey || "");
+    let depositTo = $state(defaultPaymentOption?.accountId || "");
     let paymentDate = $state(localDateStr());
     let paymentReference = $state("");
+
+    function selectPaymentOption(option: any) {
+        selectedOptionKey = `${option.methodKey}::${option.accountId}`;
+        paymentMode = option.methodKey;
+        depositTo = option.accountId;
+    }
 
     // Auto-update payment amount when credits change
     $effect(() => {
@@ -81,6 +92,11 @@
         }
         selectedCredits = [];
         paymentAmount = data.invoice.balance_due;
+        paymentMode = defaultPaymentOption?.methodKey || "";
+        depositTo = defaultPaymentOption?.accountId || "";
+        selectedOptionKey = defaultPaymentOption
+            ? `${defaultPaymentOption.methodKey}::${defaultPaymentOption.accountId}`
+            : "";
         paymentDate = localDateStr();
         paymentReference = "";
         showSettleModal = true;
@@ -443,7 +459,9 @@
                             <tbody class="divide-y divide-border/50">
                                 {#each data.items as item, i}
                                     {@const halfRate = (item.gst_rate || 0) / 2}
-                                    {@const taxOnAmount = (item.amount * (item.gst_rate || 0)) / 100}
+                                    {@const lineCgst = item.cgst || 0}
+                                    {@const lineSgst = item.sgst || 0}
+                                    {@const lineIgst = item.igst || 0}
                                     <tr class="hover:bg-surface-2/30">
                                         <td class="px-3 py-2.5 text-center text-xs text-text-muted">{i + 1}</td>
                                         <td class="px-3 py-2.5">
@@ -455,16 +473,16 @@
                                         {#if data.invoice.is_inter_state}
                                             <td class="px-3 py-2.5 text-right">
                                                 <div class="text-[10px] text-text-muted">{item.gst_rate}%</div>
-                                                <div class="font-mono text-xs">{formatINR(taxOnAmount)}</div>
+                                                <div class="font-mono text-xs">{formatINR(lineIgst)}</div>
                                             </td>
                                         {:else}
                                             <td class="px-3 py-2.5 text-right">
                                                 <div class="text-[10px] text-text-muted">{halfRate}%</div>
-                                                <div class="font-mono text-xs">{formatINR(taxOnAmount / 2)}</div>
+                                                <div class="font-mono text-xs">{formatINR(lineCgst)}</div>
                                             </td>
                                             <td class="px-3 py-2.5 text-right">
                                                 <div class="text-[10px] text-text-muted">{halfRate}%</div>
-                                                <div class="font-mono text-xs">{formatINR(taxOnAmount / 2)}</div>
+                                                <div class="font-mono text-xs">{formatINR(lineSgst)}</div>
                                             </td>
                                         {/if}
                                         <td class="px-3 py-2.5 text-right font-mono text-xs font-bold text-text-strong">{formatINR(item.amount)}</td>
@@ -629,31 +647,18 @@
     {/if}
 </div>
 
-<!-- Settle Invoice Modal (Unified) -->
+<!-- Settle Invoice Modal -->
 {#if showSettleModal}
-    <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-    >
-        <div
-            class="bg-surface-1 rounded-xl shadow-2xl w-full max-w-lg border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-        >
-            <div
-                class="p-4 border-b border-border flex justify-between items-center bg-surface-2"
-            >
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div class="bg-surface-0 rounded-xl shadow-xl w-full max-w-md border border-border overflow-hidden">
+            <div class="px-5 py-4 border-b border-border flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-lg text-text-strong">
-                        Settle Invoice
-                    </h3>
-                    <p class="text-xs text-text-muted">
-                        Apply credits or record payment to close this invoice.
-                    </p>
+                    <h3 class="text-base font-semibold text-text-strong">Record payment</h3>
+                    <p class="text-xs text-text-muted mt-0.5">Apply credits or pay to settle this invoice.</p>
                 </div>
-                <button
-                    onclick={() => (showSettleModal = false)}
-                    class="text-text-muted hover:text-text-strong"
-                >
-                    <XCircle class="size-5" />
-                </button>
+                <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => (showSettleModal = false)} aria-label="Close">
+                    <XCircle class="size-4" />
+                </Button>
             </div>
 
             <form
@@ -668,198 +673,83 @@
                             toast.success("Invoice settled successfully");
                             await update();
                         } else if (result.type === "failure") {
-                            const errorMsg =
-                                (result.data as { error?: string })?.error ||
-                                "Settlement failed";
+                            const errorMsg = (result.data as { error?: string })?.error || "Settlement failed";
                             toast.error(errorMsg);
                         }
                     };
                 }}
             >
-                <div class="p-5 space-y-6 max-h-[70vh] overflow-y-auto">
-                    <!-- Top Summary -->
-                    <div
-                        class="bg-surface-2/50 p-4 rounded-lg flex justify-between items-center border border-border"
-                    >
-                        <span class="text-sm font-medium text-text-subtle"
-                            >Amount Due</span
-                        >
-                        <span
-                            class="text-2xl font-bold font-mono text-text-strong"
-                        >
-                            {formatINR(data.invoice.balance_due)}
-                        </span>
+                <div class="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+                    <!-- Amount due -->
+                    <div class="flex items-center justify-between py-2">
+                        <span class="text-sm text-text-muted">Amount due</span>
+                        <span class="text-xl font-bold font-mono text-text-strong">{formatINR(data.invoice.balance_due)}</span>
                     </div>
 
-                    <!-- 1. Available Credits -->
+                    <!-- Credits (if any) -->
                     {#if data.availableCredits && data.availableCredits.length > 0}
-                        <div class="space-y-3">
+                        <div class="space-y-2">
                             <div class="flex items-center justify-between">
-                                <Label
-                                    class="text-xs font-bold uppercase tracking-wide text-text-subtle"
-                                >
-                                    Apply Credits
-                                </Label>
+                                <Label class="text-xs font-semibold uppercase tracking-wider text-text-muted">Apply credits</Label>
                                 {#if selectedCreditsTotal > 0}
-                                    <span
-                                        class="text-xs font-mono font-medium text-info"
-                                    >
-                                        -{formatINR(selectedCreditsTotal)} applied
-                                    </span>
+                                    <span class="text-xs font-mono text-primary">−{formatINR(selectedCreditsTotal)}</span>
                                 {/if}
                             </div>
-
-                            <div class="space-y-2">
+                            <div class="space-y-1.5">
                                 {#each data.availableCredits as credit}
-                                    <label
-                                        class="block relative group cursor-pointer"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            bind:group={selectedCredits}
-                                            value={credit}
-                                            class="peer sr-only"
-                                        />
-                                        <div
-                                            class="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-0 hover:bg-surface-2 transition-all peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:shadow-sm"
-                                        >
-                                            <div>
-                                                <div
-                                                    class="font-medium text-sm text-text-strong"
-                                                >
-                                                    {credit.type ===
-                                                    "credit_note"
-                                                        ? "Credit Note"
-                                                        : "Advance"}
-                                                    <span
-                                                        class="text-text-muted"
-                                                        >#{credit.number}</span
-                                                    >
-                                                </div>
-                                                <div
-                                                    class="text-[10px] text-text-muted"
-                                                >
-                                                    {formatDate(credit.date)}
-                                                </div>
-                                            </div>
-                                            <div
-                                                class="font-mono font-bold text-sm text-text-strong"
-                                            >
-                                                {formatINR(credit.amount)}
-                                            </div>
-                                        </div>
+                                    <label class="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-border bg-surface-1 cursor-pointer hover:bg-surface-2 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                        <input type="checkbox" bind:group={selectedCredits} value={credit} class="sr-only peer" />
+                                        <span class="text-sm text-text-strong">{credit.type === "credit_note" ? "Credit note" : "Advance"} #{credit.number}</span>
+                                        <span class="text-sm font-mono text-text-subtle">{formatINR(credit.amount)}</span>
                                     </label>
                                 {/each}
                             </div>
                         </div>
                     {/if}
 
-                    <!-- 2. Payment Details -->
-                    <div class="space-y-4 pt-4 border-t border-border-dashed">
-                        <div class="flex items-center justify-between">
-                            <Label
-                                class="text-xs font-bold uppercase tracking-wide text-text-subtle"
-                            >
-                                Remaining Payment
-                            </Label>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1.5">
-                                <Label for="payment_amount" variant="form"
-                                    >Amount</Label
-                                >
-                                <Input
-                                    id="payment_amount"
-                                    name="payment_amount"
-                                    type="number"
-                                    step="0.01"
-                                    bind:value={paymentAmount}
-                                    class="text-right font-mono font-bold bg-surface-0"
-                                />
+                    <!-- Payment -->
+                    <div class="space-y-3 pt-2 border-t border-border">
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-text-muted">Payment</Label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <Label for="payment_amount" variant="form" class="text-xs">Amount</Label>
+                                <Input id="payment_amount" name="payment_amount" type="number" step="0.01" bind:value={paymentAmount} class="font-mono" />
                             </div>
-                            <div class="space-y-1.5">
-                                <Label for="payment_date" variant="form"
-                                    >Date</Label
-                                >
-                                <Input
-                                    id="payment_date"
-                                    name="payment_date"
-                                    type="date"
-                                    bind:value={paymentDate}
-                                    class="bg-surface-0"
-                                />
+                            <div class="space-y-1">
+                                <Label for="payment_date" variant="form" class="text-xs">Date</Label>
+                                <Input id="payment_date" name="payment_date" type="date" bind:value={paymentDate} />
                             </div>
                         </div>
-
-                        <!-- Payment Mode Toggle Chips -->
                         <div class="space-y-1.5">
-                            <Label variant="form">Mode</Label>
+                            <Label variant="form" class="text-xs">Pay via</Label>
                             <input type="hidden" name="payment_mode" value={paymentMode} />
-                            <div class="flex flex-wrap gap-1.5">
-                                {#each data.paymentModes as mode}
-                                    <button
-                                        type="button"
-                                        onclick={() => { paymentMode = mode.mode_key; }}
-                                        class="px-3 py-1.5 rounded-md text-xs font-medium border transition-all {paymentMode === mode.mode_key
-                                            ? 'bg-primary text-white border-primary shadow-sm'
-                                            : 'bg-surface-0 text-text-strong border-border-strong hover:border-primary/50'}"
-                                    >
-                                        {mode.label}
-                                    </button>
-                                {/each}
-                            </div>
-                        </div>
-
-                        <!-- Reference -->
-                        <div class="space-y-1.5">
-                            <Label
-                                for="payment_reference"
-                                variant="form">Reference (Optional)</Label
-                            >
-                            <Input
-                                id="payment_reference"
-                                name="payment_reference"
-                                bind:value={paymentReference}
-                                placeholder="UTR / Txn ID"
-                                class="bg-surface-0"
+                            <input type="hidden" name="deposit_to" value={depositTo} />
+                            <PaymentOptionChips
+                                options={data.paymentOptions}
+                                selectedOptionKey={selectedOptionKey}
+                                onSelect={selectPaymentOption}
+                                compact={true}
                             />
+                        </div>
+                        <div class="space-y-1">
+                            <Label for="payment_reference" variant="form" class="text-xs">Reference (optional)</Label>
+                            <Input id="payment_reference" name="payment_reference" bind:value={paymentReference} placeholder="UTR / Cheque no." />
                         </div>
                     </div>
                 </div>
 
-                <!-- Footer Summary & Action -->
-                <div
-                    class="p-4 bg-surface-2 border-t border-border flex justify-between items-center"
-                >
-                    <div class="text-xs text-text-muted">
+                <div class="px-5 py-4 border-t border-border bg-surface-1 flex items-center justify-between gap-4">
+                    <span class="text-xs text-text-muted">
                         {#if netPayable <= 0.01}
-                            <span class="text-green-600 font-medium"
-                                >Fully Settled</span
-                            >
+                            <span class="font-medium text-green-600">Fully settled</span>
                         {:else}
-                            Remaining Due: <span class="font-mono"
-                                >{formatINR(
-                                    Math.max(0, netPayable - paymentAmount),
-                                )}</span
-                            >
+                            After this: <span class="font-mono font-medium">{formatINR(Math.max(0, netPayable - paymentAmount))}</span> due
                         {/if}
-                    </div>
-                    <div class="flex gap-3">
-                        <input
-                            type="hidden"
-                            name="credits"
-                            value={JSON.stringify(selectedCredits)}
-                        />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onclick={() => (showSettleModal = false)}
-                            >Cancel</Button
-                        >
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? "Processing..." : "Settle Invoice"}
-                        </Button>
+                    </span>
+                    <div class="flex gap-2">
+                        <input type="hidden" name="credits" value={JSON.stringify(selectedCredits)} />
+                        <Button type="button" variant="outline" onclick={() => (showSettleModal = false)}>Cancel</Button>
+                        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Processing…" : "Settle"}</Button>
                     </div>
                 </div>
             </form>

@@ -10,7 +10,7 @@ import {
 import { postCreditNote, postPaymentReceipt } from '$lib/server/services/posting-engine';
 import { bumpNumberSeriesIfHigher, getNextNumberTx } from '$lib/server/services/number-series';
 import { round2 } from '$lib/utils/currency';
-import { InvariantError, NotFoundError, ValidationError } from '$lib/server/platform/errors';
+import { NotFoundError, ValidationError } from '$lib/server/platform/errors';
 import { logDomainEvent } from '$lib/server/platform/observability';
 import {
     decreaseCustomerBalanceInTx,
@@ -18,9 +18,9 @@ import {
     findAvailableCreditNoteInTx,
     findCustomerInOrgInTx,
     findDepositAccountByIdInTx,
-    findDepositAccountForModeInTx,
     findInvoiceForSettlementInTx,
     findOpenInvoicesByIdsInTx,
+    findPaymentMethodByKeyInTx,
     setInvoiceSettlementStateInTx
 } from '../infra/queries';
 
@@ -251,7 +251,26 @@ interface RecordInvoicePaymentInTxInput {
     amount: number;
     paymentDate: string;
     paymentMode: string;
+    depositTo: string;
     reference?: string;
+}
+
+async function resolvePaymentSelectionInTx(tx: Tx, orgId: string, paymentMode: string, depositTo: string) {
+    const paymentMethod = await findPaymentMethodByKeyInTx(tx, orgId, paymentMode);
+    if (!paymentMethod) {
+        throw new ValidationError('Invalid payment method');
+    }
+
+    const depositAccount = await findDepositAccountByIdInTx(tx, orgId, depositTo);
+    if (!depositAccount) {
+        throw new ValidationError('Invalid deposit account');
+    }
+
+    // Mapping is enforced by the UI (combined picker only shows mapped combos).
+    // We validate method and account individually but don't require the mapping to exist,
+    // which also fixes backward compat for old records without explicit mappings.
+
+    return { paymentMethod, depositAccount };
 }
 
 export async function recordInvoicePaymentInTx(
@@ -270,14 +289,16 @@ export async function recordInvoicePaymentInTx(
         throw new ValidationError('Amount exceeds balance due');
     }
 
-    const depositAccount = await findDepositAccountForModeInTx(tx, input.orgId, input.paymentMode);
-    if (!depositAccount) {
-        throw new InvariantError('Deposit account is not configured');
-    }
+    const { paymentMethod, depositAccount } = await resolvePaymentSelectionInTx(
+        tx,
+        input.orgId,
+        input.paymentMode,
+        input.depositTo
+    );
 
     const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
     const paymentId = crypto.randomUUID();
-    const paymentModeForPosting = input.paymentMode === 'cash' ? 'cash' : 'bank';
+    const paymentModeForPosting = depositAccount.account_code === '1000' ? 'cash' : 'bank';
 
     const postingResult = await postPaymentReceipt(
         input.orgId,
@@ -288,6 +309,7 @@ export async function recordInvoicePaymentInTx(
             customerId: input.invoice.customer_id,
             amount,
             paymentMode: paymentModeForPosting,
+            depositAccountCode: depositAccount.account_code,
             userId: input.userId
         },
         tx
@@ -302,6 +324,8 @@ export async function recordInvoicePaymentInTx(
         amount,
         payment_mode: input.paymentMode,
         deposit_to: depositAccount.id,
+        payment_account_id: depositAccount.id,
+        payment_method_id: paymentMethod.id,
         reference: input.reference || '',
         journal_entry_id: postingResult.journalEntryId,
         created_by: input.userId
@@ -401,6 +425,7 @@ interface SettleInvoiceInTxInput {
     paymentAmount: number;
     paymentDate?: string;
     paymentMode: string;
+    depositTo?: string;
     paymentReference?: string;
 }
 
@@ -450,15 +475,21 @@ export async function settleInvoiceInTx(
             throw new ValidationError('Payment amount exceeds remaining balance due');
         }
 
-        const depositAccount = await findDepositAccountForModeInTx(tx, input.orgId, input.paymentMode);
-        if (!depositAccount) {
-            throw new InvariantError('Deposit account is not configured');
+        if (!input.depositTo) {
+            throw new ValidationError('Deposit account is required when payment amount is provided');
         }
+
+        const { paymentMethod, depositAccount } = await resolvePaymentSelectionInTx(
+            tx,
+            input.orgId,
+            input.paymentMode,
+            input.depositTo
+        );
 
         const paymentAmount = round2(input.paymentAmount);
         const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
         const paymentId = crypto.randomUUID();
-        const paymentModeForPosting = input.paymentMode === 'cash' ? 'cash' : 'bank';
+        const paymentModeForPosting = depositAccount.account_code === '1000' ? 'cash' : 'bank';
 
         const postingResult = await postPaymentReceipt(
             input.orgId,
@@ -469,6 +500,7 @@ export async function settleInvoiceInTx(
                 customerId: invoice.customer_id,
                 amount: paymentAmount,
                 paymentMode: paymentModeForPosting,
+                depositAccountCode: depositAccount.account_code,
                 userId: input.userId
             },
             tx
@@ -483,6 +515,8 @@ export async function settleInvoiceInTx(
             amount: paymentAmount,
             payment_mode: input.paymentMode,
             deposit_to: depositAccount.id,
+            payment_account_id: depositAccount.id,
+            payment_method_id: paymentMethod.id,
             reference: input.paymentReference || '',
             journal_entry_id: postingResult.journalEntryId,
             created_by: input.userId
@@ -564,10 +598,12 @@ export async function createCustomerPaymentInTx(
         throw new NotFoundError('Customer not found');
     }
 
-    const depositAccount = await findDepositAccountByIdInTx(tx, input.orgId, input.depositTo);
-    if (!depositAccount) {
-        throw new ValidationError('Invalid deposit account');
-    }
+    const { paymentMethod, depositAccount } = await resolvePaymentSelectionInTx(
+        tx,
+        input.orgId,
+        input.paymentMode,
+        input.depositTo
+    );
 
     const invoiceMap = new Map<
         string,
@@ -600,7 +636,7 @@ export async function createCustomerPaymentInTx(
 
     const paymentId = crypto.randomUUID();
     const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
-    const paymentModeForPosting = input.paymentMode === 'cash' ? 'cash' : 'bank';
+    const paymentModeForPosting = depositAccount.account_code === '1000' ? 'cash' : 'bank';
 
     const postingResult = await postPaymentReceipt(
         input.orgId,
@@ -611,6 +647,7 @@ export async function createCustomerPaymentInTx(
             customerId: input.customerId,
             amount: input.amount,
             paymentMode: paymentModeForPosting,
+            depositAccountCode: depositAccount.account_code,
             userId: input.userId
         },
         tx
@@ -625,6 +662,8 @@ export async function createCustomerPaymentInTx(
         amount: input.amount,
         payment_mode: input.paymentMode,
         deposit_to: depositAccount.id,
+        payment_account_id: depositAccount.id,
+        payment_method_id: paymentMethod.id,
         reference: input.reference || '',
         notes: input.notes || '',
         journal_entry_id: postingResult.journalEntryId,

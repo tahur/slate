@@ -15,12 +15,12 @@ import {
 } from '$lib/server/modules/receivables/application/workflows';
 import { runInTx } from '$lib/server/platform/db/tx';
 import {
-    listActivePaymentModes,
-    listDepositAccounts,
+    listPaymentOptionsForForm,
     listPaymentCustomers,
     listUnpaidCustomerInvoices
 } from '$lib/server/modules/receivables/infra/queries';
-import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
+import { hasPaymentConfiguration, seedPaymentConfiguration } from '$lib/server/seed';
+import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -30,14 +30,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const orgId = locals.user.orgId;
 
     // Auto-seed payment modes for existing orgs
-    if (!(await hasPaymentModes(orgId))) {
-        await seedPaymentModes(orgId);
+    if (!(await hasPaymentConfiguration(orgId))) {
+        await seedPaymentConfiguration(orgId);
     }
 
-    const [customerList, depositAccounts, paymentModes] = await Promise.all([
+    const [customerList, paymentOptions] = await Promise.all([
         listPaymentCustomers(orgId),
-        listDepositAccounts(orgId),
-        listActivePaymentModes(orgId)
+        listPaymentOptionsForForm(orgId)
     ]);
 
     // Check if a customer is pre-selected (from invoice page)
@@ -51,8 +50,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     return {
         customers: customerList,
-        depositAccounts,
-        paymentModes,
+        paymentOptions,
         selectedCustomer: customerId || '',
         preSelectedInvoiceId,
         unpaidInvoices,
@@ -155,6 +153,8 @@ export const actions: Actions = {
                     payment_mode: { new: payment_mode }
                 }
             });
+
+            invalidateReportingCacheForOrg(orgId);
         } catch (error) {
             if (idempotencyKey && isIdempotencyConstraintError(error, 'payments')) {
                 const duplicate = await checkIdempotency<typeof payments.$inferSelect>('payments', orgId, idempotencyKey);

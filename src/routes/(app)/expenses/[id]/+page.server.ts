@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { expenses, accounts } from '$lib/server/db/schema';
+import { expenses, accounts, payment_accounts } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -47,12 +47,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
     }
 
     // Get payment account name
-    const paymentAccount = await db.query.accounts.findFirst({
-        where: eq(accounts.id, expense.paid_through)
+    const paymentAccount = await db.query.payment_accounts.findFirst({
+        where: and(eq(payment_accounts.id, expense.paid_through), eq(payment_accounts.org_id, orgId))
     });
 
     return {
         expense,
-        paymentAccountName: paymentAccount?.account_name || 'Unknown'
+        paymentAccountName: paymentAccount?.label || 'Unknown'
     };
 };

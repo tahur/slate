@@ -108,6 +108,9 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 	const itemRows: TableCell[][] = items.map((item, i) => {
 		const rate = item.gst_rate || 0;
 		const halfRate = rate / 2;
+		const lineCgst = item.cgst || 0;
+		const lineSgst = item.sgst || 0;
+		const lineIgst = item.igst || 0;
 
 		const row: TableCell[] = [
 			{ text: String(i + 1), alignment: 'center', fontSize: 8 },
@@ -127,14 +130,14 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 				{
 					stack: [
 						{ text: `${halfRate}%`, fontSize: 7, color: '#666' },
-						{ text: fmt((item.amount * halfRate) / 100), fontSize: 8 }
+						{ text: fmt(lineCgst), fontSize: 8 }
 					],
 					alignment: 'right'
 				},
 				{
 					stack: [
 						{ text: `${halfRate}%`, fontSize: 7, color: '#666' },
-						{ text: fmt((item.amount * halfRate) / 100), fontSize: 8 }
+						{ text: fmt(lineSgst), fontSize: 8 }
 					],
 					alignment: 'right'
 				}
@@ -143,7 +146,7 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 			row.push({
 				stack: [
 					{ text: `${rate}%`, fontSize: 7, color: '#666' },
-					{ text: fmt((item.amount * rate) / 100), fontSize: 8 }
+					{ text: fmt(lineIgst), fontSize: 8 }
 				],
 				alignment: 'right'
 			});

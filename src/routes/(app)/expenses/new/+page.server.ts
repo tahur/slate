@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { expenses, accounts, vendors } from '$lib/server/db/schema';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { expenses, accounts, payment_accounts, payment_methods, vendors } from '$lib/server/db/schema';
+import { eq, and } from 'drizzle-orm';
 import type { PageServerLoad, Actions } from './$types';
 import { getNextNumberTx, postExpense, logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
@@ -13,6 +13,7 @@ import { failActionFromError } from '$lib/server/platform/errors';
 import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
 import { round2 } from '$lib/utils/currency';
 import { localDateStr } from '$lib/utils/date';
+import { listPaymentOptionsForForm } from '$lib/server/modules/receivables/infra/queries';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -22,7 +23,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const orgId = locals.user.orgId;
 
     // Fetch all data in parallel
-    const [expenseAccounts, paymentAccounts, vendorList] = await Promise.all([
+    const [expenseAccounts, paymentOptions, vendorList] = await Promise.all([
         db
             .select({
                 id: accounts.id,
@@ -38,19 +39,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                 )
             )
             .orderBy(accounts.account_code),
-        db
-            .select({
-                id: accounts.id,
-                name: accounts.account_name,
-                code: accounts.account_code
-            })
-            .from(accounts)
-            .where(
-                and(
-                    eq(accounts.org_id, orgId),
-                    sql`${accounts.account_code} IN ('1000', '1100')`
-                )
-            ),
+        listPaymentOptionsForForm(orgId),
         db
             .select({
                 id: vendors.id,
@@ -74,7 +63,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     return {
         expenseAccounts,
-        paymentAccounts,
+        paymentOptions,
         vendors: vendorList,
         selectedVendorId,
         idempotencyKey: generateIdempotencyKey(),
@@ -116,6 +105,7 @@ export const actions: Actions = {
         const amount = round2(parseFloat(formData.get('amount') as string) || 0);
         const gst_rate = parseFloat(formData.get('gst_rate') as string) || 0;
         const is_inter_state = formData.get('is_inter_state') === 'on';
+        const payment_mode = formData.get('payment_mode') as string;
         const paid_through = formData.get('paid_through') as string;
         const reference = formData.get('reference') as string || '';
 
@@ -128,6 +118,9 @@ export const actions: Actions = {
         }
         if (amount <= 0) {
             return fail(400, { error: 'Amount must be positive' });
+        }
+        if (!payment_mode) {
+            return fail(400, { error: 'Payment method is required' });
         }
         if (!paid_through) {
             return fail(400, { error: 'Payment account is required' });
@@ -144,16 +137,40 @@ export const actions: Actions = {
         const total = taxBreakdown.total;
 
         // Pre-fetch account info in parallel (read-only, safe outside transaction)
-        const [categoryAccount, paymentAccount] = await Promise.all([
+        const [categoryAccount, paymentAccount, paymentMethod] = await Promise.all([
             db.query.accounts.findFirst({ where: eq(accounts.id, category) }),
-            db.query.accounts.findFirst({ where: eq(accounts.id, paid_through) })
+            db.query.payment_accounts.findFirst({
+                where: and(
+                    eq(payment_accounts.id, paid_through),
+                    eq(payment_accounts.org_id, orgId),
+                    eq(payment_accounts.is_active, true)
+                )
+            }),
+            db.query.payment_methods.findFirst({
+                where: and(
+                    eq(payment_methods.org_id, orgId),
+                    eq(payment_methods.method_key, payment_mode),
+                    eq(payment_methods.is_active, true)
+                )
+            })
         ]);
 
         if (!categoryAccount) {
             return fail(400, { error: 'Invalid category' });
         }
 
-        const paidThrough = paymentAccount?.account_code === '1000' ? 'cash' : 'bank';
+        if (!paymentAccount) {
+            return fail(400, { error: 'Invalid payment account' });
+        }
+
+        if (!paymentMethod) {
+            return fail(400, { error: 'Invalid payment method' });
+        }
+
+        // Mapping is informational (drives default account selection in UI).
+        // As long as both the method and account are individually valid, allow the combination.
+
+        const paidThrough = paymentAccount.ledger_code === '1000' ? 'cash' : 'bank';
 
         const expenseId = crypto.randomUUID();
         let expenseNumber = '';
@@ -173,6 +190,7 @@ export const actions: Actions = {
                     inputSgst: sgst,
                     inputIgst: igst,
                     paidThrough,
+                    paidThroughAccountCode: paymentAccount.ledger_code,
                     description: description || `Expense: ${categoryAccount.account_name}`,
                     userId: locals.user!.id
                 }, tx);
@@ -194,6 +212,8 @@ export const actions: Actions = {
                     igst,
                     total,
                     paid_through,
+                    payment_account_id: paymentAccount.id,
+                    payment_method_id: paymentMethod.id,
                     reference,
                     journal_entry_id: postingResult.journalEntryId,
                     idempotency_key: idempotencyKey || null,

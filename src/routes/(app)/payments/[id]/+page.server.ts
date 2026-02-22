@@ -1,8 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { payments, payment_allocations, customers, invoices, organizations, payment_modes } from '$lib/server/db/schema';
+import { payments, payment_allocations, customers, invoices, organizations, payment_methods } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { hasPaymentModes, seedPaymentModes } from '$lib/server/seed';
+import { hasPaymentConfiguration, seedPaymentConfiguration } from '$lib/server/seed';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -63,16 +63,16 @@ export const load: PageServerLoad = async ({ locals, params }) => {
             where: eq(organizations.id, orgId)
         }),
         (async () => {
-            if (!(await hasPaymentModes(orgId))) {
-                await seedPaymentModes(orgId);
+            if (!(await hasPaymentConfiguration(orgId))) {
+                await seedPaymentConfiguration(orgId);
             }
             return db
                 .select({
-                    mode_key: payment_modes.mode_key,
-                    label: payment_modes.label
+                    mode_key: payment_methods.method_key,
+                    label: payment_methods.label
                 })
-                .from(payment_modes)
-                .where(eq(payment_modes.org_id, orgId));
+                .from(payment_methods)
+                .where(and(eq(payment_methods.org_id, orgId), eq(payment_methods.is_active, true)));
         })()
     ]);
 

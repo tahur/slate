@@ -423,6 +423,7 @@ interface PaymentPostingInput {
     customerId: string;
     amount: number;
     paymentMode: 'cash' | 'bank' | 'upi';
+    depositAccountCode?: string;
     userId?: string;
 }
 
@@ -437,7 +438,7 @@ export async function postPaymentReceipt(
     input: PaymentPostingInput,
     tx?: Tx
 ): Promise<PostingResult> {
-    const cashAccountCode = input.paymentMode === 'cash' ? '1000' : '1100';
+    const cashAccountCode = input.depositAccountCode || (input.paymentMode === 'cash' ? '1000' : '1100');
 
     const lines: JournalLineInput[] = [
         {
@@ -477,6 +478,7 @@ interface ExpensePostingInput {
     inputSgst: number;
     inputIgst: number;
     paidThrough: 'cash' | 'bank';
+    paidThroughAccountCode?: string;
     description: string;
     userId?: string;
 }
@@ -496,7 +498,7 @@ export async function postExpense(
     tx?: Tx
 ): Promise<PostingResult> {
     const totalPaid = round2(input.amount + input.inputCgst + input.inputSgst + input.inputIgst);
-    const cashAccountCode = input.paidThrough === 'cash' ? '1000' : '1100';
+    const cashAccountCode = input.paidThroughAccountCode || (input.paidThrough === 'cash' ? '1000' : '1100');
 
     const lines: JournalLineInput[] = [
         {

@@ -5,6 +5,8 @@ import { customers } from './customers';
 import { users } from './users';
 import { journal_entries } from './journals';
 import { invoices } from './invoices';
+import { payment_accounts } from './payment_accounts';
+import { payment_methods } from './payment_methods';
 
 export const payments = pgTable(
     'payments',
@@ -29,6 +31,8 @@ export const payments = pgTable(
 
         // Account
         deposit_to: text('deposit_to').notNull(), // Account ID (Cash, Bank)
+        payment_account_id: text('payment_account_id').references(() => payment_accounts.id),
+        payment_method_id: text('payment_method_id').references(() => payment_methods.id),
 
         // Journal
         journal_entry_id: text('journal_entry_id').references(() => journal_entries.id),

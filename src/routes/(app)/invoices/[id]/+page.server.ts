@@ -33,8 +33,8 @@ import {
     type RequestedCredit
 } from '$lib/server/modules/receivables/application/workflows';
 import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
-import { listActivePaymentModes } from '$lib/server/modules/receivables/infra/queries';
-import { seedPaymentModes } from '$lib/server/seed';
+import { listPaymentOptionsForForm } from '$lib/server/modules/receivables/infra/queries';
+import { seedPaymentConfiguration } from '$lib/server/seed';
 import { round2 } from '$lib/utils/currency';
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
@@ -194,13 +194,22 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
         }))
     ].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
 
-    let paymentModes = await listActivePaymentModes(orgId);
-    if (paymentModes.length === 0) {
-        await seedPaymentModes(orgId);
-        paymentModes = await listActivePaymentModes(orgId);
+    let paymentOptions = await listPaymentOptionsForForm(orgId);
+    if (paymentOptions.length === 0) {
+        await seedPaymentConfiguration(orgId);
+        paymentOptions = await listPaymentOptionsForForm(orgId);
     }
 
-    return { invoice, items, customer, org, justRecordedPayment, availableCredits, paymentHistory, paymentModes };
+    return {
+        invoice,
+        items,
+        customer,
+        org,
+        justRecordedPayment,
+        availableCredits,
+        paymentHistory,
+        paymentOptions
+    };
 };
 
 export const actions: Actions = {
@@ -357,7 +366,8 @@ export const actions: Actions = {
 
         const amount = round2(parseFloat(formData.get('amount') as string) || 0);
         const payment_date = formData.get('payment_date') as string;
-        const payment_mode = formData.get('payment_mode') as string || 'bank';
+        const payment_mode = formData.get('payment_mode') as string;
+        const deposit_to = formData.get('deposit_to') as string;
         const reference = formData.get('reference') as string || '';
 
         // Validation
@@ -366,6 +376,12 @@ export const actions: Actions = {
         }
         if (!payment_date) {
             return fail(400, { error: 'Payment date is required' });
+        }
+        if (!payment_mode) {
+            return fail(400, { error: 'Payment method is required' });
+        }
+        if (!deposit_to) {
+            return fail(400, { error: 'Deposit account is required' });
         }
 
         // Get invoice (read-only, safe outside tx)
@@ -399,10 +415,13 @@ export const actions: Actions = {
                     amount,
                     paymentDate: payment_date,
                     paymentMode: payment_mode,
+                    depositTo: deposit_to,
                     reference
                 });
                 paymentNumber = result.paymentNumber;
             });
+
+            invalidateReportingCacheForOrg(orgId);
 
             return { success: true, paymentNumber };
 
@@ -420,7 +439,8 @@ export const actions: Actions = {
 
         const paymentAmount = round2(parseFloat(formData.get('payment_amount') as string) || 0);
         const paymentDate = formData.get('payment_date') as string;
-        const paymentMode = (formData.get('payment_mode') as string) || 'bank';
+        const paymentMode = formData.get('payment_mode') as string;
+        const depositTo = formData.get('deposit_to') as string;
         const paymentReference = (formData.get('payment_reference') as string) || '';
 
         let requestedCredits: RequestedCredit[] = [];
@@ -435,6 +455,12 @@ export const actions: Actions = {
         }
         if (paymentAmount > 0 && !paymentDate) {
             return fail(400, { error: 'Payment date is required when payment amount is provided' });
+        }
+        if (paymentAmount > 0 && !paymentMode) {
+            return fail(400, { error: 'Payment method is required when payment amount is provided' });
+        }
+        if (paymentAmount > 0 && !depositTo) {
+            return fail(400, { error: 'Deposit account is required when payment amount is provided' });
         }
         if (paymentAmount <= MONEY_EPSILON && requestedCredits.length === 0) {
             return fail(400, { error: 'No payment or credits selected to settle' });
@@ -455,6 +481,7 @@ export const actions: Actions = {
                     paymentAmount,
                     paymentDate,
                     paymentMode,
+                    depositTo,
                     paymentReference
                 });
 
@@ -476,6 +503,8 @@ export const actions: Actions = {
                     payment_recorded: { new: paymentSettled }
                 }
             });
+
+            invalidateReportingCacheForOrg(orgId);
 
             return { success: true, message: 'Settlement recorded successfully' };
         } catch (error) {

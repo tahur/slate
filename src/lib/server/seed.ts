@@ -1,5 +1,5 @@
 import { db, type Tx } from './db';
-import { accounts, payment_modes } from './db/schema';
+import { accounts, payment_accounts, payment_method_account_map, payment_methods } from './db/schema';
 import { eq } from 'drizzle-orm';
 
 export const INDIAN_COA_TEMPLATE = [
@@ -37,11 +37,33 @@ export const INDIAN_COA_TEMPLATE = [
     { code: '6900', name: 'Miscellaneous', type: 'expense', is_system: true }
 ];
 
-const DEFAULT_PAYMENT_MODES = [
-    { mode_key: 'bank', label: 'Bank Transfer', account_code: '1100', is_default: true, sort_order: 1 },
-    { mode_key: 'upi', label: 'UPI', account_code: '1100', is_default: false, sort_order: 2 },
-    { mode_key: 'cash', label: 'Cash', account_code: '1000', is_default: false, sort_order: 3 },
-    { mode_key: 'cheque', label: 'Cheque', account_code: '1100', is_default: false, sort_order: 4 }
+const DEFAULT_PAYMENT_ACCOUNTS = [
+    {
+        key: 'primary-bank',
+        label: 'Primary Bank',
+        kind: 'bank',
+        ledger_code: '1100',
+        is_default_receive: true,
+        is_default_pay: true,
+        sort_order: 1
+    },
+    {
+        key: 'cash',
+        label: 'Cash',
+        kind: 'cash',
+        ledger_code: '1000',
+        is_default_receive: false,
+        is_default_pay: false,
+        sort_order: 2
+    }
+];
+
+const DEFAULT_PAYMENT_METHODS = [
+    { method_key: 'netbanking', label: 'Net Banking', is_default: true, sort_order: 1, account_key: 'primary-bank' },
+    { method_key: 'upi', label: 'UPI', is_default: false, sort_order: 2, account_key: 'primary-bank' },
+    { method_key: 'cheque', label: 'Cheque', is_default: false, sort_order: 3, account_key: 'primary-bank' },
+    { method_key: 'card', label: 'Card', is_default: false, sort_order: 4, account_key: 'primary-bank' },
+    { method_key: 'cash', label: 'Cash', is_default: false, sort_order: 5, account_key: 'cash' }
 ];
 
 export async function seedChartOfAccounts(orgId: string, tx?: Tx) {
@@ -59,46 +81,70 @@ export async function seedChartOfAccounts(orgId: string, tx?: Tx) {
     await (tx || db).insert(accounts).values(values);
 }
 
-export async function seedPaymentModes(orgId: string, tx?: Tx) {
+export async function seedPaymentConfiguration(orgId: string, tx?: Tx) {
     const runner = tx || db;
 
-    // Look up account IDs by code
-    const orgAccounts = await runner
-        .select({ id: accounts.id, code: accounts.account_code })
-        .from(accounts)
-        .where(eq(accounts.org_id, orgId));
+    const accountIdByKey = new Map<string, string>();
+    for (const account of DEFAULT_PAYMENT_ACCOUNTS) {
+        const value = {
+            id: crypto.randomUUID(),
+            org_id: orgId,
+            label: account.label,
+            kind: account.kind,
+            ledger_code: account.ledger_code,
+            is_active: true,
+            is_default_receive: account.is_default_receive,
+            is_default_pay: account.is_default_pay,
+            sort_order: account.sort_order
+        };
+        await runner.insert(payment_accounts).values([value]);
+        accountIdByKey.set(account.key, value.id);
+    }
 
-    const accountByCode = new Map(orgAccounts.map((a) => [a.code, a.id]));
+    for (const method of DEFAULT_PAYMENT_METHODS) {
+        const methodId = crypto.randomUUID();
+        await runner.insert(payment_methods).values({
+            id: methodId,
+            org_id: orgId,
+            method_key: method.method_key,
+            label: method.label,
+            direction: 'both',
+            is_default: method.is_default,
+            is_active: true,
+            sort_order: method.sort_order
+        });
 
-    const values = DEFAULT_PAYMENT_MODES.map((mode) => ({
-        id: crypto.randomUUID(),
-        org_id: orgId,
-        mode_key: mode.mode_key,
-        label: mode.label,
-        linked_account_id: accountByCode.get(mode.account_code) || null,
-        is_default: mode.is_default,
-        sort_order: mode.sort_order,
-        is_active: true
-    }));
+        const accountId = accountIdByKey.get(method.account_key);
+        if (accountId) {
+            await runner.insert(payment_method_account_map).values({
+                id: crypto.randomUUID(),
+                org_id: orgId,
+                payment_method_id: methodId,
+                payment_account_id: accountId,
+                is_default: true,
+                is_active: true
+            });
+        }
+    }
 
-    await runner.insert(payment_modes).values(values);
-    orgsWithPaymentModes.add(orgId);
+    orgsWithPaymentConfig.add(orgId);
 }
 
-/** In-memory set of orgs known to have payment modes (avoids repeated DB checks) */
-const orgsWithPaymentModes = new Set<string>();
+/** In-memory set of orgs known to have payment config (avoids repeated DB checks) */
+const orgsWithPaymentConfig = new Set<string>();
 
-/** Returns true if the org already has payment modes seeded */
-export async function hasPaymentModes(orgId: string): Promise<boolean> {
-    if (orgsWithPaymentModes.has(orgId)) return true;
+/** Returns true if the org already has payment config seeded */
+export async function hasPaymentConfiguration(orgId: string): Promise<boolean> {
+    if (orgsWithPaymentConfig.has(orgId)) return true;
     const rows = await db
-        .select({ id: payment_modes.id })
-        .from(payment_modes)
-        .where(eq(payment_modes.org_id, orgId))
+        .select({ id: payment_methods.id })
+        .from(payment_methods)
+        .where(eq(payment_methods.org_id, orgId))
         .limit(1);
     if (rows[0]) {
-        orgsWithPaymentModes.add(orgId);
+        orgsWithPaymentConfig.add(orgId);
         return true;
     }
     return false;
 }
+

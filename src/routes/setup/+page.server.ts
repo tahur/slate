@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { setupSchema } from './schema';
-import { seedChartOfAccounts, seedPaymentModes } from '$lib/server/seed';
+import { seedChartOfAccounts, seedPaymentConfiguration } from '$lib/server/seed';
 import { setFlash } from '$lib/server/flash';
 import { runInTx } from '$lib/server/platform/db/tx';
 import { failActionFromError, InvariantError } from '$lib/server/platform/errors';
@@ -80,10 +80,10 @@ export const actions: Actions = {
                     fy_start_month: data.fy_start_month
                 });
 
-                // 2. Link User to Org
+                // 2. Link User to Org (first user is always the owner)
                 await tx
                     .update(users)
-                    .set({ orgId: orgId, role: 'admin' })
+                    .set({ orgId: orgId, role: 'owner' })
                     .where(eq(users.id, userId));
 
                 // 3. Create Fiscal Year
@@ -99,8 +99,8 @@ export const actions: Actions = {
                 // 4. Seed Chart of Accounts
                 await seedChartOfAccounts(orgId, tx);
 
-                // 5. Seed Payment Modes
-                await seedPaymentModes(orgId, tx);
+                // 5. Seed Payment Configuration
+                await seedPaymentConfiguration(orgId, tx);
             });
 
             const linkedUser = await db.query.users.findFirst({

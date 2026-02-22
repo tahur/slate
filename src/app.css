@@ -13,7 +13,7 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
     --color-brand: #fb631b;
     --color-brand-hover: #e04f0d;

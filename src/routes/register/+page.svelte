@@ -1,9 +1,7 @@
 <script lang="ts">
     import { superForm } from "sveltekit-superforms";
-    import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
-    import { Card } from "$lib/components/ui/card";
     import type { PageData } from "./$types";
 
     let { data, form }: { data: PageData; form: any } = $props();
@@ -18,59 +16,57 @@
     } = superForm(initialForm);
 </script>
 
-<div
-    class="min-h-screen flex items-center justify-center bg-surface-1 p-6 relative overflow-hidden"
->
-    <!-- Subtle background grid -->
-    <div
-        class="absolute inset-0 bg-grid -z-10 [mask-image:linear-gradient(to_bottom,white,transparent)]"
-    ></div>
+<svelte:head>
+    <title>Create Account - Slate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin="anonymous"
+    />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    />
+</svelte:head>
 
-    <div class="w-full max-w-sm relative z-10">
+<div
+    class="register-shell min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
+>
+    <div class="ambient" aria-hidden="true"></div>
+
+    <div class="w-full max-w-sm relative z-10 flex flex-col items-center">
         <!-- Logo -->
-        <div class="flex flex-col items-center mb-8">
-            <div class="bg-primary/10 p-3 rounded-xl mb-3">
-                <img src="/logo.svg" alt="Slate Logo" class="w-10 h-10" />
-            </div>
-            <h1 class="font-display text-2xl font-bold text-text-strong">
-                Slate
-            </h1>
-        </div>
+        <a href="/" class="flex items-center gap-2.5 mb-10 group">
+            <img src="/logo.svg" alt="Slate" class="logo-mark transition-transform group-hover:scale-105" />
+            <span class="wordmark">Slate</span>
+        </a>
 
         <!-- Card -->
-        <Card class="p-6 bg-surface-0 border-border shadow-lg">
-            <div class="text-center mb-6">
-                <h2 class="text-xl font-bold text-text-strong mb-1">
-                    Create your account
-                </h2>
-                <p class="text-sm text-text-muted">Get started with Slate</p>
+        <div class="panel w-full">
+            <div class="text-center mb-8">
+                <h2 class="panel-title">Create your workspace</h2>
+                <p class="panel-subtitle">Get started with Slate — it's free</p>
             </div>
 
-            <form
-                method="POST"
-                use:enhance
-                id="register-form"
-                class="space-y-4"
-            >
+            <form method="POST" use:enhance id="register-form" class="space-y-4">
                 <div class="space-y-2">
-                    <Label for="name" class="text-text-subtle">Your name</Label>
+                    <Label for="name" class="font-bold text-[var(--ink)]">Your name</Label>
                     <Input
                         id="name"
                         name="name"
                         placeholder="John Doe"
                         bind:value={$formData.name}
                         {...$constraints.name}
-                        class="bg-surface-0 border-border focus-visible:ring-primary"
+                        class="bg-[var(--surface)] border-[var(--line)] text-[var(--ink)] focus-visible:ring-[var(--ink)]"
                     />
                     {#if $errors.name}
-                        <span class="text-xs text-destructive"
-                            >{$errors.name}</span
-                        >
+                        <span class="text-xs text-destructive">{$errors.name}</span>
                     {/if}
                 </div>
 
                 <div class="space-y-2">
-                    <Label for="email" class="text-text-subtle">Email</Label>
+                    <Label for="email" class="font-bold text-[var(--ink)]">Email</Label>
                     <Input
                         id="email"
                         name="email"
@@ -78,19 +74,15 @@
                         placeholder="you@example.com"
                         bind:value={$formData.email}
                         required={$constraints.email?.required}
-                        class="bg-surface-0 border-border focus-visible:ring-primary"
+                        class="bg-[var(--surface)] border-[var(--line)] text-[var(--ink)] focus-visible:ring-[var(--ink)]"
                     />
                     {#if $errors.email}
-                        <span class="text-xs text-destructive"
-                            >{$errors.email}</span
-                        >
+                        <span class="text-xs text-destructive">{$errors.email}</span>
                     {/if}
                 </div>
 
                 <div class="space-y-2">
-                    <Label for="password" class="text-text-subtle"
-                        >Password</Label
-                    >
+                    <Label for="password" class="font-bold text-[var(--ink)]">Password</Label>
                     <Input
                         id="password"
                         name="password"
@@ -98,44 +90,140 @@
                         placeholder="Min. 8 characters"
                         bind:value={$formData.password}
                         {...$constraints.password}
-                        class="bg-surface-0 border-border focus-visible:ring-primary"
+                        class="bg-[var(--surface)] border-[var(--line)] text-[var(--ink)] focus-visible:ring-[var(--ink)]"
                     />
                     {#if $errors.password}
-                        <span class="text-xs text-destructive"
-                            >{$errors.password}</span
-                        >
+                        <span class="text-xs text-destructive">{$errors.password}</span>
                     {/if}
                 </div>
 
                 {#if form?.error}
-                    <div
-                        class="text-sm text-destructive font-medium text-center py-2 px-3 bg-red-50 rounded-lg border border-red-200"
-                    >
+                    <div class="text-sm text-destructive font-medium text-center py-2 px-3 bg-red-50 rounded-lg border border-red-200">
                         {form.error}
                     </div>
                 {/if}
 
-                <Button type="submit" class="w-full" disabled={$delayed}>
+                <button type="submit" class="btn-primary w-full mt-2" disabled={$delayed}>
                     {#if $delayed}Creating account...{:else}Create account{/if}
-                </Button>
+                </button>
             </form>
 
-            <div class="mt-6 text-center">
-                <span class="text-sm text-text-muted">
+            <div class="mt-8 text-center border-t border-[var(--line)] pt-5">
+                <span class="text-[0.85rem] text-[var(--muted)]">
                     Already have an account?
-                    <a
-                        href="/login"
-                        class="text-primary font-medium hover:underline"
-                    >
+                    <a href="/login" class="text-[var(--ink)] font-bold hover:underline">
                         Sign in
                     </a>
                 </span>
             </div>
-        </Card>
+        </div>
 
-        <!-- Subtle branding at bottom -->
-        <p class="text-center text-xs text-text-muted mt-6">
+        <p class="text-center text-xs font-semibold text-[var(--muted)] mt-8 uppercase tracking-[0.08em]">
             Open source · MIT licensed
         </p>
     </div>
 </div>
+
+<style>
+    :global(body) {
+        background: #f3f3f3;
+    }
+
+    .register-shell {
+        --ink: #111111;
+        --surface: #fcfcfc;
+        --soft: #f4f4f4;
+        --muted: #5f5f5f;
+        --line: #d4d4d4;
+        background: #f3f3f3;
+        color: var(--ink);
+        font-family: "Manrope", "Helvetica Neue", Helvetica, sans-serif;
+    }
+
+    .ambient {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image: radial-gradient(
+                circle at 50% 10%,
+                rgb(0 0 0 / 0.08) 0,
+                transparent 45%
+            ),
+            linear-gradient(rgb(0 0 0 / 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgb(0 0 0 / 0.06) 1px, transparent 1px);
+        background-size:
+            auto,
+            56px 56px,
+            56px 56px;
+        mask-image: linear-gradient(
+            to bottom,
+            black 0%,
+            rgb(0 0 0 / 0.85) 48%,
+            transparent 100%
+        );
+    }
+
+    .logo-mark {
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 6px;
+    }
+
+    .wordmark {
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-weight: 700;
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+    }
+
+    .panel {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        padding: 2rem 1.75rem;
+        border-radius: var(--radius);
+        box-shadow: 0 4px 24px -12px rgba(0, 0, 0, 0.08);
+    }
+
+    .panel-title {
+        color: var(--ink);
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+    }
+
+    .panel-subtitle {
+        margin-top: 0.35rem;
+        color: var(--muted);
+        font-size: 0.95rem;
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--color-primary);
+        background: var(--color-primary);
+        color: white;
+        font-size: 0.86rem;
+        font-weight: 700;
+        padding: 0.62rem 1rem;
+        transition: all 180ms ease;
+        border-radius: var(--radius);
+        cursor: pointer;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: var(--color-brand-hover, #e04f0d);
+        border-color: var(--color-brand-hover, #e04f0d);
+        transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+</style>

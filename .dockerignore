@@ -1,10 +1,9 @@
 node_modules
+.svelte-kit
 build
-data
+dist-electron
+*.db
+.env*
 .git
-.gitignore
-.DS_Store
-.env
-npm-debug.log
-.vscode
-.idea
+HSN_SAC.xlsx
+hsn_*

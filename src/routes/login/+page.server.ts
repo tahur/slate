@@ -4,6 +4,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from './schema';
 import { forwardAuthCookies } from '$lib/server/utils/cookies';
+import { isRegistrationOpen } from '$lib/server/utils/registration';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -12,7 +13,8 @@ export const load: PageServerLoad = async (event) => {
     }
 
     const form = await superValidate(zod(loginSchema));
-    return { form };
+    const registrationOpen = await isRegistrationOpen();
+    return { form, registrationOpen };
 };
 
 export const actions: Actions = {

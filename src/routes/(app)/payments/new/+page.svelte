@@ -4,31 +4,30 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check, Search } from "lucide-svelte";
+    import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance, deserialize } from "$app/forms";
     import { toast } from "svelte-sonner";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
     let { data, form } = $props();
-    const { selectedCustomer: initCustomer, depositAccounts, paymentModes, unpaidInvoices: initUnpaid } = data;
+    const { selectedCustomer: initCustomer, paymentOptions, unpaidInvoices: initUnpaid } = data;
     let isSubmitting = $state(false);
 
     // Form state
     let selectedCustomer = $state(initCustomer);
     let amount = $state(0);
-    const defaultMode = paymentModes.find((m) => m.is_default) || paymentModes[0];
-    let paymentMode = $state(defaultMode?.mode_key || "bank");
-    let depositTo = $state(
-        defaultMode?.linked_account_id ||
-        depositAccounts.find((a) => a.code === "1100")?.id || "",
+    const defaultOption = paymentOptions.find((o) => o.isDefault) || paymentOptions[0];
+    let selectedOptionKey = $state(
+        defaultOption ? `${defaultOption.methodKey}::${defaultOption.accountId}` : "",
     );
+    let paymentMode = $state(defaultOption?.methodKey || "");
+    let depositTo = $state(defaultOption?.accountId || "");
 
-    function onPaymentModeChange(modeKey: string) {
-        paymentMode = modeKey;
-        const mode = paymentModes.find((m) => m.mode_key === modeKey);
-        if (mode?.linked_account_id) {
-            depositTo = mode.linked_account_id;
-        }
+    function selectOption(option: { methodKey: string; accountId: string; displayLabel: string; isDefault?: boolean }) {
+        selectedOptionKey = `${option.methodKey}::${option.accountId}`;
+        paymentMode = option.methodKey;
+        depositTo = option.accountId;
     }
 
     // Invoice allocations
@@ -223,45 +222,16 @@
                         </div>
                     </div>
 
-                    <!-- Payment Mode Toggle Chips -->
+                    <!-- Payment Mode + Account Combined Chips -->
                     <div class="space-y-2">
-                        <Label variant="form"
-                            >Mode <span class="text-destructive">*</span></Label
-                        >
+                        <Label variant="form">Pay via <span class="text-destructive">*</span></Label>
                         <input type="hidden" name="payment_mode" value={paymentMode} />
-                        <div class="flex flex-wrap gap-2">
-                            {#each paymentModes as mode}
-                                <button
-                                    type="button"
-                                    onclick={() => onPaymentModeChange(mode.mode_key)}
-                                    class="px-4 py-2 rounded-lg text-sm font-medium border transition-all {paymentMode === mode.mode_key
-                                        ? 'bg-primary text-white border-primary shadow-sm'
-                                        : 'bg-surface-0 text-text-strong border-border-strong hover:border-primary/50 hover:bg-surface-1'}"
-                                >
-                                    {mode.label}
-                                </button>
-                            {/each}
-                        </div>
-                    </div>
-
-                    <!-- Deposit To -->
-                    <div class="space-y-2">
-                        <Label for="deposit_to" variant="form"
-                            >Deposit To <span class="text-destructive">*</span></Label
-                        >
-                        <select
-                            id="deposit_to"
-                            name="deposit_to"
-                            bind:value={depositTo}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                            required
-                        >
-                            {#each data.depositAccounts as account}
-                                <option value={account.id}>
-                                    {account.name}
-                                </option>
-                            {/each}
-                        </select>
+                        <input type="hidden" name="deposit_to" value={depositTo} />
+                        <PaymentOptionChips
+                            options={paymentOptions}
+                            selectedOptionKey={selectedOptionKey}
+                            onSelect={selectOption}
+                        />
                     </div>
 
                     <!-- Reference -->
