@@ -20,6 +20,8 @@ export const load: PageServerLoad = async ({ locals }) => {
             sgst: expenses.sgst,
             igst: expenses.igst,
             total: expenses.total,
+            payment_status: expenses.payment_status,
+            balance_due: expenses.balance_due,
             category_name: accounts.account_name,
             vendor_display_name: vendors.display_name,
             vendor_actual_name: vendors.name,

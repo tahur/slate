@@ -37,7 +37,7 @@
         onResult: ({ result }) => {
             if (result.type === "success") {
                 isEditing = false;
-                toast.success("Vendor updated successfully.");
+                toast.success("Supplier updated successfully.");
             }
             if (result.type === "failure" && result.data?.error) {
                 toast.error(result.data.error as string);
@@ -89,7 +89,7 @@
             {/if}
             <Button size="sm" href="/expenses/new?vendor={data.vendor.id}">
                 <Plus class="mr-2 size-3" />
-                New Expense
+                Record Expense
             </Button>
         </div>
     </header>
@@ -140,7 +140,7 @@
                         <Wallet class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wide"
-                            >Payable</span
+                            >To Pay</span
                         >
                     </div>
                     <p
@@ -268,7 +268,16 @@
                             class="justify-start"
                         >
                             <Receipt class="mr-2 size-3" />
-                            Expense
+                            Record Expense
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            href="/expenses/new?vendor={data.vendor.id}&mode=credit"
+                            class="justify-start"
+                        >
+                            <Wallet class="mr-2 size-3" />
+                            Credit Expense
                         </Button>
                         <Button
                             variant="outline"
@@ -278,6 +287,15 @@
                         >
                             <Pencil class="mr-2 size-3" />
                             Edit Info
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            href="/reports/ledger?party=supplier&partyId={data.vendor.id}"
+                            class="justify-start"
+                        >
+                            <FileText class="mr-2 size-3" />
+                            Statement
                         </Button>
                     </div>
                     {#if data.vendor.notes}
@@ -306,7 +324,7 @@
                     {#if data.expenses.length === 0}
                         <div class="text-center py-12 text-text-muted">
                             <Receipt class="size-12 mx-auto mb-4 opacity-30" />
-                            <p>No expenses recorded</p>
+                            <p>No expense entries yet</p>
                             <Button
                                 href="/expenses/new?vendor={data.vendor.id}"
                                 class="mt-4"
@@ -373,7 +391,7 @@
     </div>
 </div>
 
-<!-- Edit Vendor Modal -->
+<!-- Edit Supplier Modal -->
 {#if isEditing}
     <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
@@ -384,7 +402,7 @@
             <div
                 class="p-4 border-b border-border flex justify-between items-center bg-surface-2"
             >
-                <h3 class="font-bold text-lg">Edit Vendor</h3>
+                <h3 class="font-bold text-lg">Edit Supplier</h3>
                 <button
                     onclick={() => (isEditing = false)}
                     class="text-text-muted hover:text-text-strong"
@@ -403,7 +421,7 @@
                     <!-- Basic Info -->
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="space-y-2">
-                            <Label for="name">Vendor Name *</Label>
+                            <Label for="name">Supplier Name *</Label>
                             <Input
                                 id="name"
                                 name="name"

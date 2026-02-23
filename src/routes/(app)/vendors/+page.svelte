@@ -48,11 +48,11 @@
                     <Tooltip.Trigger
                         class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
                     >
-                        Vendors
+                        Suppliers
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                         <p class="max-w-[250px] text-xs">
-                            A vendor is a person or company you buy products or
+                            A supplier is a person or company you buy products or
                             services from.
                         </p>
                     </Tooltip.Content>
@@ -64,7 +64,7 @@
         </div>
         <Button href="/vendors/new">
             <Plus class="mr-2 size-4" />
-            New Vendor
+            New Supplier
         </Button>
     </header>
 
@@ -75,7 +75,7 @@
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Users class="size-4" />
                     <span class="text-xs font-medium uppercase tracking-wide"
-                        >Total Vendors</span
+                        >Total Suppliers</span
                     >
                 </div>
                 <p class="text-2xl font-bold text-text-strong">
@@ -97,7 +97,7 @@
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Wallet class="size-4" />
                     <span class="text-xs font-medium uppercase tracking-wide"
-                        >Total Payable</span
+                        >Total To Pay</span
                     >
                 </div>
                 <p
@@ -120,7 +120,7 @@
             />
             <Input
                 type="search"
-                placeholder="Search vendors..."
+                placeholder="Search suppliers..."
                 bind:value={searchQuery}
                 class="pl-10"
             />
@@ -136,21 +136,21 @@
                 <Building2 class="size-16 text-text-muted/30 mb-4" />
                 {#if searchQuery}
                     <h3 class="text-lg font-medium text-text-strong">
-                        No vendors found
+                        No suppliers found
                     </h3>
                     <p class="text-sm text-text-muted mt-1">
                         Try a different search term
                     </p>
                 {:else}
                     <h3 class="text-lg font-medium text-text-strong">
-                        No vendors yet
+                        No suppliers yet
                     </h3>
                     <p class="text-sm text-text-muted mt-1">
-                        Add your first vendor to start tracking purchases
+                        Add your first supplier to start tracking purchases
                     </p>
                     <Button href="/vendors/new" class="mt-4">
                         <Plus class="mr-2 size-4" />
-                        Add Vendor
+                        Add Supplier
                     </Button>
                 {/if}
             </div>
@@ -232,7 +232,7 @@
                             <p
                                 class="text-xs text-text-muted uppercase tracking-wide"
                             >
-                                Payable
+                                To Pay
                             </p>
                             <p
                                 class="font-mono font-semibold {(vendor.balance ||

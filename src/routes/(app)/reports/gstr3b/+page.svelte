@@ -151,9 +151,9 @@
     <!-- Vendor-wise Table -->
     <Card class="p-4">
         <div class="space-y-2">
-            <h3 class="font-medium text-text-strong">Vendor-wise ITC Breakdown</h3>
+            <h3 class="font-medium text-text-strong">Supplier-wise ITC Breakdown</h3>
             <p class="text-xs text-text-muted">
-                Purchase summary by vendor with ITC eligibility
+                Purchase summary by supplier with ITC eligibility
             </p>
             {#if data.data.vendorWise.length === 0}
                 <p class="text-sm text-text-muted py-8 text-center">
@@ -164,7 +164,7 @@
                     <Table>
                         <TableHeader>
                             <TableRow class="hover:bg-transparent">
-                                <TableHead>Vendor</TableHead>
+                                <TableHead>Supplier</TableHead>
                                 <TableHead>GSTIN</TableHead>
                                 <TableHead class="text-center">Expenses</TableHead>
                                 <TableHead class="text-right">Amount</TableHead>
@@ -227,7 +227,7 @@
                 </h4>
                 <p class="text-sm text-text-subtle mt-1">
                     Input Tax Credit is only eligible from purchases made from
-                    GST-registered vendors. Ensure vendor GSTIN is captured for
+                    GST-registered suppliers. Ensure supplier GSTIN is captured for
                     all eligible purchases. The ITC shown here is based on
                     purchase data and should be reconciled with GSTR-2B before
                     filing.

@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS "expenses"
+ALTER COLUMN "paid_through" DROP NOT NULL;

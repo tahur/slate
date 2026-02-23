@@ -132,7 +132,7 @@ export const actions: Actions = {
 
             return { form, success: true };
         } catch (error) {
-            return failActionFromError(error, 'Vendor update failed', { form });
+            return failActionFromError(error, 'Supplier update failed', { form });
         }
     }
 };

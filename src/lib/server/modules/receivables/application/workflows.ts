@@ -9,6 +9,7 @@ import {
 } from '$lib/server/db/schema';
 import { postCreditNote, postPaymentReceipt } from '$lib/server/services/posting-engine';
 import { bumpNumberSeriesIfHigher, getNextNumberTx } from '$lib/server/services/number-series';
+import { buildCustomerReceiptReason } from '$lib/server/services/statement-reasons';
 import { round2 } from '$lib/utils/currency';
 import { NotFoundError, ValidationError } from '$lib/server/platform/errors';
 import { logDomainEvent } from '$lib/server/platform/observability';
@@ -21,6 +22,7 @@ import {
     findInvoiceForSettlementInTx,
     findOpenInvoicesByIdsInTx,
     findPaymentMethodByKeyInTx,
+    isPaymentMethodMappedToAccountInTx,
     setInvoiceSettlementStateInTx
 } from '../infra/queries';
 
@@ -237,6 +239,7 @@ export async function applyRequestedCreditsInTx(
 
 interface InvoiceRow {
     id: string;
+    invoice_number: string;
     customer_id: string;
     total: number;
     amount_paid: number | null;
@@ -266,9 +269,10 @@ async function resolvePaymentSelectionInTx(tx: Tx, orgId: string, paymentMode: s
         throw new ValidationError('Invalid deposit account');
     }
 
-    // Mapping is enforced by the UI (combined picker only shows mapped combos).
-    // We validate method and account individually but don't require the mapping to exist,
-    // which also fixes backward compat for old records without explicit mappings.
+    const isMapped = await isPaymentMethodMappedToAccountInTx(tx, orgId, paymentMethod.id, depositAccount.id);
+    if (!isMapped) {
+        throw new ValidationError('Selected payment account is not linked to the selected payment method');
+    }
 
     return { paymentMethod, depositAccount };
 }
@@ -327,6 +331,7 @@ export async function recordInvoicePaymentInTx(
         payment_account_id: depositAccount.id,
         payment_method_id: paymentMethod.id,
         reference: input.reference || '',
+        reason_snapshot: buildCustomerReceiptReason(amount, amount, [input.invoice.invoice_number]),
         journal_entry_id: postingResult.journalEntryId,
         created_by: input.userId
     });
@@ -518,6 +523,11 @@ export async function settleInvoiceInTx(
             payment_account_id: depositAccount.id,
             payment_method_id: paymentMethod.id,
             reference: input.paymentReference || '',
+            reason_snapshot: buildCustomerReceiptReason(
+                paymentAmount,
+                paymentAmount,
+                [invoice.invoice_number]
+            ),
             journal_entry_id: postingResult.journalEntryId,
             created_by: input.userId
         });
@@ -609,6 +619,7 @@ export async function createCustomerPaymentInTx(
         string,
         {
             id: string;
+            invoice_number: string;
             total: number;
             amount_paid: number | null;
             balance_due: number;
@@ -637,6 +648,14 @@ export async function createCustomerPaymentInTx(
     const paymentId = crypto.randomUUID();
     const paymentNumber = await getNextNumberTx(tx, input.orgId, 'payment');
     const paymentModeForPosting = depositAccount.account_code === '1000' ? 'cash' : 'bank';
+    const allocatedInvoiceNumbers = Array.from(
+        new Set(
+            input.allocations
+                .map((allocation) => invoiceMap.get(allocation.invoice_id)?.invoice_number || '')
+                .filter(Boolean)
+        )
+    ).sort();
+    const reasonSnapshot = buildCustomerReceiptReason(input.amount, totalAllocated, allocatedInvoiceNumbers);
 
     const postingResult = await postPaymentReceipt(
         input.orgId,
@@ -666,6 +685,7 @@ export async function createCustomerPaymentInTx(
         payment_method_id: paymentMethod.id,
         reference: input.reference || '',
         notes: input.notes || '',
+        reason_snapshot: reasonSnapshot,
         journal_entry_id: postingResult.journalEntryId,
         idempotency_key: input.idempotencyKey || null,
         created_by: input.userId

@@ -34,23 +34,23 @@
                     <Tooltip.Trigger
                         class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
                     >
-                        Payments Received
+                        Receipts
                     </Tooltip.Trigger>
                     <Tooltip.Content>
                         <p class="max-w-[250px] text-xs">
-                            A payment is money you receive from a customer
+                            A receipt is money you receive from a customer
                             against an invoice.
                         </p>
                     </Tooltip.Content>
                 </Tooltip.Root>
             </div>
             <p class="text-sm text-text-muted">
-                Record and manage payments you receive from customers
+                Record and manage money received from customers
             </p>
         </div>
         <Button href="/payments/new">
             <Plus class="mr-2 size-4" />
-            Record Payment
+            Receive Payment
         </Button>
     </div>
 
@@ -63,14 +63,14 @@
             >
                 <FileText class="size-12 text-text-muted/30 mb-4" />
                 <h3 class="text-lg font-bold text-text-strong">
-                    No payments yet
+                    No receipts yet
                 </h3>
                 <p class="text-sm text-text-muted mb-6">
-                    Record your first customer payment to get started
+                    Save your first customer receipt to get started
                 </p>
                 <Button href="/payments/new">
                     <Plus class="mr-2 size-4" />
-                    Record Payment
+                    Receive Payment
                 </Button>
             </div>
         {:else}
@@ -81,9 +81,9 @@
                     <TableHeader>
                         <TableRow class="hover:bg-transparent">
                             <TableHead class="w-28">Date</TableHead>
-                            <TableHead>Payment #</TableHead>
+                            <TableHead>Receipt #</TableHead>
                             <TableHead>Customer Name</TableHead>
-                            <TableHead class="w-32">Mode</TableHead>
+                            <TableHead class="w-32">Method</TableHead>
                             <TableHead class="text-right w-32">Amount</TableHead>
                         </TableRow>
                     </TableHeader>

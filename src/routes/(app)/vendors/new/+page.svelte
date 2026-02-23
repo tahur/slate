@@ -63,7 +63,7 @@
         </Button>
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                New Vendor
+                New Supplier
             </h1>
             <p class="text-sm text-text-muted">
                 Add a supplier or service provider
@@ -95,7 +95,7 @@
                         <div class="grid gap-6 md:grid-cols-2">
                             <div class="space-y-2">
                                 <Label for="name" variant="form">
-                                    Vendor Name <span class="text-destructive"
+                                    Supplier Name <span class="text-destructive"
                                         >*</span
                                     >
                                 </Label>
@@ -103,7 +103,7 @@
                                     id="name"
                                     name="name"
                                     bind:value={$form.name}
-                                    placeholder="Enter vendor name"
+                                    placeholder="Enter supplier name"
                                     class="border-border-strong bg-surface-0 {$errors.name
                                         ? 'border-destructive'
                                         : ''}"
@@ -140,7 +140,7 @@
                                     class="border-border-strong bg-surface-0"
                                 />
                                 <p class="text-[10px] text-text-muted">
-                                    Overridden by vendor name if blank
+                                    Uses supplier name if left blank
                                 </p>
                             </div>
 
@@ -153,7 +153,7 @@
                                     name="email"
                                     type="email"
                                     bind:value={$form.email}
-                                    placeholder="vendor@example.com"
+                                    placeholder="supplier@example.com"
                                     class="border-border-strong bg-surface-0"
                                 />
                             </div>
@@ -179,7 +179,7 @@
                                     id="website"
                                     name="website"
                                     bind:value={$form.website}
-                                    placeholder="https://vendor.com"
+                                    placeholder="https://supplier.com"
                                     class="border-border-strong bg-surface-0"
                                 />
                             </div>
@@ -468,7 +468,7 @@
         <div class="action-bar-group">
             <Button type="submit" form="vendor-form" disabled={$submitting}>
                 <Save class="mr-2 size-4" />
-                {$submitting ? "Saving..." : "Save Vendor"}
+                {$submitting ? "Saving..." : "Save Supplier"}
             </Button>
             <Button variant="ghost" href="/vendors">Cancel</Button>
         </div>

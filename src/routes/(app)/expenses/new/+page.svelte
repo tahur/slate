@@ -4,11 +4,12 @@
     import { Label } from "$lib/components/ui/label";
     import { ArrowLeft, Check, Plus } from "lucide-svelte";
     import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
-    import { enhance } from "$app/forms";
+    import { enhance, deserialize } from "$app/forms";
     import { toast } from "svelte-sonner";
     import { formatINR } from "$lib/utils/currency";
+    import { formatDate } from "$lib/utils/date";
 
-    let { data, form } = $props();
+    let { data } = $props();
     const { selectedVendorId: initVendorId } = data;
     let isSubmitting = $state(false);
 
@@ -16,6 +17,9 @@
     let amount = $state(0);
     let gstRate = $state(0);
     let isInterState = $state(false);
+    let paymentStatus = $state<"paid" | "unpaid">(
+        data.defaultPaymentStatus === "unpaid" ? "unpaid" : "paid",
+    );
     let selectedVendorId = $state(initVendorId || "");
     let vendorName = $state("");
     const defaultOption = data.paymentOptions.find((o: any) => o.isDefault) || data.paymentOptions[0];
@@ -24,11 +28,48 @@
     );
     let paymentMode = $state(defaultOption?.methodKey || "");
     let paidThrough = $state(defaultOption?.accountId || "");
+    let pendingBills = $state<any[]>([]);
+    let pendingTotal = $state(0);
+    let oldestPendingDate = $state<string | null>(null);
 
     function selectOption(option: any) {
         selectedOptionKey = `${option.methodKey}::${option.accountId}`;
         paymentMode = option.methodKey;
         paidThrough = option.accountId;
+    }
+
+    async function loadVendorPending(vendorId: string) {
+        if (!vendorId) {
+            pendingBills = [];
+            pendingTotal = 0;
+            oldestPendingDate = null;
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append("vendor_id", vendorId);
+
+            const res = await fetch("/expenses/new?/getVendorPending", {
+                method: "POST",
+                body: formData,
+            });
+            const text = await res.text();
+            const result = deserialize(text);
+
+            if (result.type === "success") {
+                pendingBills = (result.data?.bills || []) as any[];
+                pendingTotal = Number(result.data?.pendingTotal || 0);
+                oldestPendingDate = (result.data?.oldestDate as string | null) || null;
+                return;
+            }
+
+            if (result.type === "failure" && result.data?.error) {
+                toast.error(result.data.error as string);
+            }
+        } catch {
+            toast.error("Failed to load supplier pending bills");
+        }
     }
 
     // When vendor is selected, update the display name
@@ -40,6 +81,16 @@
     $effect(() => {
         if (selectedVendor) {
             vendorName = selectedVendor.display_name || selectedVendor.name;
+        }
+    });
+
+    $effect(() => {
+        if (selectedVendorId) {
+            void loadVendorPending(selectedVendorId);
+        } else {
+            pendingBills = [];
+            pendingTotal = 0;
+            oldestPendingDate = null;
         }
     });
 
@@ -61,9 +112,9 @@
         </Button>
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                Add Expense
+                Record Expense
             </h1>
-            <p class="text-sm text-text-subtle">Record a business expense</p>
+            <p class="text-sm text-text-subtle">Save a business expense</p>
         </div>
     </header>
 
@@ -72,13 +123,35 @@
         <form
             id="expense-form"
             method="POST"
+            action="?/save"
             use:enhance={() => {
                 isSubmitting = true;
                 return async ({ result, update }) => {
-                    await update();
-                    isSubmitting = false;
-                    if (result.type === "failure" && result.data?.error) {
-                        toast.error(result.data.error as string);
+                    try {
+                        if (result.type === "failure") {
+                            if (result.data?.error) {
+                                const message = result.data.error as string;
+                                const traceId = (result.data as { traceId?: string }).traceId;
+                                toast.error(
+                                    traceId
+                                        ? `${message} (Ref: ${traceId})`
+                                        : message,
+                                );
+                            }
+                            await update();
+                            return;
+                        }
+
+                        if (result.type === "error") {
+                            toast.error(result.error?.message || "Unable to save entry");
+                            return;
+                        }
+
+                        await update();
+                    } catch {
+                        toast.error("Unable to save entry. Please try again.");
+                    } finally {
+                        isSubmitting = false;
                     }
                 };
             }}
@@ -133,18 +206,18 @@
                         </div>
                     </div>
 
-                    <!-- Vendor -->
+                    <!-- Supplier -->
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
                             <Label for="vendor_id" variant="form"
-                                >Vendor</Label
+                                >Supplier</Label
                             >
                             <a
                                 href="/vendors/new"
                                 class="text-xs text-primary hover:underline flex items-center gap-1"
                             >
                                 <Plus class="size-3" />
-                                New Vendor
+                                New Supplier
                             </a>
                         </div>
                         <select
@@ -154,7 +227,7 @@
                             class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                         >
                             <option value=""
-                                >Select vendor or type below...</option
+                                >Select supplier or type below...</option
                             >
                             {#each data.vendors as vendor}
                                 <option value={vendor.id}>
@@ -171,7 +244,7 @@
                                 id="vendor_name"
                                 name="vendor_name"
                                 bind:value={vendorName}
-                                placeholder="Or type vendor name for quick entry"
+                                placeholder="Or type supplier name for quick entry"
                             />
                         {:else}
                             <input
@@ -197,14 +270,74 @@
                     </div>
 
                     <div class="space-y-2">
-                        <Label variant="form">Paid via <span class="text-destructive">*</span></Label>
-                        <input type="hidden" name="payment_mode" value={paymentMode} />
-                        <input type="hidden" name="paid_through" value={paidThrough} />
-                        <PaymentOptionChips
-                            options={data.paymentOptions}
-                            selectedOptionKey={selectedOptionKey}
-                            onSelect={selectOption}
+                        <Label for="payment_status" variant="form">Payment Timing</Label>
+                        <select
+                            id="payment_status"
+                            bind:value={paymentStatus}
+                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                        >
+                            <option value="paid">Paid now</option>
+                            <option value="unpaid">On Credit (pay supplier later)</option>
+                        </select>
+                        <input type="hidden" name="payment_status" value={paymentStatus} />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label variant="form">
+                            {paymentStatus === "paid" ? "Paid From" : "Credit Status"}
+                            {#if paymentStatus === "paid"}
+                                <span class="text-destructive">*</span>
+                            {/if}
+                        </Label>
+                        <input
+                            type="hidden"
+                            name="payment_mode"
+                            value={paymentStatus === "paid" ? paymentMode : ""}
                         />
+                        <input
+                            type="hidden"
+                            name="paid_through"
+                            value={paymentStatus === "paid" ? paidThrough : ""}
+                        />
+                        {#if paymentStatus === "paid"}
+                            <PaymentOptionChips
+                                options={data.paymentOptions}
+                                selectedOptionKey={selectedOptionKey}
+                                onSelect={selectOption}
+                            />
+                        {:else}
+                            <div class="rounded-lg border border-border bg-surface-0 p-3 space-y-2">
+                                <div>
+                                    <p class="text-xs text-text-muted">Current Supplier Credit</p>
+                                    <p class="font-mono text-sm font-semibold text-amber-600">
+                                        {formatINR(pendingTotal)}
+                                    </p>
+                                    {#if oldestPendingDate}
+                                        <p class="text-xs text-text-muted mt-0.5">
+                                            Oldest bill: {formatDate(oldestPendingDate)}
+                                        </p>
+                                    {/if}
+                                </div>
+
+                                {#if pendingBills.length > 0}
+                                    <div class="rounded border border-border bg-surface-1 p-2">
+                                        <p class="text-xs text-text-muted mb-1">Recent credit bills</p>
+                                        <div class="space-y-1.5">
+                                            {#each pendingBills.slice(0, 3) as bill}
+                                                <div class="flex items-center justify-between text-xs">
+                                                    <span class="font-mono text-text-strong">
+                                                        {bill.expense_number}
+                                                    </span>
+                                                    <span class="font-mono text-amber-600">
+                                                        {formatINR(bill.balance_due)}
+                                                    </span>
+                                                </div>
+                                            {/each}
+                                        </div>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/if}
                     </div>
 
                     <!-- Reference -->
@@ -236,7 +369,7 @@
                     <!-- Amount -->
                     <div class="space-y-2">
                         <Label for="amount" variant="form"
-                            >Amount (excl. Tax) <span class="text-destructive"
+                            >Amount (before GST) <span class="text-destructive"
                                 >*</span
                             ></Label
                         >
@@ -258,7 +391,7 @@
                     >
                         <div class="space-y-2">
                             <Label for="gst_rate" variant="form"
-                                >Tax Rate</Label
+                                >GST Rate</Label
                             >
                             <select
                                 id="gst_rate"
@@ -317,7 +450,9 @@
                             class="flex justify-between items-baseline pt-3 border-t border-border"
                         >
                             <span class="font-semibold text-text-strong"
-                                >Total Payable</span
+                                >{paymentStatus === "paid"
+                                    ? "Total Paid"
+                                    : "Credit for this bill"}</span
                             >
                             <span
                                 class="font-mono text-2xl font-bold text-primary"
@@ -339,7 +474,7 @@
                 disabled={isSubmitting || amount <= 0}
             >
                 <Check class="mr-2 size-4" />
-                {isSubmitting ? "Saving..." : "Save Expense"}
+                {isSubmitting ? "Saving..." : "Save Entry"}
             </Button>
             <Button variant="ghost" href="/expenses">Cancel</Button>
         </div>

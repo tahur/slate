@@ -19,9 +19,9 @@
             <ArrowLeft class="size-4" />
         </Button>
         <div>
-            <h1 class="text-xl font-semibold">Accounts Receivable Aging</h1>
+            <h1 class="text-xl font-semibold">Customer Pending Report (Ageing)</h1>
             <p class="text-sm text-muted-foreground">
-                Outstanding invoices by age bucket
+                Pending bill amount by delay bucket (A/R Ageing)
             </p>
         </div>
     </div>
@@ -29,7 +29,7 @@
     <Card class="overflow-hidden">
         {#if data.customerAging.length === 0}
             <div class="p-12 text-center">
-                <p class="text-muted-foreground">No outstanding invoices</p>
+                <p class="text-muted-foreground">No pending bills</p>
             </div>
         {:else}
             <div class="overflow-x-auto">
@@ -38,11 +38,11 @@
                         <tr class="border-b bg-muted/50">
                             <th
                                 class="px-4 py-3 text-left font-medium text-muted-foreground"
-                                >Customer</th
+                                >Customer / Party</th
                             >
                             <th
                                 class="px-4 py-3 text-right font-medium text-muted-foreground"
-                                >Current</th
+                                >Not Due</th
                             >
                             <th
                                 class="px-4 py-3 text-right font-medium text-muted-foreground"

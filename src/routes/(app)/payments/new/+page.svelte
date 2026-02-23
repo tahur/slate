@@ -128,7 +128,7 @@
             </Button>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                    Record Payment
+                    Receive Payment
                 </h1>
             </div>
         </div>
@@ -146,7 +146,13 @@
                     await update();
                     isSubmitting = false;
                     if (result.type === "failure" && result.data?.error) {
-                        toast.error(result.data.error as string);
+                        const message = result.data.error as string;
+                        const traceId = (result.data as { traceId?: string }).traceId;
+                        toast.error(
+                            traceId
+                                ? `${message} (Ref: ${traceId})`
+                                : message,
+                        );
                     }
                 };
             }}
@@ -171,7 +177,7 @@
                             class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                             required
                         >
-                            <option value="">Select customer...</option>
+                            <option value="">Select customer / party...</option>
                             {#each data.customers as customer}
                                 <option value={customer.id}>
                                     {customer.name}
@@ -179,7 +185,7 @@
                                         ({customer.company_name})
                                     {/if}
                                     {#if customer.balance && customer.balance > 0}
-                                        — Outstanding: {formatINR(
+                                        — Pending: {formatINR(
                                             customer.balance,
                                         )}
                                     {/if}
@@ -209,7 +215,7 @@
                         <!-- Date -->
                         <div class="space-y-2">
                             <Label for="payment_date" variant="form"
-                                >Date <span class="text-destructive">*</span></Label
+                                >Receipt Date <span class="text-destructive">*</span></Label
                             >
                             <Input
                                 type="date"
@@ -224,7 +230,7 @@
 
                     <!-- Payment Mode + Account Combined Chips -->
                     <div class="space-y-2">
-                        <Label variant="form">Pay via <span class="text-destructive">*</span></Label>
+                        <Label variant="form">Received In <span class="text-destructive">*</span></Label>
                         <input type="hidden" name="payment_mode" value={paymentMode} />
                         <input type="hidden" name="deposit_to" value={depositTo} />
                         <PaymentOptionChips
@@ -271,7 +277,7 @@
                         <h3
                             class="text-sm font-bold uppercase tracking-wide text-text-subtle"
                         >
-                            Unpaid Invoices
+                            Pending Bills
                         </h3>
                         {#if unpaidInvoices.length > 0 && amount > 0}
                             <Button
@@ -280,7 +286,7 @@
                                 size="sm"
                                 onclick={autoAllocate}
                             >
-                                Auto-Allocate
+                                Auto Adjust
                             </Button>
                         {/if}
                     </div>
@@ -290,7 +296,7 @@
                             class="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg text-text-muted text-sm text-center p-4"
                         >
                             <Search class="size-8 mb-2 opacity-50" />
-                            Select a customer to view invoices
+                            Select a customer to view pending bills
                         </div>
                     {:else if unpaidInvoices.length === 0}
                         <div
@@ -299,7 +305,7 @@
                             <Check
                                 class="size-8 mb-2 opacity-50 text-green-500"
                             />
-                            All caught up! No unpaid invoices.
+                            All clear. No pending bills.
                         </div>
                     {:else}
                         <div class="space-y-3">
@@ -325,7 +331,7 @@
                                         <div class="flex items-baseline gap-2">
                                             <span
                                                 class="text-xs text-text-muted"
-                                                >Due:</span
+                                                >Pending:</span
                                             >
                                             <span
                                                 class="text-sm font-medium text-destructive"
@@ -361,7 +367,7 @@
                                     <button
                                         type="button"
                                         class="absolute -right-2 -top-2 bg-surface-0 border border-border shadow-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Pay Full"
+                                        title="Use Full Amount"
                                         onclick={() => {
                                             allocations[invoice.id] =
                                                 invoice.balance_due;
@@ -389,7 +395,7 @@
                 disabled={isSubmitting || !selectedCustomer || amount <= 0}
             >
                 <Check class="mr-2 size-4" />
-                {isSubmitting ? "Recording..." : "Record Payment"}
+                {isSubmitting ? "Saving..." : "Save Receipt"}
             </Button>
             <Button
                 href="/payments"
@@ -404,7 +410,7 @@
             <div class="flex flex-col items-end">
                 <span
                     class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-                    >Received</span
+                    >Amount Received</span
                 >
                 <span class="font-mono text-xl font-bold text-text-strong"
                     >{formatINR(amount)}</span
@@ -414,7 +420,7 @@
             <div class="flex flex-col items-end">
                 <span
                     class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-                    >Allocated</span
+                    >Adjusted to Bills</span
                 >
                 <span
                     class="font-mono font-medium text-text-strong {totalAllocated >
@@ -428,24 +434,24 @@
                 <div class="flex flex-col items-end text-blue-600">
                     <span
                         class="text-[10px] uppercase tracking-wide font-semibold"
-                        >Full Advance</span
+                        >Advance Received</span
                     >
                     <span class="font-mono font-bold">{formatINR(amount)}</span>
                     <span class="text-[10px] text-text-muted">
-                        No invoice allocated - saved as advance
+                        No bill selected. Saved as advance.
                     </span>
                 </div>
             {:else if hasExcess}
                 <div class="flex flex-col items-end text-amber-600">
                     <span
                         class="text-[10px] uppercase tracking-wide font-semibold"
-                        >Customer Advance</span
+                        >Advance Balance</span
                     >
                     <span class="font-mono font-bold"
                         >{formatINR(remainingAmount)}</span
                     >
                     <span class="text-[10px] text-text-muted">
-                        Excess saved for future invoices
+                        This will be used in future bills
                     </span>
                 </div>
             {/if}

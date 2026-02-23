@@ -16,6 +16,7 @@ export type PostingType =
     | 'INVOICE_ISSUED'
     | 'INVOICE_CANCELLED'
     | 'PAYMENT_RECEIVED'
+    | 'VENDOR_PAYMENT'
     | 'PAYMENT_REVERSED'
     | 'EXPENSE_RECORDED'
     | 'EXPENSE_REVERSED'
@@ -465,6 +466,60 @@ export async function postPaymentReceipt(
     }, tx);
 }
 
+interface VendorPaymentPostingInput {
+    paymentId: string;
+    paymentNumber: string;
+    date: string;
+    vendorId: string;
+    amount: number;
+    paidFromMode: 'cash' | 'bank';
+    paidFromAccountCode?: string;
+    userId?: string;
+}
+
+/**
+ * Post a supplier payment.
+ *
+ * Debit: Accounts Payable (2000) - Payment amount
+ * Credit: Cash (1000) or Bank (1100) - Payment amount
+ */
+export async function postVendorPayment(
+    orgId: string,
+    input: VendorPaymentPostingInput,
+    tx?: Tx
+): Promise<PostingResult> {
+    const paidFromAccountCode =
+        input.paidFromAccountCode || (input.paidFromMode === 'cash' ? '1000' : '1100');
+
+    const lines: JournalLineInput[] = [
+        {
+            accountCode: '2000',
+            debit: input.amount,
+            partyType: 'vendor',
+            partyId: input.vendorId,
+            narration: `Supplier payment ${input.paymentNumber}`
+        },
+        {
+            accountCode: paidFromAccountCode,
+            credit: input.amount,
+            narration: `Supplier payment ${input.paymentNumber}`
+        }
+    ];
+
+    return post(
+        orgId,
+        {
+            type: 'VENDOR_PAYMENT',
+            date: input.date,
+            referenceId: input.paymentId,
+            narration: `Supplier payment: ${input.paymentNumber}`,
+            lines,
+            userId: input.userId
+        },
+        tx
+    );
+}
+
 // ============================================================
 // EXPENSE POSTING RULES
 // ============================================================
@@ -477,8 +532,10 @@ interface ExpensePostingInput {
     inputCgst: number;
     inputSgst: number;
     inputIgst: number;
-    paidThrough: 'cash' | 'bank';
+    paidThrough?: 'cash' | 'bank';
     paidThroughAccountCode?: string;
+    vendorId?: string | null;
+    payableOnly?: boolean;
     description: string;
     userId?: string;
 }
@@ -498,7 +555,13 @@ export async function postExpense(
     tx?: Tx
 ): Promise<PostingResult> {
     const totalPaid = round2(input.amount + input.inputCgst + input.inputSgst + input.inputIgst);
-    const cashAccountCode = input.paidThroughAccountCode || (input.paidThrough === 'cash' ? '1000' : '1100');
+    const paidThroughMode = input.paidThrough || 'bank';
+    const cashAccountCode = input.paidThroughAccountCode || (paidThroughMode === 'cash' ? '1000' : '1100');
+    const payableOnly = input.payableOnly === true;
+
+    if (payableOnly && !input.vendorId) {
+        throw new Error('Vendor is required when recording supplier payable');
+    }
 
     const lines: JournalLineInput[] = [
         {
@@ -532,11 +595,21 @@ export async function postExpense(
         });
     }
 
-    lines.push({
-        accountCode: cashAccountCode,
-        credit: totalPaid,
-        narration: input.description
-    });
+    if (payableOnly) {
+        lines.push({
+            accountCode: '2000',
+            credit: totalPaid,
+            partyType: 'vendor',
+            partyId: input.vendorId || undefined,
+            narration: `Payable: ${input.description}`
+        });
+    } else {
+        lines.push({
+            accountCode: cashAccountCode,
+            credit: totalPaid,
+            narration: input.description
+        });
+    }
 
     return post(orgId, {
         type: 'EXPENSE_RECORDED',

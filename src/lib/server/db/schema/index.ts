@@ -17,3 +17,4 @@ export * from './app_settings';
 export * from './payment_accounts';
 export * from './payment_methods';
 export * from './payment_method_account_map';
+export * from './supplier_payments';

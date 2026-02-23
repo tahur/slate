@@ -375,13 +375,13 @@ export const actions: Actions = {
             return fail(400, { error: 'Amount must be positive' });
         }
         if (!payment_date) {
-            return fail(400, { error: 'Payment date is required' });
+            return fail(400, { error: 'Receipt date is required' });
         }
         if (!payment_mode) {
             return fail(400, { error: 'Payment method is required' });
         }
         if (!deposit_to) {
-            return fail(400, { error: 'Deposit account is required' });
+            return fail(400, { error: 'Received in account is required' });
         }
 
         // Get invoice (read-only, safe outside tx)
@@ -394,7 +394,7 @@ export const actions: Actions = {
             return fail(400, { error: 'Invoice is already paid or cancelled' });
         }
         if (amount > invoice.balance_due + MONEY_EPSILON) {
-            return fail(400, { error: 'Amount exceeds balance due' });
+            return fail(400, { error: 'Amount exceeds pending balance' });
         }
 
         let paymentNumber = '';
@@ -406,6 +406,7 @@ export const actions: Actions = {
                     userId: locals.user!.id,
                     invoice: {
                         id: invoice.id,
+                        invoice_number: invoice.invoice_number,
                         customer_id: invoice.customer_id,
                         total: invoice.total,
                         amount_paid: invoice.amount_paid,
@@ -426,7 +427,7 @@ export const actions: Actions = {
             return { success: true, paymentNumber };
 
         } catch (error) {
-            return failActionFromError(error, 'Invoice payment record failed');
+            return failActionFromError(error, 'Invoice receipt save failed');
         }
     },
 
@@ -451,19 +452,19 @@ export const actions: Actions = {
         }
 
         if (paymentAmount < 0) {
-            return fail(400, { error: 'Payment amount must be zero or positive' });
+            return fail(400, { error: 'Receipt amount must be zero or positive' });
         }
         if (paymentAmount > 0 && !paymentDate) {
-            return fail(400, { error: 'Payment date is required when payment amount is provided' });
+            return fail(400, { error: 'Receipt date is required when amount is provided' });
         }
         if (paymentAmount > 0 && !paymentMode) {
             return fail(400, { error: 'Payment method is required when payment amount is provided' });
         }
         if (paymentAmount > 0 && !depositTo) {
-            return fail(400, { error: 'Deposit account is required when payment amount is provided' });
+            return fail(400, { error: 'Received in account is required when amount is provided' });
         }
         if (paymentAmount <= MONEY_EPSILON && requestedCredits.length === 0) {
-            return fail(400, { error: 'No payment or credits selected to settle' });
+            return fail(400, { error: 'No receipt amount or credits selected to settle' });
         }
 
         let totalSettled = 0;

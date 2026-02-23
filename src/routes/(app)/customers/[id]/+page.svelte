@@ -93,7 +93,7 @@
             {/if}
             <Button size="sm" href="/invoices/new?customer={data.customer.id}">
                 <Plus class="mr-2 size-3" />
-                New Invoice
+                New Bill
             </Button>
         </div>
     </header>
@@ -132,7 +132,7 @@
                         <Wallet class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wide"
-                            >Outstanding</span
+                            >Pending</span
                         >
                     </div>
                     <p
@@ -145,7 +145,7 @@
                     >
                         {formatINR(Math.abs(data.summary.outstanding))}
                         {#if data.summary.outstanding < 0}
-                            <span class="text-xs font-normal">(Credit)</span>
+                            <span class="text-xs font-normal">(Advance)</span>
                         {/if}
                     </p>
                 </div>
@@ -154,7 +154,7 @@
                         <BadgePercent class="size-4" />
                         <span
                             class="text-xs font-medium uppercase tracking-wide"
-                            >Available Credits</span
+                            >Credit Balance</span
                         >
                     </div>
                     <p class="text-xl font-bold font-mono text-blue-600">
@@ -250,7 +250,7 @@
                             href="/invoices/new?customer={data.customer.id}"
                         >
                             <FileText class="mr-1.5 size-3" />
-                            Invoice
+                            Bill
                         </Button>
                         <Button
                             variant="outline"
@@ -258,7 +258,7 @@
                             href="/payments/new?customer={data.customer.id}"
                         >
                             <CreditCard class="mr-1.5 size-3" />
-                            Payment
+                            Receipt
                         </Button>
                         <Button
                             variant="outline"
@@ -267,6 +267,14 @@
                         >
                             <Receipt class="mr-1.5 size-3" />
                             Credit Note
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            href="/reports/ledger?party=customer&partyId={data.customer.id}"
+                        >
+                            <FileText class="mr-1.5 size-3" />
+                            Statement
                         </Button>
                         <Button
                             variant="outline"
@@ -292,7 +300,7 @@
                             : 'text-text-muted hover:text-text-strong'}"
                         onclick={() => (activeTab = "ledger")}
                     >
-                        Ledger
+                        Statement
                     </button>
                     <button
                         class="px-4 py-3 text-sm font-medium transition-colors {activeTab ===
@@ -301,7 +309,7 @@
                             : 'text-text-muted hover:text-text-strong'}"
                         onclick={() => (activeTab = "invoices")}
                     >
-                        Invoices ({data.invoices.length})
+                        Bills ({data.invoices.length})
                     </button>
                     <button
                         class="px-4 py-3 text-sm font-medium transition-colors {activeTab ===
@@ -310,7 +318,7 @@
                             : 'text-text-muted hover:text-text-strong'}"
                         onclick={() => (activeTab = "payments")}
                     >
-                        Payments ({data.payments.length})
+                        Receipts ({data.payments.length})
                     </button>
                     <button
                         class="px-4 py-3 text-sm font-medium transition-colors {activeTab ===
@@ -319,7 +327,7 @@
                             : 'text-text-muted hover:text-text-strong'}"
                         onclick={() => (activeTab = "credits")}
                     >
-                        Credits ({data.creditNotes.length +
+                        Credit & Advance ({data.creditNotes.length +
                             data.advances.length})
                     </button>
                 </div>
@@ -341,16 +349,16 @@
                                         class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                     >
                                         <th class="pb-3 pr-4">Date</th>
-                                        <th class="pb-3 pr-4">Type</th>
-                                        <th class="pb-3 pr-4">Number</th>
+                                        <th class="pb-3 pr-4">Document</th>
+                                        <th class="pb-3 pr-4">Doc #</th>
                                         <th class="pb-3 pr-4">Description</th>
                                         <th class="pb-3 pr-4 text-right"
-                                            >Debit</th
+                                            >Bill Amt</th
                                         >
                                         <th class="pb-3 pr-4 text-right"
-                                            >Credit</th
+                                            >Received</th
                                         >
-                                        <th class="pb-3 text-right">Balance</th>
+                                        <th class="pb-3 text-right">Pending</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-border-subtle">
@@ -370,10 +378,11 @@
                                                           ? 'bg-green-100 text-green-700'
                                                           : 'bg-purple-100 text-purple-700'}"
                                                 >
-                                                    {entry.type ===
-                                                    "credit_note"
-                                                        ? "Credit Note"
-                                                        : entry.type}
+                                                    {entry.type === "invoice"
+                                                        ? "Bill"
+                                                        : entry.type === "payment"
+                                                          ? "Receipt"
+                                                          : "Credit Note"}
                                                 </span>
                                             </td>
                                             <td class="py-3 pr-4">
@@ -426,7 +435,7 @@
                                                 {#if entry.balance < 0}<span
                                                         class="text-xs"
                                                     >
-                                                        Cr</span
+                                                        Adv</span
                                                     >{/if}
                                             </td>
                                         </tr>
@@ -441,14 +450,14 @@
                                 <FileText
                                     class="size-12 mx-auto mb-4 opacity-30"
                                 />
-                                <p>No invoices yet</p>
+                                <p>No bills yet</p>
                                 <Button
                                     href="/invoices/new?customer={data.customer
                                         .id}"
                                     class="mt-4"
                                 >
                                     <Plus class="mr-2 size-4" />
-                                    Create Invoice
+                                    Create Bill
                                 </Button>
                             </div>
                         {:else}
@@ -458,13 +467,13 @@
                                         class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                     >
                                         <th class="pb-3 pr-4">Date</th>
-                                        <th class="pb-3 pr-4">Invoice #</th>
+                                        <th class="pb-3 pr-4">Bill #</th>
                                         <th class="pb-3 pr-4">Due Date</th>
                                         <th class="pb-3 pr-4 text-right"
                                             >Total</th
                                         >
                                         <th class="pb-3 pr-4 text-right"
-                                            >Balance Due</th
+                                            >Pending</th
                                         >
                                         <th class="pb-3 text-right">Status</th>
                                     </tr>
@@ -522,14 +531,14 @@
                                 <CreditCard
                                     class="size-12 mx-auto mb-4 opacity-30"
                                 />
-                                <p>No payments yet</p>
+                                <p>No receipts yet</p>
                                 <Button
                                     href="/payments/new?customer={data.customer
                                         .id}"
                                     class="mt-4"
                                 >
                                     <Plus class="mr-2 size-4" />
-                                    Record Payment
+                                    Receive Payment
                                 </Button>
                             </div>
                         {:else}
@@ -539,8 +548,8 @@
                                         class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
                                     >
                                         <th class="pb-3 pr-4">Date</th>
-                                        <th class="pb-3 pr-4">Payment #</th>
-                                        <th class="pb-3 pr-4">Mode</th>
+                                        <th class="pb-3 pr-4">Receipt #</th>
+                                        <th class="pb-3 pr-4">Method</th>
                                         <th class="pb-3 pr-4">Reference</th>
                                         <th class="pb-3 text-right">Amount</th>
                                     </tr>
@@ -672,11 +681,11 @@
                                 <h4
                                     class="text-xs font-bold uppercase tracking-wide text-text-muted mb-3"
                                 >
-                                    Customer Advances
+                                    Advance Receipts
                                 </h4>
                                 {#if data.advances.length === 0}
                                     <p class="text-sm text-text-muted py-4">
-                                        No advances
+                                        No advance receipts
                                     </p>
                                 {:else}
                                     <table class="w-full text-sm">
@@ -712,7 +721,7 @@
                                                         {#if advance.payment_number}
                                                             <span class="font-mono text-primary">{advance.payment_number}</span>
                                                         {:else}
-                                                            <span class="text-text-subtle">{advance.notes || "Advance payment"}</span>
+                                                            <span class="text-text-subtle">{advance.notes || "Advance receipt"}</span>
                                                         {/if}
                                                     </td>
                                                     <td

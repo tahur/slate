@@ -83,8 +83,13 @@ async function baselineIfSchemaAlreadyExists() {
     return;
   }
 
+  // Baseline only the earliest migration for pre-existing databases.
+  // This keeps legacy installs on the migration track while still allowing
+  // newer migrations to run normally.
+  const baselineHashes = hashes.slice(0, 1);
+
   await client.begin(async (tx) => {
-    for (const entry of hashes) {
+    for (const entry of baselineHashes) {
       await tx`
         INSERT INTO drizzle.__drizzle_migrations ("hash", "created_at")
         VALUES (${entry.hash}, ${entry.when})
@@ -92,7 +97,7 @@ async function baselineIfSchemaAlreadyExists() {
     }
   });
 
-  console.log(`[migrate] Baseline applied for ${hashes.length} migration(s).`);
+  console.log(`[migrate] Baseline applied for ${baselineHashes.length} migration(s).`);
 }
 
 try {

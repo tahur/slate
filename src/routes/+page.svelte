@@ -17,7 +17,7 @@
 
     const businessActions = [
         { action: "Create Invoice", result: "Sent to customer, GST calculated, books updated", icon: FileText },
-        { action: "Record Payment", result: "Matched to invoice, bank balance updated", icon: Wallet },
+        { action: "Receive Payment", result: "Matched to invoice, bank balance updated", icon: Wallet },
         { action: "Add Expense", result: "Categorized, tax tracked, cash adjusted", icon: Receipt },
     ] as const;
 </script>
@@ -26,7 +26,7 @@
     <title>Slate — Simple Invoicing & Accounting for Indian Small Businesses</title>
     <meta
         name="description"
-        content="Create invoices, record payments, track expenses. Slate handles GST, bookkeeping, and compliance in the background. Free, open-source, and built for Indian small businesses."
+        content="Create invoices, receive payments, and track expenses. Slate handles GST, bookkeeping, and compliance in the background. Free, open-source, and built for Indian small businesses."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -83,7 +83,7 @@
                         <span>We keep the books.</span>
                     </h1>
                     <p class="hero-copy">
-                        Create invoices, record payments, track expenses — in plain language.
+                        Create invoices, receive payments, and track expenses in plain language.
                         Slate handles GST, bookkeeping, and compliance automatically.
                         No accounting knowledge needed.
                     </p>
@@ -193,7 +193,7 @@
                         </div>
                         <h3>Know who paid and who hasn't.</h3>
                         <p>
-                            Record payments against invoices. Slate tracks outstanding
+                            Receive payments against invoices. Slate tracks outstanding
                             balances, partial payments, and updates your books automatically.
                         </p>
                     </article>
@@ -208,7 +208,7 @@
                         </div>
                         <h3>Track every rupee going out.</h3>
                         <p>
-                            Log expenses by category, vendor, and payment method.
+                            Log expenses by category, supplier, and payment method.
                             Input tax is tracked so nothing is missed at filing time.
                         </p>
                     </article>

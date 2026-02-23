@@ -36,7 +36,7 @@
         </div>
         <Button href="/expenses/new">
             <Plus class="mr-2 size-4" />
-            Add Expense
+            Record Expense
         </Button>
     </div>
 
@@ -52,11 +52,11 @@
                     No expenses yet
                 </h3>
                 <p class="text-sm text-text-muted mb-6">
-                    Record your business expenses here to track spending
+                    Add your expense entries here to track spending
                 </p>
                 <Button href="/expenses/new">
                     <Plus class="mr-2 size-4" />
-                    Add Expense
+                    Record Expense
                 </Button>
             </div>
         {:else}
@@ -69,7 +69,8 @@
                             <TableHead class="w-32">Date</TableHead>
                             <TableHead class="w-32">Number</TableHead>
                             <TableHead>Category</TableHead>
-                            <TableHead class="w-48">Vendor</TableHead>
+                            <TableHead class="w-48">Supplier</TableHead>
+                            <TableHead class="w-32">Status</TableHead>
                             <TableHead class="text-right w-32">Amount (Ex)</TableHead>
                             <TableHead class="text-right w-32">Input Tax</TableHead>
                             <TableHead class="text-right w-32">Total</TableHead>
@@ -133,6 +134,29 @@
                                             {expense.vendor_name || "—"}
                                         </a>
                                     {/if}
+                                </TableCell>
+                                <TableCell>
+                                    <a
+                                        href="/expenses/{expense.id}"
+                                        class="flex items-center w-full h-full text-inherit no-underline"
+                                    >
+                                        <div class="flex flex-col gap-1">
+                                            <span
+                                                class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium {expense.payment_status === 'unpaid' && (expense.balance_due || 0) > 0
+                                                    ? 'bg-amber-50 text-amber-700'
+                                                    : 'bg-green-50 text-green-700'}"
+                                            >
+                                                {expense.payment_status === "unpaid" && (expense.balance_due || 0) > 0
+                                                    ? "Credit"
+                                                    : "Paid"}
+                                            </span>
+                                            {#if expense.payment_status === "unpaid" && (expense.balance_due || 0) > 0}
+                                                <span class="font-mono text-xs text-amber-600">
+                                                    {formatINR(expense.balance_due)}
+                                                </span>
+                                            {/if}
+                                        </div>
+                                    </a>
                                 </TableCell>
                                 <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-subtle">
                                     <a

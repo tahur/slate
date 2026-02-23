@@ -8,7 +8,8 @@ export const expenseSchema = z.object({
     amount: z.coerce.number().min(0.01, 'Amount must be positive'),
     gst_rate: z.coerce.number().min(0).max(28).default(0),
     is_inter_state: z.boolean().optional().default(false),
-    paid_through: z.string().min(1, 'Payment account is required'),
+    payment_status: z.enum(['paid', 'unpaid']).default('paid'),
+    paid_through: z.string().optional().default(''),
     reference: z.string().optional().default('')
 });
 

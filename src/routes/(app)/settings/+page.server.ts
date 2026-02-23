@@ -483,6 +483,9 @@ export const actions: Actions = {
         if (!label) {
             return fail(400, { error: 'Label is required' });
         }
+        if (linkedAccountIds.length === 0) {
+            return fail(400, { error: 'Link at least one payment account to this method' });
+        }
 
         // Generate method_key from label
         const mode_key = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -714,6 +717,9 @@ export const actions: Actions = {
 
         if (!id || !label) {
             return fail(400, { error: 'ID and label are required' });
+        }
+        if (linkedAccountIds.length === 0) {
+            return fail(400, { error: 'Link at least one payment account to this method' });
         }
 
         // Validate all submitted account IDs exist

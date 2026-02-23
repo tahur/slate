@@ -8,7 +8,7 @@ export const VENDOR_GST_TREATMENTS = [
     { value: 'registered', label: 'Registered Business' },
     { value: 'unregistered', label: 'Unregistered Business' },
     { value: 'composition', label: 'Composition Scheme' },
-    { value: 'overseas', label: 'Overseas Vendor' },
+    { value: 'overseas', label: 'Overseas Supplier' },
 ] as const;
 
 // TDS Sections applicable for vendor payments

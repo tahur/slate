@@ -1,29 +1,13 @@
 import { redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { invoices, payments, customers } from '$lib/server/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { parsePagination } from '$lib/server/platform/db/pagination';
+import {
+    buildPartyLedger,
+    getFiscalYearRange,
+    listPartyOptions,
+    normalizePartyType,
+    parseIsoDateOrDefault
+} from '$lib/server/modules/reporting/application/party-ledger';
 import type { PageServerLoad } from './$types';
-
-interface LedgerEntry {
-    date: string;
-    type: 'invoice' | 'payment';
-    number: string;
-    description: string;
-    debit: number;
-    credit: number;
-    balance: number;
-    id: string;
-}
-
-interface CustomerLedger {
-    id: string;
-    name: string;
-    company_name: string | null;
-    entries: LedgerEntry[];
-    totalDebit: number;
-    totalCredit: number;
-    balance: number;
-}
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -31,114 +15,76 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     }
 
     const orgId = locals.user.orgId;
-    const selectedCustomerId = url.searchParams.get('customer');
+    const defaults = getFiscalYearRange();
 
-    // Get all customers
-    const customerList = await db
-        .select({
-            id: customers.id,
-            name: customers.name,
-            company_name: customers.company_name,
-            balance: customers.balance
-        })
-        .from(customers)
-        .where(eq(customers.org_id, orgId))
-        .orderBy(customers.name);
+    const partyType = normalizePartyType(url.searchParams.get('party'));
 
-    if (!selectedCustomerId) {
-        return { customers: customerList, ledger: null };
+    const startRaw = parseIsoDateOrDefault(url.searchParams.get('from'), defaults.startDate);
+    const endRaw = parseIsoDateOrDefault(url.searchParams.get('to'), defaults.endDate);
+    const startDate = startRaw <= endRaw ? startRaw : endRaw;
+    const endDate = startRaw <= endRaw ? endRaw : startRaw;
+
+    const paginationInput = parsePagination(url.searchParams, { defaultPageSize: 50, maxPageSize: 200 });
+
+    const { customers, suppliers } = await listPartyOptions(orgId);
+
+    const selectedPartyIdRaw =
+        url.searchParams.get('partyId') ||
+        (partyType === 'customer' ? (url.searchParams.get('customer') || '') : '');
+
+    const validIds = new Set((partyType === 'customer' ? customers : suppliers).map((party) => party.id));
+    const selectedPartyId = selectedPartyIdRaw && validIds.has(selectedPartyIdRaw) ? selectedPartyIdRaw : '';
+
+    if (!selectedPartyId) {
+        return {
+            partyType,
+            selectedPartyId: '',
+            startDate,
+            endDate,
+            customers,
+            suppliers,
+            ledger: null,
+            pagination: null
+        };
     }
 
-    // Get customer
-    const customer = customerList.find(c => c.id === selectedCustomerId);
-    if (!customer) {
-        return { customers: customerList, ledger: null };
+    const selectedParty = (partyType === 'customer' ? customers : suppliers).find(
+        (party) => party.id === selectedPartyId
+    );
+
+    if (!selectedParty) {
+        return {
+            partyType,
+            selectedPartyId: '',
+            startDate,
+            endDate,
+            customers,
+            suppliers,
+            ledger: null,
+            pagination: null
+        };
     }
 
-    // Get invoices
-    const customerInvoices = await db
-        .select({
-            id: invoices.id,
-            invoice_number: invoices.invoice_number,
-            invoice_date: invoices.invoice_date,
-            total: invoices.total,
-            status: invoices.status
-        })
-        .from(invoices)
-        .where(
-            and(
-                eq(invoices.org_id, orgId),
-                eq(invoices.customer_id, selectedCustomerId)
-            )
-        )
-        .orderBy(invoices.invoice_date);
+    const result = await buildPartyLedger({
+        orgId,
+        partyType,
+        partyId: selectedParty.id,
+        partyName: selectedParty.name,
+        partyCompanyName: selectedParty.companyName,
+        startDate,
+        endDate,
+        page: paginationInput.page,
+        pageSize: paginationInput.pageSize
+    });
 
-    // Get payments
-    const customerPayments = await db
-        .select({
-            id: payments.id,
-            payment_number: payments.payment_number,
-            payment_date: payments.payment_date,
-            amount: payments.amount
-        })
-        .from(payments)
-        .where(
-            and(
-                eq(payments.org_id, orgId),
-                eq(payments.customer_id, selectedCustomerId)
-            )
-        )
-        .orderBy(payments.payment_date);
-
-    // Build ledger entries
-    const entries: LedgerEntry[] = [];
-
-    for (const inv of customerInvoices) {
-        if (inv.status === 'draft' || inv.status === 'cancelled') continue;
-        entries.push({
-            date: inv.invoice_date,
-            type: 'invoice',
-            number: inv.invoice_number,
-            description: `Invoice ${inv.invoice_number}`,
-            debit: inv.total,
-            credit: 0,
-            balance: 0,
-            id: inv.id
-        });
-    }
-
-    for (const pay of customerPayments) {
-        entries.push({
-            date: pay.payment_date,
-            type: 'payment',
-            number: pay.payment_number,
-            description: `Payment ${pay.payment_number}`,
-            debit: 0,
-            credit: pay.amount,
-            balance: 0,
-            id: pay.id
-        });
-    }
-
-    // Sort by date
-    entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    // Calculate running balance
-    let runningBalance = 0;
-    for (const entry of entries) {
-        runningBalance += entry.debit - entry.credit;
-        entry.balance = runningBalance;
-    }
-
-    const ledger: CustomerLedger = {
-        id: customer.id,
-        name: customer.name,
-        company_name: customer.company_name,
-        entries,
-        totalDebit: entries.reduce((sum, e) => sum + e.debit, 0),
-        totalCredit: entries.reduce((sum, e) => sum + e.credit, 0),
-        balance: runningBalance
+    return {
+        partyType,
+        selectedPartyId,
+        startDate,
+        endDate,
+        customers,
+        suppliers,
+        ledger: result.ledger,
+        pagination: result.pagination
     };
-
-    return { customers: customerList, ledger };
 };

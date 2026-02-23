@@ -61,13 +61,13 @@
                     </h1>
                     <span
                         class="text-text-muted"
-                        title="This payment is posted and cannot be modified"
+                        title="This receipt is posted and cannot be modified"
                     >
                         <Lock class="size-4" />
                     </span>
                 </div>
                 <p class="text-xs text-text-muted mt-0.5">
-                    Received on {formatDate(data.payment.payment_date)}
+                    Receipt date {formatDate(data.payment.payment_date)}
                 </p>
             </div>
         </div>
@@ -98,7 +98,7 @@
                         {/if}
                         <div>
                             <h2 class="text-2xl font-bold text-text-strong">
-                                Payment Receipt
+                                Receipt Voucher
                             </h2>
                             <p class="text-sm text-text-subtle font-mono">
                                 # {data.payment.payment_number}
@@ -160,7 +160,7 @@
                             <p
                                 class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
-                                Payment Date
+                                Receipt Date
                             </p>
                             <p class="font-mono text-text-strong">
                                 {formatDate(data.payment.payment_date)}
@@ -170,7 +170,7 @@
                             <p
                                 class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
-                                Payment Mode
+                                Payment Method
                             </p>
                             <p class="text-text-strong">
                                 {getModeLabel(data.payment.payment_mode)}
@@ -211,7 +211,7 @@
                         <p
                             class="text-xs font-bold uppercase tracking-wide text-text-muted mb-3"
                         >
-                            Applied to Invoices
+                            Adjusted Against Bills
                         </p>
                         <div class="border rounded-md overflow-hidden">
                             <table class="w-full text-sm">
@@ -221,19 +221,19 @@
                                     <tr>
                                         <th
                                             class="px-4 py-3 text-left font-medium text-text-subtle text-[10px] uppercase tracking-wide"
-                                            >Invoice #</th
+                                            >Bill #</th
                                         >
                                         <th
                                             class="px-4 py-3 text-left font-medium text-text-subtle text-[10px] uppercase tracking-wide"
-                                            >Invoice Date</th
+                                            >Bill Date</th
                                         >
                                         <th
                                             class="px-4 py-3 text-right font-medium text-text-subtle text-[10px] uppercase tracking-wide"
-                                            >Invoice Total</th
+                                            >Bill Total</th
                                         >
                                         <th
                                             class="px-4 py-3 text-right font-medium text-text-subtle text-[10px] uppercase tracking-wide"
-                                            >Amount Applied</th
+                                            >Adjusted Amount</th
                                         >
                                     </tr>
                                 </thead>
@@ -278,7 +278,7 @@
                             <div
                                 class="flex justify-between items-center text-sm text-text-subtle"
                             >
-                                <span>Total Applied</span>
+                                <span>Total Adjusted</span>
                                 <span class="font-mono font-medium text-text-strong">
                                     {formatINR(totalAllocated)}
                                 </span>
@@ -288,7 +288,7 @@
                                     class="flex justify-between items-center text-sm pt-2 border-t border-dashed border-border"
                                 >
                                     <span class="font-medium text-warning"
-                                        >Advance / Excess</span
+                                        >Advance Balance</span
                                     >
                                     <span
                                         class="font-mono font-bold text-warning"

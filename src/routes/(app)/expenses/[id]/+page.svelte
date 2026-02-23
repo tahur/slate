@@ -1,11 +1,48 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
-    import { ArrowLeft, Printer, Lock } from "lucide-svelte";
+    import { Input } from "$lib/components/ui/input";
+    import { Label } from "$lib/components/ui/label";
+    import { ArrowLeft, Printer, Lock, X } from "lucide-svelte";
+    import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
+    import { enhance } from "$app/forms";
+    import { toast } from "svelte-sonner";
+    import { page } from "$app/stores";
     import * as ButtonGroup from "$lib/components/ui/button-group";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
     let { data } = $props();
+    let showSettleModal = $state(false);
+    let isSubmitting = $state(false);
+
+    const defaultOption =
+        data.paymentOptions.find((option: any) => option.isDefault) || data.paymentOptions[0];
+    let selectedOptionKey = $state(
+        defaultOption ? `${defaultOption.methodKey}::${defaultOption.accountId}` : "",
+    );
+    let paymentMode = $state(defaultOption?.methodKey || "");
+    let paidFrom = $state(defaultOption?.accountId || "");
+    let settleAmount = $state(data.balanceDue || 0);
+    let paymentDate = $state(data.defaults.payment_date);
+    let reference = $state("");
+    let notes = $state("");
+
+    function selectOption(option: any) {
+        selectedOptionKey = `${option.methodKey}::${option.accountId}`;
+        paymentMode = option.methodKey;
+        paidFrom = option.accountId;
+    }
+
+    function openSettleModal() {
+        settleAmount = data.balanceDue || 0;
+        paymentDate = data.defaults.payment_date;
+        reference = "";
+        notes = "";
+        selectedOptionKey = defaultOption ? `${defaultOption.methodKey}::${defaultOption.accountId}` : "";
+        paymentMode = defaultOption?.methodKey || "";
+        paidFrom = defaultOption?.accountId || "";
+        showSettleModal = true;
+    }
 </script>
 
 <div class="page-full-bleed">
@@ -35,6 +72,13 @@
                     >
                         <Lock class="size-4" />
                     </span>
+                    <span
+                        class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium {data.canSettleCredit
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-green-50 text-green-700'}"
+                    >
+                        {data.canSettleCredit ? "Credit" : "Paid"}
+                    </span>
                 </div>
                 <p class="text-xs text-text-muted mt-0.5">
                     {data.expense.category_name} · Posted {formatDate(data.expense.expense_date)}
@@ -48,6 +92,14 @@
             </Button>
         </ButtonGroup.Root>
     </header>
+
+    {#if $page.url.searchParams.get("settle") === "recorded"}
+        <div
+            class="mx-6 mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700"
+        >
+            Settlement recorded successfully.
+        </div>
+    {/if}
 
     <!-- Content: Paper View -->
     <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
@@ -98,14 +150,14 @@
                 <!-- Vendor + Expense Meta -->
                 <div class="flex justify-between items-start">
                     <div class="space-y-2">
-                        {#if data.expense.vendor_name}
+                        {#if data.expense.vendor_display_name || data.expense.vendor_actual_name || data.expense.vendor_name}
                             <p
                                 class="text-xs font-bold uppercase tracking-wide text-text-muted"
                             >
-                                Paid To
+                                Supplier
                             </p>
                             <h3 class="font-semibold text-text-strong">
-                                {data.expense.vendor_name}
+                                {data.expense.vendor_display_name || data.expense.vendor_actual_name || data.expense.vendor_name}
                             </h3>
                         {/if}
                     </div>
@@ -134,10 +186,12 @@
                             <p
                                 class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
                             >
-                                Paid Through
+                                {data.canSettleCredit ? "Credit Balance" : "Paid Through"}
                             </p>
                             <p class="text-text-strong">
-                                {data.paymentAccountName}
+                                {data.canSettleCredit
+                                    ? formatINR(data.balanceDue)
+                                    : data.paymentAccountName}
                             </p>
                         </div>
                         {#if data.expense.reference}
@@ -247,6 +301,41 @@
                     </div>
                 </div>
 
+                {#if data.settlements.length > 0}
+                    <div class="space-y-3 border-t border-border pt-6">
+                        <h3
+                            class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        >
+                            Settlements
+                        </h3>
+                        <div class="space-y-2">
+                            {#each data.settlements as settlement}
+                                <div
+                                    class="flex items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2"
+                                >
+                                    <div class="space-y-0.5">
+                                        <p class="text-sm font-mono text-text-strong">
+                                            {settlement.payment_number}
+                                        </p>
+                                        <p class="text-xs text-text-muted">
+                                            {formatDate(settlement.date)}
+                                            {#if settlement.method_label}
+                                                · {settlement.method_label}
+                                            {/if}
+                                            {#if settlement.account_label}
+                                                · {settlement.account_label}
+                                            {/if}
+                                        </p>
+                                    </div>
+                                    <p class="font-mono text-sm font-semibold text-green-700">
+                                        {formatINR(settlement.amount)}
+                                    </p>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+
                 <!-- Footer / Signature line -->
                 <div
                     class="border-t border-border pt-8 mt-8 flex justify-between items-end"
@@ -266,4 +355,165 @@
             </div>
         </div>
     </div>
+
+    <div class="print-hide action-bar">
+        <div class="action-bar-group">
+            {#if data.canSettleCredit}
+                <Button type="button" onclick={openSettleModal}>
+                    Settle
+                </Button>
+            {/if}
+            <Button variant="ghost" href="/expenses">Back</Button>
+        </div>
+    </div>
+
+    {#if showSettleModal}
+        <div
+            class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 md:items-center"
+        >
+            <div class="w-full max-w-lg rounded-lg border border-border bg-surface-0 shadow-xl">
+                <div class="flex items-center justify-between border-b border-border px-5 py-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-text-strong">
+                            Settle Expense
+                        </h2>
+                        <p class="mt-0.5 text-xs text-text-muted">
+                            Outstanding: {formatINR(data.balanceDue)}
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="h-8 w-8"
+                        onclick={() => (showSettleModal = false)}
+                    >
+                        <X class="size-4" />
+                    </Button>
+                </div>
+
+                <form
+                    method="POST"
+                    action="?/settle"
+                    use:enhance={() => {
+                        isSubmitting = true;
+                        return async ({ result, update }) => {
+                            try {
+                                if (result.type === "failure") {
+                                    if (result.data?.error) {
+                                        toast.error(result.data.error as string);
+                                    }
+                                    await update();
+                                    return;
+                                }
+
+                                if (result.type === "error") {
+                                    toast.error(result.error?.message || "Unable to save settlement");
+                                    return;
+                                }
+
+                                if (result.type === "success" || result.type === "redirect") {
+                                    showSettleModal = false;
+                                }
+
+                                await update();
+                            } catch {
+                                toast.error("Unable to save settlement. Please try again.");
+                            } finally {
+                                isSubmitting = false;
+                            }
+                        };
+                    }}
+                    class="space-y-4 px-5 py-4"
+                >
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="amount" variant="form">
+                                Amount
+                            </Label>
+                            <Input
+                                id="amount"
+                                name="amount"
+                                type="number"
+                                bind:value={settleAmount}
+                                min="0.01"
+                                max={data.balanceDue}
+                                step="0.01"
+                                class="font-mono text-right"
+                                required
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="payment_date" variant="form">
+                                Date
+                            </Label>
+                            <Input
+                                id="payment_date"
+                                name="payment_date"
+                                type="date"
+                                bind:value={paymentDate}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label variant="form">Paid From</Label>
+                        {#if data.paymentOptions.length === 0}
+                            <div class="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                                Configure payment methods and accounts in Settings before settlement.
+                            </div>
+                        {:else}
+                            <input type="hidden" name="payment_mode" value={paymentMode} />
+                            <input type="hidden" name="paid_from" value={paidFrom} />
+                            <PaymentOptionChips
+                                options={data.paymentOptions}
+                                selectedOptionKey={selectedOptionKey}
+                                onSelect={selectOption}
+                            />
+                        {/if}
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label for="reference" variant="form">Reference</Label>
+                        <Input
+                            id="reference"
+                            name="reference"
+                            type="text"
+                            bind:value={reference}
+                            placeholder="UTR / Cheque no."
+                        />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label for="notes" variant="form">Notes</Label>
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            bind:value={notes}
+                            rows="3"
+                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                            placeholder="Optional note..."
+                        ></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 border-t border-border pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onclick={() => (showSettleModal = false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting || settleAmount <= 0 || data.paymentOptions.length === 0}
+                        >
+                            {isSubmitting ? "Saving..." : "Settle"}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {/if}
 </div>

@@ -13,6 +13,7 @@ import { round2 } from '$lib/utils/currency';
 
 export type InvoiceSettlementRow = {
     id: string;
+    invoice_number: string;
     customer_id: string;
     total: number;
     amount_paid: number | null;
@@ -22,6 +23,7 @@ export type InvoiceSettlementRow = {
 
 export type OpenCustomerInvoiceRow = {
     id: string;
+    invoice_number: string;
     total: number;
     amount_paid: number | null;
     balance_due: number;
@@ -133,6 +135,7 @@ export async function findInvoiceForSettlementInTx(
         where: and(eq(invoices.id, invoiceId), eq(invoices.org_id, orgId)),
         columns: {
             id: true,
+            invoice_number: true,
             customer_id: true,
             total: true,
             amount_paid: true,
@@ -223,6 +226,7 @@ export async function findOpenInvoicesByIdsInTx(
     return tx
         .select({
             id: invoices.id,
+            invoice_number: invoices.invoice_number,
             total: invoices.total,
             amount_paid: invoices.amount_paid,
             balance_due: invoices.balance_due

@@ -629,7 +629,7 @@
                     <div class="flex flex-col items-end">
                         <span
                             class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-                            >Balance Due</span
+                            >Pending</span
                         >
                         <span
                             class="font-mono text-lg font-bold text-text-strong"
@@ -639,7 +639,7 @@
                 </div>
                 <Button onclick={openSettleModal}>
                     {data.invoice.amount_paid && data.invoice.amount_paid > 0
-                        ? "Record Payment"
+                        ? "Receive Payment"
                         : "Settle & Close"}
                 </Button>
             </div>
@@ -653,8 +653,8 @@
         <div class="bg-surface-0 rounded-xl shadow-xl w-full max-w-md border border-border overflow-hidden">
             <div class="px-5 py-4 border-b border-border flex items-center justify-between">
                 <div>
-                    <h3 class="text-base font-semibold text-text-strong">Record payment</h3>
-                    <p class="text-xs text-text-muted mt-0.5">Apply credits or pay to settle this invoice.</p>
+                    <h3 class="text-base font-semibold text-text-strong">Receive payment</h3>
+                    <p class="text-xs text-text-muted mt-0.5">Adjust credits or receive amount to settle this bill.</p>
                 </div>
                 <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => (showSettleModal = false)} aria-label="Close">
                     <XCircle class="size-4" />
@@ -682,7 +682,7 @@
                 <div class="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
                     <!-- Amount due -->
                     <div class="flex items-center justify-between py-2">
-                        <span class="text-sm text-text-muted">Amount due</span>
+                        <span class="text-sm text-text-muted">Pending amount</span>
                         <span class="text-xl font-bold font-mono text-text-strong">{formatINR(data.invoice.balance_due)}</span>
                     </div>
 
@@ -709,19 +709,19 @@
 
                     <!-- Payment -->
                     <div class="space-y-3 pt-2 border-t border-border">
-                        <Label class="text-xs font-semibold uppercase tracking-wider text-text-muted">Payment</Label>
+                        <Label class="text-xs font-semibold uppercase tracking-wider text-text-muted">Receipt</Label>
                         <div class="grid grid-cols-2 gap-3">
                             <div class="space-y-1">
                                 <Label for="payment_amount" variant="form" class="text-xs">Amount</Label>
                                 <Input id="payment_amount" name="payment_amount" type="number" step="0.01" bind:value={paymentAmount} class="font-mono" />
                             </div>
                             <div class="space-y-1">
-                                <Label for="payment_date" variant="form" class="text-xs">Date</Label>
+                                <Label for="payment_date" variant="form" class="text-xs">Receipt Date</Label>
                                 <Input id="payment_date" name="payment_date" type="date" bind:value={paymentDate} />
                             </div>
                         </div>
                         <div class="space-y-1.5">
-                            <Label variant="form" class="text-xs">Pay via</Label>
+                            <Label variant="form" class="text-xs">Received In</Label>
                             <input type="hidden" name="payment_mode" value={paymentMode} />
                             <input type="hidden" name="deposit_to" value={depositTo} />
                             <PaymentOptionChips
@@ -743,7 +743,7 @@
                         {#if netPayable <= 0.01}
                             <span class="font-medium text-green-600">Fully settled</span>
                         {:else}
-                            After this: <span class="font-mono font-medium">{formatINR(Math.max(0, netPayable - paymentAmount))}</span> due
+                            After this: <span class="font-mono font-medium">{formatINR(Math.max(0, netPayable - paymentAmount))}</span> pending
                         {/if}
                     </span>
                     <div class="flex gap-2">

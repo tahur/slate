@@ -56,7 +56,7 @@ export const actions: Actions = {
                 created_by: event.locals.user.id,
             });
         } catch (error) {
-            return failActionFromError(error, 'Vendor creation failed', { form });
+            return failActionFromError(error, 'Supplier creation failed', { form });
         }
 
         redirect(302, '/vendors');

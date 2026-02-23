@@ -107,7 +107,7 @@
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Wallet class="size-4" />
                     <span class="text-xs font-medium uppercase tracking-wide"
-                        >Total Receivable</span
+                        >Total Pending</span
                     >
                 </div>
                 <p
@@ -156,7 +156,7 @@
                         No customers yet
                     </h3>
                     <p class="text-sm text-text-muted mt-1">
-                        Add your first customer to start invoicing
+                        Add your first customer to start billing
                     </p>
                     <Button href="/customers/new" class="mt-4">
                         <Plus class="mr-2 size-4" />
@@ -242,7 +242,7 @@
                             <p
                                 class="text-xs text-text-muted uppercase tracking-wide"
                             >
-                                Receivable
+                                Pending
                             </p>
                             <p
                                 class="font-mono font-semibold {(customer.balance ||

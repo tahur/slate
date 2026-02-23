@@ -14,176 +14,195 @@
     } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
 
-    const reportSections = [
+    type ReportItem = {
+        title: string;
+        description: string;
+        href: string;
+        icon: any;
+        iconClass: string;
+        simpleDescription?: string;
+        accountingTerm?: string;
+    };
+
+    type ReportSection = {
+        title: string;
+        items: ReportItem[];
+    };
+
+    const reportSections: ReportSection[] = [
         {
-            title: "Financial Reports",
+            title: "Business Reports",
             items: [
                 {
                     title: "Profit & Loss",
+                    accountingTerm: "P&L Statement",
                     description: "Income, expenses, and net profit summary",
                     simpleDescription:
                         "See if you are making money or losing it",
                     href: "/reports/pnl",
                     icon: TrendingUp,
-                    color: "text-orange-600",
-                    bg: "bg-orange-500",
+                    iconClass: "bg-blue-50 text-blue-700",
                 },
                 {
                     title: "GST Summary",
+                    accountingTerm: "Output vs Input GST",
                     description:
                         "Tax collected (Output) vs matched credits (Input)",
                     href: "/reports/gst",
                     icon: FileText,
-                    color: "text-purple-600",
-                    bg: "bg-purple-500",
+                    iconClass: "bg-green-50 text-green-700",
                 },
                 {
-                    title: "Accounts Receivable",
-                    description: "Aging analysis of unpaid customer invoices",
+                    title: "Customer Pending",
+                    accountingTerm: "A/R Ageing",
+                    description: "Pending customer payments by bill age",
                     href: "/reports/aging",
                     icon: BarChart3,
-                    color: "text-blue-600",
-                    bg: "bg-blue-500",
+                    iconClass: "bg-amber-50 text-amber-700",
                 },
                 {
-                    title: "Customer Ledger",
-                    description: "Detailed transaction history by customer",
+                    title: "Party Ledger",
+                    accountingTerm: "A/R + Supplier Statement",
+                    description: "Customer and supplier statement with reasons",
                     href: "/reports/ledger",
                     icon: Users,
-                    color: "text-emerald-600",
-                    bg: "bg-emerald-500",
+                    iconClass: "bg-surface-2 text-text-subtle",
                 },
                 {
-                    title: "Cash & Bank Statement",
-                    description: "Track money received and paid by account",
+                    title: "Cashbook (Cash & Bank)",
+                    accountingTerm: "Cash & Bank Book",
+                    description: "Money in and money out, account-wise",
                     simpleDescription:
-                        "Verify deposits and spending account-wise",
+                        "Daily cash and bank movement in one place",
                     href: "/reports/cashbook",
                     icon: Landmark,
-                    color: "text-sky-600",
-                    bg: "bg-sky-500",
+                    iconClass: "bg-red-50 text-red-700",
                 },
             ],
         },
         {
-            title: "GST Filing Data",
+            title: "GST Filing Reports",
             items: [
                 {
                     title: "GSTR-1 Sales Register",
+                    accountingTerm: "Outward Supplies Register",
                     description:
                         "Outward supplies data (B2B, B2C, credit notes, HSN)",
                     href: "/reports/gstr1",
                     icon: FileSpreadsheet,
-                    color: "text-teal-600",
-                    bg: "bg-teal-500",
+                    iconClass: "bg-blue-50 text-blue-700",
                 },
                 {
                     title: "GSTR-3B Purchase Data",
+                    accountingTerm: "Input ITC Register",
                     description:
-                        "Input Tax Credit data from purchases by vendor",
+                        "Input tax credit data from purchases by supplier",
                     href: "/reports/gstr3b",
                     icon: Receipt,
-                    color: "text-cyan-600",
-                    bg: "bg-cyan-500",
+                    iconClass: "bg-green-50 text-green-700",
                 },
             ],
         },
         {
-            title: "Accounting Tools",
+            title: "Advanced Accounting",
             items: [
                 {
                     title: "Chart of Accounts",
-                    description: "Manage ledgers, groups, and account defaults",
+                    description:
+                        "Advanced setup: ledgers, groups, and default accounts",
                     href: "/accounts",
                     icon: BookOpen,
-                    color: "text-rose-600",
-                    bg: "bg-rose-500",
+                    iconClass: "bg-surface-2 text-text-subtle",
                 },
                 {
                     title: "Journal Entries",
-                    description:
-                        "Record manual adjustments and double-entry transactions",
+                    description: "Manual adjustment entries (advanced)",
                     href: "/journals",
                     icon: Briefcase,
-                    color: "text-indigo-600",
-                    bg: "bg-indigo-500",
+                    iconClass: "bg-surface-2 text-text-subtle",
                 },
             ],
         },
     ];
 </script>
 
-<div class="flex flex-col gap-8">
-    <!-- Header -->
-    <div>
-        <h2 class="text-2xl font-bold tracking-tight text-text-strong">
-            Reports
-        </h2>
+<div class="page-full-bleed">
+    <header class="px-6 py-4 border-b border-border bg-surface-0 z-20">
+        <h1 class="text-xl font-bold tracking-tight text-text-strong">Reports</h1>
         <p class="text-sm text-text-muted mt-1">
-            Business insights, GST filing data, and accounting tools
+            Simple business reports, GST filing data, and advanced tools
         </p>
-    </div>
+    </header>
 
-    {#each reportSections as section}
-        <div class="space-y-3">
-            <h3
-                class="text-[11px] font-bold uppercase tracking-widest text-text-muted"
-            >
-                {section.title}
-            </h3>
-
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {#each section.items as item}
-                    <a
-                        href={item.href}
-                        class="group relative rounded-xl border border-border bg-surface-0 p-5 transition-all hover:shadow-md hover:border-border-strong hover:-translate-y-0.5"
+    <div class="flex-1 overflow-auto bg-surface-1 p-6">
+        <div class="max-w-7xl mx-auto space-y-6">
+            {#each reportSections as section}
+                <div class="space-y-3">
+                    <h2
+                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
                     >
-                        <div class="flex items-start gap-4">
-                            <div class="rounded-lg {item.bg} p-2.5 shrink-0">
-                                <svelte:component
-                                    this={item.icon}
-                                    class="size-5 text-white"
-                                />
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-1">
-                                    <h3
-                                        class="text-sm font-bold text-text-strong group-hover:text-primary transition-colors"
-                                    >
-                                        {item.title}
-                                    </h3>
-                                    {#if item.simpleDescription}
-                                        <Tooltip.Root>
-                                            <Tooltip.Trigger>
-                                                <Info
-                                                    class="size-3.5 text-text-muted cursor-help"
-                                                />
-                                            </Tooltip.Trigger>
-                                            <Tooltip.Content>
-                                                <p
-                                                    class="max-w-[250px] text-xs"
-                                                >
-                                                    {item.simpleDescription}
-                                                </p>
-                                            </Tooltip.Content>
-                                        </Tooltip.Root>
-                                    {/if}
+                        {section.title}
+                    </h2>
+
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {#each section.items as item}
+                            <a
+                                href={item.href}
+                                class="group relative rounded-xl border border-border bg-surface-0 p-5 transition-all hover:shadow-sm hover:border-border-strong"
+                            >
+                                <div class="flex items-start gap-4">
+                                    <div class="rounded-lg p-2.5 shrink-0 {item.iconClass}">
+                                        <svelte:component
+                                            this={item.icon}
+                                            class="size-5"
+                                        />
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <h3
+                                                class="text-sm font-bold text-text-strong group-hover:text-primary transition-colors"
+                                            >
+                                                {item.title}
+                                            </h3>
+                                            {#if item.accountingTerm}
+                                                <span class="text-xs text-text-muted">
+                                                    ({item.accountingTerm})
+                                                </span>
+                                            {/if}
+                                            {#if item.simpleDescription}
+                                                <Tooltip.Root>
+                                                    <Tooltip.Trigger>
+                                                        <Info
+                                                            class="size-3.5 text-text-muted cursor-help"
+                                                        />
+                                                    </Tooltip.Trigger>
+                                                    <Tooltip.Content>
+                                                        <p
+                                                            class="max-w-[250px] text-xs"
+                                                        >
+                                                            {item.simpleDescription}
+                                                        </p>
+                                                    </Tooltip.Content>
+                                                </Tooltip.Root>
+                                            {/if}
+                                        </div>
+                                        <p
+                                            class="text-xs text-text-muted mt-1 leading-relaxed"
+                                        >
+                                            {item.description}
+                                        </p>
+                                    </div>
                                 </div>
-                                <p
-                                    class="text-xs text-text-muted mt-1 leading-relaxed line-clamp-2"
+                                <div
+                                    class="absolute top-5 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    {item.description}
-                                </p>
-                            </div>
-                        </div>
-                        <div
-                            class="absolute top-5 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                            <ArrowRight class="size-4 text-primary" />
-                        </div>
-                    </a>
-                {/each}
-            </div>
+                                    <ArrowRight class="size-4 text-primary" />
+                                </div>
+                            </a>
+                        {/each}
+                    </div>
+                </div>
+            {/each}
         </div>
-    {/each}
+    </div>
 </div>

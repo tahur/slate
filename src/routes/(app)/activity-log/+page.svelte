@@ -116,11 +116,11 @@
                 >
                     <option value="all">All</option>
                     <option value="invoice">Invoice</option>
-                    <option value="payment">Payment</option>
+                    <option value="payment">Receipt</option>
                     <option value="expense">Expense</option>
                     <option value="credit_note">Credit Note</option>
                     <option value="customer">Customer</option>
-                    <option value="vendor">Vendor</option>
+                    <option value="vendor">Supplier</option>
                 </select>
             </div>
             <div class="flex items-center gap-2">

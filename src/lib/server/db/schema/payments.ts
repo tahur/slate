@@ -28,6 +28,7 @@ export const payments = pgTable(
         payment_mode: text('payment_mode').notNull(), // cash, bank, upi, cheque
         reference: text('reference'), // Cheque no, UTR, etc.
         notes: text('notes'),
+        reason_snapshot: text('reason_snapshot'),
 
         // Account
         deposit_to: text('deposit_to').notNull(), // Account ID (Cash, Bank)

@@ -20,10 +20,12 @@
 		"check:phase9": "node scripts/check-phase9-performance.mjs",
 		"check:phase6": "node scripts/check-phase6-contracts.mjs",
 		"check:phase7": "node scripts/check-phase7-critical-tests.mjs",
+		"check:ledger": "node scripts/check-party-ledger.mjs",
 		"check:integrity": "node scripts/check-integrity.mjs",
-		"ci:guardrails": "npm run check:money && npm run check:phase1 && npm run check:phase2 && npm run check:phase3 && npm run check:phase4 && npm run check:phase6 && npm run check:phase7 && npm run check:phase8 && npm run check:phase9",
+		"ci:guardrails": "npm run check:money && npm run check:phase1 && npm run check:phase2 && npm run check:phase3 && npm run check:phase4 && npm run check:phase6 && npm run check:phase7 && npm run check:phase8 && npm run check:phase9 && npm run check:ledger",
 		"ci": "npm run check && npm run build && npm run ci:guardrails",
 		"lint:buttons": "node scripts/check-button-classes.js",
+		"db:migrate": "node scripts/migrate.mjs",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio"
 	},

@@ -5,7 +5,12 @@ import type { PageServerLoad, Actions } from './$types';
 import { logActivity } from '$lib/server/services';
 import { setFlash } from '$lib/server/flash';
 import { checkIdempotency, generateIdempotencyKey } from '$lib/server/utils/idempotency';
-import { isIdempotencyConstraintError, isUniqueConstraintOnColumns } from '$lib/server/utils/db-errors';
+import {
+    isForeignKeyConstraintError,
+    isIdempotencyConstraintError,
+    isSchemaOutOfDateError,
+    isUniqueConstraintOnColumns
+} from '$lib/server/utils/db-errors';
 import { round2 } from '$lib/utils/currency';
 import { failActionFromError } from '$lib/server/platform/errors';
 import {
@@ -21,6 +26,8 @@ import {
 } from '$lib/server/modules/receivables/infra/queries';
 import { hasPaymentConfiguration, seedPaymentConfiguration } from '$lib/server/seed';
 import { invalidateReportingCacheForOrg } from '$lib/server/modules/reporting/application/gst-reports';
+
+type PaymentRecord = typeof payments.$inferSelect;
 
 export const load: PageServerLoad = async ({ locals, url }) => {
     if (!locals.user) {
@@ -71,11 +78,22 @@ export const actions: Actions = {
         const formData = await request.formData();
 
         const idempotencyKey = formData.get('idempotency_key') as string;
-        const { isDuplicate, existingRecord } = await checkIdempotency<typeof payments.$inferSelect>(
-            'payments',
-            orgId,
-            idempotencyKey
-        );
+        let idempotencyResult: { isDuplicate: boolean; existingRecord?: PaymentRecord };
+        try {
+            idempotencyResult = await checkIdempotency<PaymentRecord>(
+                'payments',
+                orgId,
+                idempotencyKey
+            );
+        } catch (error) {
+            if (isSchemaOutOfDateError(error)) {
+                return fail(500, {
+                    error: 'Database schema is outdated. Run "npm run db:migrate" and try again.'
+                });
+            }
+            return failActionFromError(error, 'Receipt idempotency check failed');
+        }
+        const { isDuplicate, existingRecord } = idempotencyResult;
         if (isDuplicate && existingRecord) {
             redirect(302, `/payments/${existingRecord.id}`);
         }
@@ -95,28 +113,28 @@ export const actions: Actions = {
             return fail(400, { error: 'Customer is required' });
         }
         if (!payment_date) {
-            return fail(400, { error: 'Payment date is required' });
+            return fail(400, { error: 'Receipt date is required' });
         }
         if (amount <= MONEY_EPSILON) {
             return fail(400, { error: 'Amount must be positive' });
         }
         if (!payment_mode) {
-            return fail(400, { error: 'Payment mode is required' });
+            return fail(400, { error: 'Payment method is required' });
         }
         if (!deposit_to) {
-            return fail(400, { error: 'Deposit account is required' });
+            return fail(400, { error: 'Received in account is required' });
         }
 
         let allocations;
         try {
             allocations = parsePaymentAllocationsFromFormData(formData);
         } catch (error) {
-            return failActionFromError(error, 'Payment allocation parse failed');
+            return failActionFromError(error, 'Bill adjustment parse failed');
         }
 
         const totalAllocated = round2(allocations.reduce((sum, allocation) => sum + allocation.amount, 0));
         if (totalAllocated > amount + MONEY_EPSILON) {
-            return fail(400, { error: 'Allocated amount cannot exceed payment amount' });
+            return fail(400, { error: 'Adjusted amount cannot exceed received amount' });
         }
 
         let paymentId = '';
@@ -156,8 +174,43 @@ export const actions: Actions = {
 
             invalidateReportingCacheForOrg(orgId);
         } catch (error) {
+            if (isSchemaOutOfDateError(error)) {
+                return fail(500, {
+                    error: 'Database schema is outdated. Run "npm run db:migrate" and try again.'
+                });
+            }
+
+            if (error instanceof Error && error.message.startsWith('Account not found:')) {
+                return fail(400, {
+                    error: 'Required account setup is incomplete. Please verify chart of accounts and retry.'
+                });
+            }
+
+            if (isForeignKeyConstraintError(error, 'payments_created_by_users_id_fk')) {
+                return fail(401, {
+                    error: 'Session is out of sync. Please log out and log in again.'
+                });
+            }
+
+            if (isForeignKeyConstraintError(error, 'payments_customer_id_customers_id_fk')) {
+                return fail(400, {
+                    error: 'Selected customer was not found. Refresh and select customer again.'
+                });
+            }
+
+            if (isForeignKeyConstraintError(error)) {
+                return fail(400, {
+                    error: 'Linked data changed while saving. Refresh and retry.'
+                });
+            }
+
             if (idempotencyKey && isIdempotencyConstraintError(error, 'payments')) {
-                const duplicate = await checkIdempotency<typeof payments.$inferSelect>('payments', orgId, idempotencyKey);
+                let duplicate: { isDuplicate: boolean; existingRecord?: PaymentRecord };
+                try {
+                    duplicate = await checkIdempotency<PaymentRecord>('payments', orgId, idempotencyKey);
+                } catch {
+                    redirect(302, '/payments');
+                }
                 if (duplicate.isDuplicate && duplicate.existingRecord) {
                     redirect(302, `/payments/${duplicate.existingRecord.id}`);
                 }
@@ -165,15 +218,15 @@ export const actions: Actions = {
             }
 
             if (isUniqueConstraintOnColumns(error, 'payments', ['org_id', 'payment_number'])) {
-                return fail(409, { error: 'Payment number conflict. Please retry.' });
+                return fail(409, { error: 'Receipt number conflict. Please retry.' });
             }
 
-            return failActionFromError(error, 'Payment recording failed');
+            return failActionFromError(error, 'Receipt save failed');
         }
 
         setFlash(cookies, {
             type: 'success',
-            message: 'Payment recorded successfully.'
+            message: 'Receipt saved successfully.'
         });
         redirect(302, '/payments');
     },
@@ -198,7 +251,7 @@ export const actions: Actions = {
 
             return { invoices: unpaidInvoices };
         } catch (error) {
-            return failActionFromError(error, 'Payment invoices lookup failed');
+            return failActionFromError(error, 'Bill lookup failed');
         }
     }
 };

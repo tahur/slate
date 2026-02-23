@@ -34,10 +34,15 @@ export const expenses = pgTable(
         total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).notNull(),
 
         // Payment
-        paid_through: text('paid_through').notNull(), // Account ID (Cash, Bank)
+        payment_status: text('payment_status').notNull().default('paid'), // paid, unpaid
+        paid_through: text('paid_through'), // Account ID (Cash, Bank); null when payable/unpaid
         payment_account_id: text('payment_account_id').references(() => payment_accounts.id),
         payment_method_id: text('payment_method_id').references(() => payment_methods.id),
+        amount_settled: numeric('amount_settled', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
+        balance_due: numeric('balance_due', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
+        credit_applied: numeric('credit_applied', { precision: 14, scale: 2, mode: 'number' }).notNull().default(0),
         reference: text('reference'),
+        reason_snapshot: text('reason_snapshot'),
 
         // Attachments
         receipt_url: text('receipt_url'),

@@ -24,6 +24,10 @@ type HttpErrorLike = {
     body?: unknown;
 };
 
+type DbErrorLike = Error & {
+    code?: string;
+};
+
 function getHttpStatusFromUnknown(error: unknown): number | null {
     if (!error || typeof error !== 'object') {
         return null;
@@ -32,6 +36,52 @@ function getHttpStatusFromUnknown(error: unknown): number | null {
     const maybeHttpError = error as HttpErrorLike;
     if (typeof maybeHttpError.status === 'number') {
         return maybeHttpError.status;
+    }
+
+    return null;
+}
+
+function mapKnownDbError(error: unknown, traceId: string): HttpErrorResult | null {
+    if (!(error instanceof Error)) return null;
+
+    const dbCode = (error as DbErrorLike).code;
+    const message = error.message.toLowerCase();
+    if (!dbCode) return null;
+
+    if (
+        dbCode === '23502'
+        && message.includes('column "paid_through"')
+        && message.includes('relation "expenses"')
+    ) {
+        return {
+            status: 500,
+            payload: {
+                message: 'Database schema is outdated for supplier payable entries. Run "npm run db:migrate" and retry.',
+                code: 'INTERNAL_ERROR',
+                traceId
+            }
+        };
+    }
+
+    if (dbCode === '23503') {
+        return {
+            status: 400,
+            payload: { message: 'Linked record not found. Refresh and try again.', code: 'VALIDATION_ERROR', traceId }
+        };
+    }
+
+    if (dbCode === '23502' || dbCode === '23514' || dbCode === '22P02') {
+        return {
+            status: 400,
+            payload: { message: 'Invalid input data. Please review and retry.', code: 'VALIDATION_ERROR', traceId }
+        };
+    }
+
+    if (dbCode === '40001' || dbCode === '40P01') {
+        return {
+            status: 409,
+            payload: { message: 'Temporary database conflict. Please retry.', code: 'CONFLICT_ERROR', traceId }
+        };
     }
 
     return null;
@@ -85,6 +135,11 @@ export function mapErrorToHttp(error: unknown, traceId: string): HttpErrorResult
             status: 400,
             payload: { message: error.message, code: error.code, traceId }
         };
+    }
+
+    const knownDbError = mapKnownDbError(error, traceId);
+    if (knownDbError) {
+        return knownDbError;
     }
 
     const maybeStatus = getHttpStatusFromUnknown(error);
