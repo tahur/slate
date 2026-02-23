@@ -1,0 +1,80 @@
+name: Deploy to Cloud Run (Mumbai)
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  # We use the asia-south1 region for Mumbai
+  REGION: asia-south1
+  SERVICE_NAME: slate
+  # Important: To connect this service to the Load Balancer later, it MUST be restricted to internal-and-cloud-load-balancing
+  INGRESS_TYPE: internal-and-cloud-load-balancing
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------------
+      # AUTHENTICATION
+      # You have two options here. Uncomment the one you want to use.
+      # Option 1: Workload Identity Federation (Recommended by Google)
+      # ------------------------------------------------------------------------
+      # - name: Authenticate to Google Cloud
+      #   id: auth
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      # ------------------------------------------------------------------------
+      # Option 2: Service Account JSON Key (Easier to set up initially)
+      # ------------------------------------------------------------------------
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
+
+      # Setup gcloud CLI
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # Extract the auth output to a file for docker credential helper
+      - name: Configure Docker to use gcloud as a credential helper
+        run: |
+          gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
+
+      # Build the Docker image
+      - name: Build Docker Image
+        run: |
+          docker build -t asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }} .
+
+      # Push the Docker image to Google Artifact Registry
+      # (Note: You may need to create the 'cloud-run-source-deploy' repository in Artifact Registry first!)
+      - name: Push Docker Image
+        run: |
+          docker push asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      # Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          flags: |
+            --allow-unauthenticated
+            --ingress=${{ env.INGRESS_TYPE }}
+            --set-env-vars=NODE_ENV=production,ORIGIN=${{ secrets.ORIGIN }},BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }},DATABASE_URL=${{ secrets.DATABASE_URL }},DATABASE_URL_MIGRATION=${{ secrets.DATABASE_URL_MIGRATION }}
+
+      # Output the Cloud Run url (Note: You can't reach this directly if INGRESS_TYPE restricts it, you must use your LB)
+      - name: Show Output
+        run: echo "Cloud Run allocated URL (Internal/LB Only): ${{ steps.deploy.outputs.url }}"
