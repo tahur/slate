@@ -7,9 +7,14 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { vendorSchema } from '../new/schema';
 import { addCurrency } from '$lib/utils/currency';
 import { failActionFromError } from '$lib/server/platform/errors';
+import {
+    buildPartyLedger,
+    getFiscalYearRange,
+    parseIsoDateOrDefault
+} from '$lib/server/modules/reporting/application/party-ledger';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, params }) => {
+export const load: PageServerLoad = async ({ locals, params, url }) => {
     if (!locals.user) {
         redirect(302, '/login');
     }
@@ -49,6 +54,24 @@ export const load: PageServerLoad = async ({ locals, params }) => {
         ))
         .orderBy(desc(expenses.expense_date));
 
+    const defaults = getFiscalYearRange();
+    const startRaw = parseIsoDateOrDefault(url.searchParams.get('from'), defaults.startDate);
+    const endRaw = parseIsoDateOrDefault(url.searchParams.get('to'), defaults.endDate);
+    const startDate = startRaw <= endRaw ? startRaw : endRaw;
+    const endDate = startRaw <= endRaw ? endRaw : startRaw;
+
+    const ledgerResult = await buildPartyLedger({
+        orgId,
+        partyType: 'supplier',
+        partyId: vendor.id,
+        partyName: vendor.display_name || vendor.name,
+        partyCompanyName: vendor.company_name,
+        startDate,
+        endDate,
+        page: 1,
+        pageSize: 100
+    });
+
     // Calculate summary stats
     const totalExpenses = vendorExpenses.reduce((sum, exp) => addCurrency(sum, exp.total), 0);
     const totalInputGst = vendorExpenses.reduce((sum, exp) =>
@@ -84,6 +107,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
             totalInputGst,
             expenseCount: vendorExpenses.length,
             balance: vendor.balance || 0,
+        },
+        ledger: ledgerResult.ledger,
+        ledgerPagination: ledgerResult.pagination,
+        ledgerRange: {
+            startDate,
+            endDate
         }
     };
 };

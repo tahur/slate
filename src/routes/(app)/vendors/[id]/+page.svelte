@@ -31,7 +31,7 @@
     const { form: initialForm } = data;
 
     let isEditing = $state(false);
-    let activeTab = $state<"expenses">("expenses");
+    let activeTab = $state<"expenses" | "ledger">("expenses");
 
     const { form, errors, enhance, submitting } = superForm(initialForm, {
         onResult: ({ result }) => {
@@ -48,6 +48,18 @@
     function getStateName(code: string | null): string {
         if (!code) return "—";
         return INDIAN_STATES.find((s) => s.code === code)?.name || code;
+    }
+
+    function getLedgerDocLabel(type: string): string {
+        if (type === "expense") return "Expense";
+        if (type === "supplier_payment") return "Payment";
+        return "Entry";
+    }
+
+    function getLedgerDocClass(type: string): string {
+        if (type === "expense") return "bg-red-50 text-red-700";
+        if (type === "supplier_payment") return "bg-green-50 text-green-700";
+        return "bg-surface-2 text-text-subtle";
     }
 </script>
 
@@ -314,76 +326,174 @@
             >
                 <div class="flex border-b border-border">
                     <button
-                        class="px-4 py-3 text-sm font-medium transition-colors border-b-2 border-primary text-primary"
+                        type="button"
+                        onclick={() => (activeTab = "expenses")}
+                        class="px-4 py-3 text-sm font-medium transition-colors border-b-2 {activeTab === 'expenses'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-text-muted hover:text-text-strong'}"
                     >
                         Expenses ({data.expenses.length})
+                    </button>
+                    <button
+                        type="button"
+                        onclick={() => (activeTab = "ledger")}
+                        class="px-4 py-3 text-sm font-medium transition-colors border-b-2 {activeTab === 'ledger'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-text-muted hover:text-text-strong'}"
+                    >
+                        Ledger ({data.ledger.entries.length})
                     </button>
                 </div>
 
                 <div class="p-4">
-                    {#if data.expenses.length === 0}
-                        <div class="text-center py-12 text-text-muted">
-                            <Receipt class="size-12 mx-auto mb-4 opacity-30" />
-                            <p>No expense entries yet</p>
-                            <Button
-                                href="/expenses/new?vendor={data.vendor.id}"
-                                class="mt-4"
-                            >
-                                <Plus class="mr-2 size-4" />
-                                Record Expense
-                            </Button>
-                        </div>
-                    {:else}
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr
-                                    class="text-left text-xs uppercase tracking-wide text-text-muted border-b border-border"
+                    {#if activeTab === "expenses"}
+                        {#if data.expenses.length === 0}
+                            <div class="text-center py-12 text-text-muted">
+                                <Receipt class="size-12 mx-auto mb-4 opacity-30" />
+                                <p>No expense entries yet</p>
+                                <Button
+                                    href="/expenses/new?vendor={data.vendor.id}"
+                                    class="mt-4"
                                 >
-                                    <th class="pb-3 pr-4">Date</th>
-                                    <th class="pb-3 pr-4">Expense #</th>
-                                    <th class="pb-3 pr-4">Description</th>
-                                    <th class="pb-3 pr-4 text-right">Amount</th>
-                                    <th class="pb-3 pr-4 text-right">GST</th>
-                                    <th class="pb-3 text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border-subtle">
-                                {#each data.expenses as expense}
-                                    <tr class="hover:bg-surface-2/50">
-                                        <td class="py-3 pr-4 text-text-muted"
-                                            >{formatDate(
-                                                expense.expense_date,
-                                            )}</td
-                                        >
-                                        <td class="py-3 pr-4">
-                                            <span class="font-mono text-primary"
-                                                >{expense.expense_number}</span
-                                            >
-                                        </td>
-                                        <td class="py-3 pr-4 text-text-subtle"
-                                            >{expense.description || "—"}</td
-                                        >
-                                        <td
-                                            class="py-3 pr-4 text-right font-mono"
-                                            >{formatINR(expense.amount)}</td
-                                        >
-                                        <td
-                                            class="py-3 pr-4 text-right font-mono text-green-600"
-                                        >
-                                            {formatINR(
-                                                (expense.cgst || 0) +
-                                                    (expense.sgst || 0) +
-                                                    (expense.igst || 0),
-                                            )}
-                                        </td>
-                                        <td
-                                            class="py-3 text-right font-mono font-medium"
-                                            >{formatINR(expense.total)}</td
-                                        >
+                                    <Plus class="mr-2 size-4" />
+                                    Record Expense
+                                </Button>
+                            </div>
+                        {:else}
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr
+                                        class="text-left text-xs uppercase tracking-wide text-text-muted border-b border-border"
+                                    >
+                                        <th class="pb-3 pr-4">Date</th>
+                                        <th class="pb-3 pr-4">Expense #</th>
+                                        <th class="pb-3 pr-4">Description</th>
+                                        <th class="pb-3 pr-4 text-right">Amount</th>
+                                        <th class="pb-3 pr-4 text-right">GST</th>
+                                        <th class="pb-3 text-right">Total</th>
                                     </tr>
-                                {/each}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-border-subtle">
+                                    {#each data.expenses as expense}
+                                        <tr class="hover:bg-surface-2/50">
+                                            <td class="py-3 pr-4 text-text-muted"
+                                                >{formatDate(
+                                                    expense.expense_date,
+                                                )}</td
+                                            >
+                                            <td class="py-3 pr-4">
+                                                <span class="font-mono text-primary"
+                                                    >{expense.expense_number}</span
+                                                >
+                                            </td>
+                                            <td class="py-3 pr-4 text-text-subtle"
+                                                >{expense.description || "—"}</td
+                                            >
+                                            <td
+                                                class="py-3 pr-4 text-right font-mono"
+                                                >{formatINR(expense.amount)}</td
+                                            >
+                                            <td
+                                                class="py-3 pr-4 text-right font-mono text-green-600"
+                                            >
+                                                {formatINR(
+                                                    (expense.cgst || 0) +
+                                                        (expense.sgst || 0) +
+                                                        (expense.igst || 0),
+                                                )}
+                                            </td>
+                                            <td
+                                                class="py-3 text-right font-mono font-medium"
+                                                >{formatINR(expense.total)}</td
+                                            >
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        {/if}
+                    {:else}
+                        <div class="space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <p class="text-xs text-text-muted">
+                                    Statement: {formatDate(data.ledgerRange.startDate)} to {formatDate(data.ledgerRange.endDate)}
+                                </p>
+                                <a
+                                    href="/reports/ledger?party=supplier&partyId={data.vendor.id}&from={data.ledgerRange.startDate}&to={data.ledgerRange.endDate}"
+                                    class="text-xs font-medium text-primary hover:underline"
+                                >
+                                    Open full statement
+                                </a>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div class="rounded border border-border bg-surface-1 p-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-text-muted">Opening</p>
+                                    <p class="text-sm font-semibold font-mono text-text-strong">{formatINR(data.ledger.opening)}</p>
+                                </div>
+                                <div class="rounded border border-border bg-surface-1 p-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-text-muted">Bills</p>
+                                    <p class="text-sm font-semibold font-mono text-text-strong">{formatINR(data.ledger.totalCharges)}</p>
+                                </div>
+                                <div class="rounded border border-border bg-surface-1 p-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-text-muted">Paid</p>
+                                    <p class="text-sm font-semibold font-mono text-red-600">{formatINR(data.ledger.totalSettlements)}</p>
+                                </div>
+                                <div class="rounded border border-border bg-surface-1 p-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-text-muted">Closing</p>
+                                    <p class="text-sm font-semibold font-mono {data.ledger.closing > 0 ? 'text-amber-600' : data.ledger.closing < 0 ? 'text-blue-600' : 'text-text-muted'}">{formatINR(data.ledger.closing)}</p>
+                                </div>
+                            </div>
+
+                            {#if data.ledger.entries.length === 0}
+                                <div class="text-center py-12 text-text-muted">
+                                    <FileText class="size-12 mx-auto mb-4 opacity-30" />
+                                    <p>No ledger entries in selected period</p>
+                                </div>
+                            {:else}
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr
+                                            class="text-left text-xs uppercase tracking-wide text-text-muted border-b border-border"
+                                        >
+                                            <th class="pb-3 pr-4">Date</th>
+                                            <th class="pb-3 pr-4">Doc</th>
+                                            <th class="pb-3 pr-4">Number</th>
+                                            <th class="pb-3 pr-4">Reason</th>
+                                            <th class="pb-3 pr-4">Method</th>
+                                            <th class="pb-3 pr-4 text-right">Bill</th>
+                                            <th class="pb-3 pr-4 text-right">Paid</th>
+                                            <th class="pb-3 text-right">Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-border-subtle">
+                                        {#each data.ledger.entries as entry}
+                                            <tr class="hover:bg-surface-2/50">
+                                                <td class="py-3 pr-4 text-text-muted">
+                                                    {formatDate(entry.date)}
+                                                </td>
+                                                <td class="py-3 pr-4">
+                                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {getLedgerDocClass(entry.sourceType)}">
+                                                        {getLedgerDocLabel(entry.sourceType)}
+                                                    </span>
+                                                </td>
+                                                <td class="py-3 pr-4">
+                                                    <a href={entry.href} class="font-mono text-primary hover:underline">
+                                                        {entry.number}
+                                                    </a>
+                                                </td>
+                                                <td class="py-3 pr-4 text-text-subtle">{entry.reason}</td>
+                                                <td class="py-3 pr-4 text-xs text-text-muted">{entry.methodLabel || "—"}</td>
+                                                <td class="py-3 pr-4 text-right font-mono">{entry.charge > 0 ? formatINR(entry.charge) : "—"}</td>
+                                                <td class="py-3 pr-4 text-right font-mono text-red-600">{entry.settlement > 0 ? formatINR(entry.settlement) : "—"}</td>
+                                                <td class="py-3 text-right font-mono font-medium {entry.balance > 0 ? 'text-amber-600' : entry.balance < 0 ? 'text-blue-600' : 'text-text-muted'}">
+                                                    {formatINR(entry.balance)}
+                                                </td>
+                                            </tr>
+                                        {/each}
+                                    </tbody>
+                                </table>
+                            {/if}
+                        </div>
                     {/if}
                 </div>
             </div>
