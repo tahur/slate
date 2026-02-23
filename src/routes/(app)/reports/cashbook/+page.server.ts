@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { and, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
+    accounts,
     customers,
     expenses,
     invoices,
@@ -9,13 +10,19 @@ import {
     payment_allocations,
     payment_methods,
     payments,
+    supplier_payment_allocations,
+    supplier_payments,
     vendors
 } from '$lib/server/db/schema';
 import { localDateStr } from '$lib/utils/date';
 import { round2 } from '$lib/utils/currency';
+import {
+    buildCustomerReceiptReason,
+    buildSupplierExpenseReason,
+    buildSupplierPaymentReason,
+    coalesceReasonSnapshot
+} from '$lib/server/services/statement-reasons';
 import type { PageServerLoad } from './$types';
-
-const AMOUNT_EPSILON = 0.01;
 
 type AccountOption = {
     id: string;
@@ -37,7 +44,7 @@ type AccountSummary = {
 type StatementEntry = {
     id: string;
     date: string;
-    sourceType: 'payment' | 'expense';
+    sourceType: 'payment' | 'expense' | 'supplier_payment';
     /** Human-readable remark: e.g. "Full payment against INV-2026-0001" or "Advance" or "Expense" */
     remark: string;
     voucherNumber: string;
@@ -122,7 +129,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         return left.localeCompare(right);
     });
 
-    const [paymentAccountRows, expenseAccountRows] = await Promise.all([
+    const [paymentAccountRows, expenseAccountRows, supplierPaymentAccountRows] = await Promise.all([
         db
             .select({ accountId: payments.deposit_to })
             .from(payments)
@@ -131,14 +138,26 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         db
             .select({ accountId: expenses.paid_through })
             .from(expenses)
-            .where(eq(expenses.org_id, orgId))
-            .groupBy(expenses.paid_through)
+            .where(and(eq(expenses.org_id, orgId), eq(expenses.payment_status, 'paid')))
+            .groupBy(expenses.paid_through),
+        db
+            .select({ accountId: supplier_payments.paid_from })
+            .from(supplier_payments)
+            .where(eq(supplier_payments.org_id, orgId))
+            .groupBy(supplier_payments.paid_from)
     ]);
 
     const usedAccountIds = Array.from(
         new Set([
-            ...paymentAccountRows.map((row) => row.accountId).filter(Boolean),
-            ...expenseAccountRows.map((row) => row.accountId).filter(Boolean)
+            ...paymentAccountRows
+                .map((row) => row.accountId)
+                .filter((accountId): accountId is string => Boolean(accountId)),
+            ...expenseAccountRows
+                .map((row) => row.accountId)
+                .filter((accountId): accountId is string => Boolean(accountId)),
+            ...supplierPaymentAccountRows
+                .map((row) => row.accountId)
+                .filter((accountId): accountId is string => Boolean(accountId))
         ])
     );
 
@@ -152,7 +171,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         }
     }
 
-    const [paymentsBefore, expensesBefore, paymentsInPeriod, expensesInPeriod] = await Promise.all([
+    const [
+        paymentsBefore,
+        expensesBefore,
+        supplierPaymentsBefore,
+        paymentsInPeriod,
+        expensesInPeriod,
+        supplierPaymentsInPeriod
+    ] = await Promise.all([
         db
             .select({
                 accountId: payments.deposit_to,
@@ -167,8 +193,22 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                 total: sql<number>`COALESCE(SUM(${expenses.total}), 0)`
             })
             .from(expenses)
-            .where(and(eq(expenses.org_id, orgId), lt(expenses.expense_date, startDate)))
+            .where(
+                and(
+                    eq(expenses.org_id, orgId),
+                    eq(expenses.payment_status, 'paid'),
+                    lt(expenses.expense_date, startDate)
+                )
+            )
             .groupBy(expenses.paid_through),
+        db
+            .select({
+                accountId: supplier_payments.paid_from,
+                total: sql<number>`COALESCE(SUM(${supplier_payments.amount}), 0)`
+            })
+            .from(supplier_payments)
+            .where(and(eq(supplier_payments.org_id, orgId), lt(supplier_payments.payment_date, startDate)))
+            .groupBy(supplier_payments.paid_from),
         db
             .select({
                 accountId: payments.deposit_to,
@@ -192,11 +232,26 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             .where(
                 and(
                     eq(expenses.org_id, orgId),
+                    eq(expenses.payment_status, 'paid'),
                     gte(expenses.expense_date, startDate),
                     lte(expenses.expense_date, endDate)
                 )
             )
-            .groupBy(expenses.paid_through)
+            .groupBy(expenses.paid_through),
+        db
+            .select({
+                accountId: supplier_payments.paid_from,
+                total: sql<number>`COALESCE(SUM(${supplier_payments.amount}), 0)`
+            })
+            .from(supplier_payments)
+            .where(
+                and(
+                    eq(supplier_payments.org_id, orgId),
+                    gte(supplier_payments.payment_date, startDate),
+                    lte(supplier_payments.payment_date, endDate)
+                )
+            )
+            .groupBy(supplier_payments.paid_from)
     ]);
 
     const summaryMap = new Map<string, AccountSummary>();
@@ -239,6 +294,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         const summary = ensureSummary(row.accountId);
         summary.opening = toAmount(summary.opening - toAmount(row.total));
     }
+    for (const row of supplierPaymentsBefore) {
+        if (!row.accountId) continue;
+        const summary = ensureSummary(row.accountId);
+        summary.opening = toAmount(summary.opening - toAmount(row.total));
+    }
 
     for (const row of paymentsInPeriod) {
         if (!row.accountId) continue;
@@ -247,6 +307,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     }
 
     for (const row of expensesInPeriod) {
+        if (!row.accountId) continue;
+        const summary = ensureSummary(row.accountId);
+        summary.paid = toAmount(summary.paid + toAmount(row.total));
+    }
+    for (const row of supplierPaymentsInPeriod) {
         if (!row.accountId) continue;
         const summary = ensureSummary(row.accountId);
         summary.paid = toAmount(summary.paid + toAmount(row.total));
@@ -274,9 +339,19 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     const accountSummaryMap = new Map(accountSummaries.map((summary) => [summary.accountId, summary]));
 
     const selectedFromUrl = url.searchParams.get('account');
-    const defaultAccountId = accountOptions[0]?.id || '';
     const selectedAccountId =
-        selectedFromUrl && accountMeta.has(selectedFromUrl) ? selectedFromUrl : defaultAccountId;
+        selectedFromUrl && accountMeta.has(selectedFromUrl) ? selectedFromUrl : '';
+
+    const overallSummary = accountSummaries.reduce(
+        (acc, summary) => ({
+            opening: toAmount(acc.opening + summary.opening),
+            received: toAmount(acc.received + summary.received),
+            paid: toAmount(acc.paid + summary.paid),
+            net: toAmount(acc.net + summary.net),
+            closing: toAmount(acc.closing + summary.closing)
+        }),
+        { opening: 0, received: 0, paid: 0, net: 0, closing: 0 }
+    );
 
     const selectedSummary = selectedAccountId
         ? accountSummaryMap.get(selectedAccountId) || {
@@ -289,32 +364,58 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             net: 0,
             closing: 0
         }
-        : null;
+        : {
+            accountId: '',
+            accountName: 'All Accounts',
+            accountCode: 'ALL',
+            opening: overallSummary.opening,
+            received: overallSummary.received,
+            paid: overallSummary.paid,
+            net: overallSummary.net,
+            closing: overallSummary.closing
+        };
 
     let entries: StatementEntry[] = [];
 
-    if (selectedAccountId) {
+    if (accountOptions.length > 0) {
         const paymentWhere = [
             eq(payments.org_id, orgId),
-            eq(payments.deposit_to, selectedAccountId),
             gte(payments.payment_date, startDate),
             lte(payments.payment_date, endDate)
         ];
+        if (selectedAccountId) {
+            paymentWhere.push(eq(payments.deposit_to, selectedAccountId));
+        }
         if (selectedMethodId) {
             paymentWhere.push(eq(payments.payment_method_id, selectedMethodId));
         }
 
         const expenseWhere = [
             eq(expenses.org_id, orgId),
-            eq(expenses.paid_through, selectedAccountId),
+            eq(expenses.payment_status, 'paid'),
             gte(expenses.expense_date, startDate),
             lte(expenses.expense_date, endDate)
         ];
+        if (selectedAccountId) {
+            expenseWhere.push(eq(expenses.paid_through, selectedAccountId));
+        }
         if (selectedMethodId) {
             expenseWhere.push(eq(expenses.payment_method_id, selectedMethodId));
         }
 
-        const [paymentRows, expenseRows] = await Promise.all([
+        const supplierPaymentWhere = [
+            eq(supplier_payments.org_id, orgId),
+            gte(supplier_payments.payment_date, startDate),
+            lte(supplier_payments.payment_date, endDate)
+        ];
+        if (selectedAccountId) {
+            supplierPaymentWhere.push(eq(supplier_payments.paid_from, selectedAccountId));
+        }
+        if (selectedMethodId) {
+            supplierPaymentWhere.push(eq(supplier_payments.payment_method_id, selectedMethodId));
+        }
+
+        const [paymentRows, expenseRows, supplierPaymentRows] = await Promise.all([
             db
                 .select({
                     id: payments.id,
@@ -323,6 +424,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                     amount: payments.amount,
                     mode: payments.payment_mode,
                     reference: payments.reference,
+                    reasonSnapshot: payments.reason_snapshot,
                     customerName: customers.name,
                     customerCompany: customers.company_name,
                     createdAt: payments.created_at,
@@ -338,7 +440,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                     date: expenses.expense_date,
                     voucherNumber: expenses.expense_number,
                     amount: expenses.total,
+                    paymentStatus: expenses.payment_status,
                     reference: expenses.reference,
+                    reasonSnapshot: expenses.reason_snapshot,
+                    description: expenses.description,
+                    categoryName: accounts.account_name,
                     vendorName: expenses.vendor_name,
                     vendorDisplayName: vendors.display_name,
                     vendorActualName: vendors.name,
@@ -347,8 +453,27 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                 })
                 .from(expenses)
                 .leftJoin(vendors, eq(expenses.vendor_id, vendors.id))
+                .leftJoin(accounts, eq(expenses.category, accounts.id))
                 .leftJoin(payment_methods, eq(expenses.payment_method_id, payment_methods.id))
-                .where(and(...expenseWhere))
+                .where(and(...expenseWhere)),
+            db
+                .select({
+                    id: supplier_payments.id,
+                    date: supplier_payments.payment_date,
+                    voucherNumber: supplier_payments.supplier_payment_number,
+                    amount: supplier_payments.amount,
+                    mode: supplier_payments.payment_mode,
+                    reference: supplier_payments.reference,
+                    reasonSnapshot: supplier_payments.reason_snapshot,
+                    vendorName: vendors.name,
+                    vendorDisplayName: vendors.display_name,
+                    createdAt: supplier_payments.created_at,
+                    methodLabel: payment_methods.label
+                })
+                .from(supplier_payments)
+                .leftJoin(vendors, eq(supplier_payments.vendor_id, vendors.id))
+                .leftJoin(payment_methods, eq(supplier_payments.payment_method_id, payment_methods.id))
+                .where(and(...supplierPaymentWhere))
         ]);
 
         const paymentIds = paymentRows.map((r) => r.id);
@@ -387,24 +512,44 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             }
         }
 
-        function buildPaymentRemark(
-            amount: number,
-            allocatedTotal: number,
-            invoiceNumbers: string[]
-        ): string {
-            const invList = invoiceNumbers.length > 0 ? invoiceNumbers.join(', ') : '';
-            if (allocatedTotal >= amount - AMOUNT_EPSILON && invList) {
-                return invoiceNumbers.length === 1
-                    ? `Full payment against ${invList}`
-                    : `Full payment against ${invList}`;
+        const supplierPaymentIds = supplierPaymentRows.map((r) => r.id);
+        type SupplierAllocationInfo = { total: number; expenseNumbers: string[] };
+        const allocationBySupplierPayment = new Map<string, SupplierAllocationInfo>();
+        if (supplierPaymentIds.length > 0) {
+            const [allocRows, totalBySupplierPayment] = await Promise.all([
+                db
+                    .select({
+                        supplierPaymentId: supplier_payment_allocations.supplier_payment_id,
+                        expenseNumber: expenses.expense_number
+                    })
+                    .from(supplier_payment_allocations)
+                    .innerJoin(expenses, eq(supplier_payment_allocations.expense_id, expenses.id))
+                    .where(inArray(supplier_payment_allocations.supplier_payment_id, supplierPaymentIds)),
+                db
+                    .select({
+                        supplierPaymentId: supplier_payment_allocations.supplier_payment_id,
+                        total: sql<number>`COALESCE(SUM(${supplier_payment_allocations.amount}), 0)`
+                    })
+                    .from(supplier_payment_allocations)
+                    .where(inArray(supplier_payment_allocations.supplier_payment_id, supplierPaymentIds))
+                    .groupBy(supplier_payment_allocations.supplier_payment_id)
+            ]);
+
+            for (const row of totalBySupplierPayment) {
+                allocationBySupplierPayment.set(row.supplierPaymentId, {
+                    total: toAmount(row.total),
+                    expenseNumbers: []
+                });
             }
-            if (allocatedTotal > 0 && invList) {
-                const part = invoiceNumbers.length === 1
-                    ? `Part payment against ${invList}`
-                    : `Part payment against ${invList}`;
-                return amount - allocatedTotal > AMOUNT_EPSILON ? `${part}; advance` : part;
+            for (const row of allocRows) {
+                const info = allocationBySupplierPayment.get(row.supplierPaymentId);
+                if (info && row.expenseNumber && !info.expenseNumbers.includes(row.expenseNumber)) {
+                    info.expenseNumbers.push(row.expenseNumber);
+                }
             }
-            return 'Advance';
+            for (const [, info] of allocationBySupplierPayment) {
+                info.expenseNumbers.sort();
+            }
         }
 
         type StatementEntryWithSortKey = StatementEntry & { createdAt: string };
@@ -412,11 +557,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         const combinedEntries: StatementEntryWithSortKey[] = [
             ...paymentRows.map((row) => {
                 const info = allocationByPayment.get(row.id) ?? { total: 0, invoiceNumbers: [] };
-                const remark = buildPaymentRemark(
+                const fallbackReason = buildCustomerReceiptReason(
                     toAmount(row.amount),
                     info.total,
                     info.invoiceNumbers
                 );
+                const remark = coalesceReasonSnapshot(row.reasonSnapshot, fallbackReason);
                 return {
                     id: row.id,
                     date: row.date,
@@ -433,21 +579,52 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                     createdAt: row.createdAt || ''
                 };
             }),
-            ...expenseRows.map((row) => ({
-                id: row.id,
-                date: row.date,
-                sourceType: 'expense' as const,
-                remark: 'Expense',
-                voucherNumber: row.voucherNumber,
-                partyName: row.vendorDisplayName || row.vendorActualName || row.vendorName || 'Expense',
-                reference: row.reference || '',
-                methodLabel: row.methodLabel || '',
-                received: 0,
-                paid: toAmount(row.amount),
-                balance: 0,
-                href: `/expenses/${row.id}`,
-                createdAt: row.createdAt || ''
-            }))
+            ...expenseRows.map((row) => {
+                const paymentStatus = row.paymentStatus === 'unpaid' ? 'unpaid' : 'paid';
+                const fallbackReason = buildSupplierExpenseReason(
+                    row.categoryName,
+                    row.description,
+                    paymentStatus
+                );
+                return {
+                    id: row.id,
+                    date: row.date,
+                    sourceType: 'expense' as const,
+                    remark: coalesceReasonSnapshot(row.reasonSnapshot, fallbackReason),
+                    voucherNumber: row.voucherNumber,
+                    partyName: row.vendorDisplayName || row.vendorActualName || row.vendorName || 'Expense',
+                    reference: row.reference || '',
+                    methodLabel: row.methodLabel || '',
+                    received: 0,
+                    paid: toAmount(row.amount),
+                    balance: 0,
+                    href: `/expenses/${row.id}`,
+                    createdAt: row.createdAt || ''
+                };
+            }),
+            ...supplierPaymentRows.map((row) => {
+                const info = allocationBySupplierPayment.get(row.id) ?? { total: 0, expenseNumbers: [] };
+                const fallbackReason = buildSupplierPaymentReason(
+                    toAmount(row.amount),
+                    info.total,
+                    info.expenseNumbers
+                );
+                return {
+                    id: row.id,
+                    date: row.date,
+                    sourceType: 'supplier_payment' as const,
+                    remark: coalesceReasonSnapshot(row.reasonSnapshot, fallbackReason),
+                    voucherNumber: row.voucherNumber,
+                    partyName: row.vendorDisplayName || row.vendorName || 'Supplier',
+                    reference: row.reference || row.mode || '',
+                    methodLabel: row.methodLabel || '',
+                    received: 0,
+                    paid: toAmount(row.amount),
+                    balance: 0,
+                    href: `/vendor-payments/${row.id}`,
+                    createdAt: row.createdAt || ''
+                };
+            })
         ];
 
         entries = combinedEntries
@@ -472,15 +649,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         });
     }
 
-    const totals = accountSummaries.reduce(
-        (acc, summary) => ({
-            opening: toAmount(acc.opening + summary.opening),
-            received: toAmount(acc.received + summary.received),
-            paid: toAmount(acc.paid + summary.paid),
-            closing: toAmount(acc.closing + summary.closing)
-        }),
-        { opening: 0, received: 0, paid: 0, closing: 0 }
-    );
+    const totals = {
+        opening: overallSummary.opening,
+        received: overallSummary.received,
+        paid: overallSummary.paid,
+        closing: overallSummary.closing
+    };
 
     return {
         startDate,

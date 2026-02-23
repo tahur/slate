@@ -1,6 +1,5 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { Button } from "$lib/components/ui/button";
     import {
         LayoutDashboard,
         FileText,
@@ -12,12 +11,32 @@
         LogOut,
         Briefcase,
         Package,
+        Landmark,
+        BookOpen,
     } from "lucide-svelte";
+    import {
+        Sidebar as UiSidebar,
+        SidebarHeader,
+        SidebarContent,
+        SidebarFooter,
+        SidebarGroup,
+        SidebarGroupLabel,
+        SidebarMenu,
+        SidebarMenuItem,
+        SidebarMenuButton,
+    } from "$lib/components/ui/sidebar";
+
+    type NavItem = {
+        href: string;
+        label: string;
+        icon: any;
+        exact?: boolean;
+    };
 
     const navSections = [
         {
             title: "",
-            items: [
+            items: <NavItem[]>[
                 {
                     href: "/dashboard",
                     label: "Dashboard",
@@ -29,7 +48,7 @@
             title: "SALES",
             items: [
                 { href: "/invoices", label: "Invoices", icon: FileText },
-                { href: "/payments", label: "Payments", icon: Banknote },
+                { href: "/payments", label: "Receipts", icon: Banknote },
                 { href: "/customers", label: "Customers", icon: Users },
                 { href: "/items", label: "Items", icon: Package },
             ],
@@ -38,28 +57,43 @@
             title: "PURCHASE",
             items: [
                 { href: "/expenses", label: "Expenses", icon: Wallet },
-                { href: "/vendors", label: "Vendors", icon: Briefcase },
+                { href: "/vendors", label: "Suppliers", icon: Briefcase },
             ],
         },
         {
-            title: "MORE",
+            title: "REPORTS",
             items: [
-                { href: "/reports", label: "Reports", icon: BarChart3 },
+                { href: "/reports", label: "Overview", icon: BarChart3, exact: true },
+                { href: "/reports/cashbook", label: "Cashbook", icon: Landmark },
+                { href: "/reports/ledger", label: "Ledger", icon: BookOpen },
+            ],
+        },
+        {
+            title: "SETUP",
+            items: [
                 { href: "/settings", label: "Settings", icon: Settings },
             ],
         },
     ];
 
-    let { class: className }: { class?: string } = $props();
+    let {
+        class: className,
+        onNavigate,
+    }: { class?: string; onNavigate?: () => void } = $props();
+
+    function isActive(href: string, exact = false) {
+        return exact
+            ? $page.url.pathname === href
+            : $page.url.pathname.startsWith(href);
+    }
 </script>
 
-<aside
+<UiSidebar
     class={className
         ? className
-        : "hidden w-[200px] flex-col border-r border-sidebar-border bg-sidebar-bg text-sidebar-fg md:flex"}
+        : "hidden w-[200px] md:flex"}
 >
-    <!-- Header -->
-    <div class="flex h-14 items-center px-4 border-b border-sidebar-border">
+    <SidebarHeader>
         <div
             class="hidden lg:flex items-center gap-3 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
         >
@@ -69,49 +103,44 @@
                 >Slate</span
             >
         </div>
-    </div>
+    </SidebarHeader>
 
-    <!-- Navigation -->
-    <div class="flex-1 overflow-auto py-3 px-2.5 space-y-5">
+    <SidebarContent class="space-y-5">
         {#each navSections as section}
-            <div class="space-y-0.5">
+            <SidebarGroup>
                 {#if section.title}
-                    <h3
-                        class="px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted mb-2"
-                    >
+                    <SidebarGroupLabel>
                         {section.title}
-                    </h3>
+                    </SidebarGroupLabel>
                 {/if}
-                {#each section.items as item}
-                    {@const isActive = $page.url.pathname.startsWith(item.href)}
-                    <a
-                        href={item.href}
-                        data-sveltekit-noscroll
-                        class="group relative flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150
-                        {isActive
-                            ? 'bg-sidebar-accent text-sidebar-primary font-semibold'
-                            : 'text-sidebar-fg hover:bg-surface-2 hover:text-text-strong'}"
-                    >
-                        <!-- Active Indicator (always rendered, opacity toggles) -->
-                        <span
-                            class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary transition-opacity duration-150
-                            {isActive ? 'opacity-100' : 'opacity-0'}"
-                        ></span>
-
-                        <item.icon
-                            class="size-4 transition-colors duration-150 {isActive
-                                ? 'text-sidebar-primary'
-                                : 'text-sidebar-fg group-hover:text-text-strong'}"
-                        />
-                        <span class="flex-1">{item.label}</span>
-                    </a>
-                {/each}
-            </div>
+                <SidebarMenu>
+                    {#each section.items as item}
+                        {@const itemActive = isActive(item.href, item.exact)}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                href={item.href}
+                                active={itemActive}
+                                onNavigate={onNavigate}
+                            >
+                                <span
+                                    class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary transition-opacity duration-150
+                                    {itemActive ? 'opacity-100' : 'opacity-0'}"
+                                ></span>
+                                <item.icon
+                                    class="size-4 transition-colors duration-150 {itemActive
+                                        ? 'text-sidebar-primary'
+                                        : 'text-sidebar-fg group-hover:text-text-strong'}"
+                                />
+                                <span class="flex-1">{item.label}</span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    {/each}
+                </SidebarMenu>
+            </SidebarGroup>
         {/each}
-    </div>
+    </SidebarContent>
 
-    <!-- Footer -->
-    <div class="border-t border-sidebar-border p-3">
+    <SidebarFooter>
         <form action="/logout" method="POST">
             <button
                 type="submit"
@@ -123,5 +152,5 @@
                 Logout
             </button>
         </form>
-    </div>
-</aside>
+    </SidebarFooter>
+</UiSidebar>

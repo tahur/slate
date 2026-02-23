@@ -10,6 +10,7 @@
     import * as Avatar from "$lib/components/ui/avatar";
 
     let { data }: { data: any } = $props();
+    let mobileSidebarOpen = $state(false);
 
     function getInitials(name: string) {
         return name
@@ -26,7 +27,7 @@
 >
     <!-- Mobile Menu -->
     <div class="md:hidden">
-        <Sheet>
+        <Sheet bind:open={mobileSidebarOpen}>
             <SheetTrigger
                 class={buttonVariants({
                     variant: "ghost",
@@ -38,7 +39,10 @@
                 <span class="sr-only">Toggle navigation menu</span>
             </SheetTrigger>
             <SheetContent side="left" class="w-[200px] p-0 border-none">
-                <Sidebar class="flex h-full w-full flex-col bg-sidebar-bg" />
+                <Sidebar
+                    class="flex h-full w-full bg-sidebar-bg"
+                    onNavigate={() => (mobileSidebarOpen = false)}
+                />
             </SheetContent>
         </Sheet>
     </div>

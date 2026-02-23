@@ -5,7 +5,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
-    import { ArrowLeft, RefreshCw, Building2 } from "lucide-svelte";
+    import { ArrowLeft, RefreshCw, Building2, ArrowUpRight, ArrowDownLeft } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
     import { formatDate } from "$lib/utils/date";
 
@@ -15,6 +15,62 @@
     let endDate = $state(data.endDate);
     let selectedAccountId = $state(data.selectedAccountId);
     let selectedMethodId = $state(data.selectedMethodId);
+
+    type Preset = "this-month" | "last-month" | "fy" | "last-90";
+
+    function buildIsoDate(date: Date): string {
+        const year = date.getFullYear();
+        const month = `${date.getMonth() + 1}`.padStart(2, "0");
+        const day = `${date.getDate()}`.padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    function getPresetRange(preset: Preset) {
+        const now = new Date();
+
+        if (preset === "this-month") {
+            return {
+                from: buildIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+                to: buildIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+            };
+        }
+
+        if (preset === "last-month") {
+            return {
+                from: buildIsoDate(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
+                to: buildIsoDate(new Date(now.getFullYear(), now.getMonth(), 0)),
+            };
+        }
+
+        if (preset === "last-90") {
+            const ninetyDaysAgo = new Date(now);
+            ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+            return {
+                from: buildIsoDate(ninetyDaysAgo),
+                to: buildIsoDate(now),
+            };
+        }
+
+        const currentYear = now.getFullYear();
+        const isAfterMarch = now.getMonth() >= 3;
+        const startYear = isAfterMarch ? currentYear : currentYear - 1;
+        const endYear = isAfterMarch ? currentYear + 1 : currentYear;
+        return {
+            from: `${startYear}-04-01`,
+            to: `${endYear}-03-31`,
+        };
+    }
+
+    function applyPreset(preset: Preset) {
+        const range = getPresetRange(preset);
+        startDate = range.from;
+        endDate = range.to;
+    }
+
+    function isPresetActive(preset: Preset) {
+        const range = getPresetRange(preset);
+        return startDate === range.from && endDate === range.to;
+    }
 
     function applyFilter() {
         const params = new URLSearchParams();
@@ -40,10 +96,10 @@
             </Button>
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                    Cash & Bank Statement
+                    Cashbook (Cash & Bank)
                 </h1>
                 <p class="text-sm text-text-muted">
-                    Money received and paid by account (business view)
+                    Daily credit and debit movement by account
                 </p>
             </div>
         </div>
@@ -68,6 +124,7 @@
                             bind:value={selectedAccountId}
                             class="w-full h-9 rounded-md border border-border bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
                         >
+                            <option value="">All Accounts</option>
                             {#each data.accounts as account}
                                 <option value={account.id}>{account.name}</option>
                             {/each}
@@ -91,8 +148,52 @@
                         Apply
                     </Button>
                 </div>
+
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class={isPresetActive("this-month")
+                            ? "border-primary text-primary bg-surface-0"
+                            : ""}
+                        onclick={() => applyPreset("this-month")}
+                    >
+                        This Month
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class={isPresetActive("last-month")
+                            ? "border-primary text-primary bg-surface-0"
+                            : ""}
+                        onclick={() => applyPreset("last-month")}
+                    >
+                        Last Month
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class={isPresetActive("fy")
+                            ? "border-primary text-primary bg-surface-0"
+                            : ""}
+                        onclick={() => applyPreset("fy")}
+                    >
+                        This FY
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class={isPresetActive("last-90")
+                            ? "border-primary text-primary bg-surface-0"
+                            : ""}
+                        onclick={() => applyPreset("last-90")}
+                    >
+                        Last 90 Days
+                    </Button>
+                </div>
+
                 <p class="text-xs text-text-muted mt-3">
-                    Account lists all configured banks and cash. Only customer payments and expenses are included; manual journals are excluded.
+                    Shows all bank and cash accounts from Settings. Includes customer receipts and expenses.
                 </p>
             </Card>
 
@@ -104,7 +205,7 @@
                             No bank or cash accounts
                         </h3>
                         <p class="text-sm text-text-muted">
-                            Add payment accounts (banks and cash) in Settings to see the cashbook and statement by account.
+                            Add bank/cash accounts in Settings to use Cashbook.
                         </p>
                         <Button href="/settings" variant="outline" class="mt-2">
                             Open Settings
@@ -120,13 +221,13 @@
                         </p>
                     </Card>
                     <Card class="p-4">
-                        <p class="text-xs text-text-muted">Money In</p>
+                        <p class="text-xs text-text-muted">Credit</p>
                         <p class="text-2xl font-bold font-mono text-green-600">
                             {formatINR(data.selectedSummary?.received || 0)}
                         </p>
                     </Card>
                     <Card class="p-4">
-                        <p class="text-xs text-text-muted">Money Out</p>
+                        <p class="text-xs text-text-muted">Debit</p>
                         <p class="text-2xl font-bold font-mono text-red-600">
                             {formatINR(data.selectedSummary?.paid || 0)}
                         </p>
@@ -215,7 +316,7 @@
                 <Card class="p-4">
                     <div class="mb-3">
                         <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                            Statement Entries
+                            Transactions
                         </h2>
                         <p class="text-sm text-text-muted mt-1">
                             {data.selectedSummary ? data.selectedSummary.accountName : "Selected account"}
@@ -224,7 +325,7 @@
 
                     {#if data.entries.length === 0}
                         <p class="text-sm text-text-muted py-8 text-center">
-                            No entries for this account in selected period.
+                            No entries for the selected filters.
                         </p>
                     {:else}
                         <div class="overflow-x-auto">
@@ -232,7 +333,7 @@
                                 <TableHeader>
                                     <TableRow class="hover:bg-transparent">
                                         <TableHead class="w-28">Date</TableHead>
-                                        <TableHead class="w-28">Type</TableHead>
+                                        <TableHead class="w-24">Entry</TableHead>
                                         <TableHead class="w-36">Voucher #</TableHead>
                                         <TableHead>Party</TableHead>
                                         <TableHead>Method</TableHead>
@@ -251,13 +352,17 @@
                                             </TableCell>
                                             <TableCell>
                                                 <span
-                                                    class="inline-flex px-2 py-0.5 rounded text-xs font-medium {entry.sourceType === 'payment'
-                                                        ? 'bg-green-50 text-green-700'
-                                                        : 'bg-red-50 text-red-700'}"
+                                                    class="inline-flex items-center gap-1 text-xs font-medium {entry.sourceType === 'payment'
+                                                        ? 'text-green-700'
+                                                        : 'text-red-700'}"
                                                 >
-                                                    {entry.sourceType === "payment"
-                                                        ? "Received"
-                                                        : "Paid"}
+                                                    {#if entry.sourceType === "payment"}
+                                                        <ArrowDownLeft class="size-3.5" />
+                                                        Credit
+                                                    {:else}
+                                                        <ArrowUpRight class="size-3.5" />
+                                                        Debit
+                                                    {/if}
                                                 </span>
                                             </TableCell>
                                             <TableCell>
@@ -296,6 +401,7 @@
                         </div>
                     {/if}
                 </Card>
+
             {/if}
         </div>
     </div>
