@@ -91,11 +91,11 @@
 <UiSidebar
     class={className
         ? className
-        : "hidden w-[200px] md:flex"}
+        : "hidden w-[220px] md:flex"}
 >
     <SidebarHeader>
         <div
-            class="hidden lg:flex items-center gap-3 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
+            class="flex items-center gap-3 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
         >
             <img src="/logo.svg" alt="Logo" class="h-9 w-auto" />
             <span
@@ -144,7 +144,7 @@
         <form action="/logout" method="POST">
             <button
                 type="submit"
-                class="group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium text-sidebar-fg transition-colors hover:bg-red-50 hover:text-red-600"
+                class="group flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-sidebar-fg transition-colors hover:bg-red-50 hover:text-red-600"
             >
                 <LogOut
                     class="size-4 transition-colors group-hover:text-red-500"

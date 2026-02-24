@@ -4,6 +4,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
     import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "$lib/components/ui/table";
     import { ArrowLeft, RefreshCw, Building2, ArrowUpRight, ArrowDownLeft } from "lucide-svelte";
     import { formatINR } from "$lib/utils/currency";
@@ -15,6 +16,8 @@
     let endDate = $state(data.endDate);
     let selectedAccountId = $state(data.selectedAccountId);
     let selectedMethodId = $state(data.selectedMethodId);
+    const ALL_ACCOUNT = "__all_accounts";
+    const ALL_METHOD = "__all_methods";
 
     type Preset = "this-month" | "last-month" | "fy" | "last-90";
 
@@ -84,6 +87,22 @@
         }
         goto(`/reports/cashbook?${params.toString()}`);
     }
+
+    function getSelectedAccountLabel() {
+        if (!selectedAccountId) return "All Accounts";
+        return (
+            data.accounts.find((account) => account.id === selectedAccountId)
+                ?.name || "All Accounts"
+        );
+    }
+
+    function getSelectedMethodLabel() {
+        if (!selectedMethodId) return "All Methods";
+        return (
+            data.paymentMethods.find((method) => method.id === selectedMethodId)
+                ?.label || "All Methods"
+        );
+    }
 </script>
 
 <div class="page-full-bleed">
@@ -119,29 +138,47 @@
                     </div>
                     <div class="space-y-2 min-w-72">
                         <Label for="account" variant="form">Account</Label>
-                        <select
-                            id="account"
-                            bind:value={selectedAccountId}
-                            class="w-full h-9 rounded-md border border-border bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                        <Select.Root
+                            type="single"
+                            value={selectedAccountId || ALL_ACCOUNT}
+                            onValueChange={(value) =>
+                                (selectedAccountId =
+                                    value === ALL_ACCOUNT ? "" : value)}
                         >
-                            <option value="">All Accounts</option>
-                            {#each data.accounts as account}
-                                <option value={account.id}>{account.name}</option>
-                            {/each}
-                        </select>
+                            <Select.Trigger id="account" class="w-full">
+                                {getSelectedAccountLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value={ALL_ACCOUNT}>All Accounts</Select.Item>
+                                {#each data.accounts as account}
+                                    <Select.Item value={account.id}>
+                                        {account.name}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
                     </div>
                     <div class="space-y-2 min-w-48">
                         <Label for="method" variant="form">Method</Label>
-                        <select
-                            id="method"
-                            bind:value={selectedMethodId}
-                            class="w-full h-9 rounded-md border border-border bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                        <Select.Root
+                            type="single"
+                            value={selectedMethodId || ALL_METHOD}
+                            onValueChange={(value) =>
+                                (selectedMethodId =
+                                    value === ALL_METHOD ? "" : value)}
                         >
-                            <option value="">All Methods</option>
-                            {#each data.paymentMethods as method}
-                                <option value={method.id}>{method.label}</option>
-                            {/each}
-                        </select>
+                            <Select.Trigger id="method" class="w-full">
+                                {getSelectedMethodLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value={ALL_METHOD}>All Methods</Select.Item>
+                                {#each data.paymentMethods as method}
+                                    <Select.Item value={method.id}>
+                                        {method.label}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
                     </div>
                     <Button onclick={applyFilter}>
                         <RefreshCw class="mr-2 size-4" />

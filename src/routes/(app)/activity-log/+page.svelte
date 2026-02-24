@@ -3,6 +3,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
     import { History, RefreshCw, FileText, User, CreditCard, Receipt, Users, Building2, BookOpen } from "lucide-svelte";
 
     let { data } = $props();
@@ -93,11 +94,22 @@
     function formatEntityType(type: string): string {
         return type.replace('_', ' ');
     }
+
+    function getEntityTypeLabel(type: string) {
+        if (type === "all") return "All";
+        if (type === "invoice") return "Invoice";
+        if (type === "payment") return "Receipt";
+        if (type === "expense") return "Expense";
+        if (type === "credit_note") return "Credit Note";
+        if (type === "customer") return "Customer";
+        if (type === "vendor") return "Supplier";
+        return "All";
+    }
 </script>
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between px-4 sm:px-6 py-4 border-b border-border bg-surface-0">
         <div class="flex items-center gap-3">
             <History class="size-5 text-text-muted" />
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
@@ -106,22 +118,23 @@
         </div>
 
         <!-- Filters -->
-        <div class="flex items-center gap-3">
+        <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:grid-cols-none lg:auto-cols-max lg:grid-flow-col lg:items-center">
             <div class="flex items-center gap-2">
                 <Label for="type" class="text-xs text-text-muted whitespace-nowrap">Type</Label>
-                <select
-                    id="type"
-                    bind:value={entityType}
-                    class="h-9 w-32 rounded-md border border-border-strong bg-surface-0 px-2 text-sm text-text-strong"
-                >
-                    <option value="all">All</option>
-                    <option value="invoice">Invoice</option>
-                    <option value="payment">Receipt</option>
-                    <option value="expense">Expense</option>
-                    <option value="credit_note">Credit Note</option>
-                    <option value="customer">Customer</option>
-                    <option value="vendor">Supplier</option>
-                </select>
+                <Select.Root type="single" bind:value={entityType}>
+                    <Select.Trigger id="type" class="h-9 w-40">
+                        {getEntityTypeLabel(entityType)}
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Item value="all">All</Select.Item>
+                        <Select.Item value="invoice">Invoice</Select.Item>
+                        <Select.Item value="payment">Receipt</Select.Item>
+                        <Select.Item value="expense">Expense</Select.Item>
+                        <Select.Item value="credit_note">Credit Note</Select.Item>
+                        <Select.Item value="customer">Customer</Select.Item>
+                        <Select.Item value="vendor">Supplier</Select.Item>
+                    </Select.Content>
+                </Select.Root>
             </div>
             <div class="flex items-center gap-2">
                 <Label for="from" class="text-xs text-text-muted whitespace-nowrap">From</Label>

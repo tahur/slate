@@ -249,7 +249,7 @@
             onkeydown={handleKeydown}
             {placeholder}
             autocomplete="off"
-            class="h-9 w-full pl-7 pr-2 border-transparent hover:border-border focus:border-primary bg-transparent text-sm font-medium placeholder:text-text-placeholder rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/20"
+            class="h-9 w-full pl-7 pr-2 border border-border-strong hover:border-border focus:border-primary bg-surface-0 text-sm font-medium text-text-strong placeholder:text-text-placeholder rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/20"
         />
     </div>
 </div>

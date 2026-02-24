@@ -4,6 +4,7 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
     import {
         Table,
         TableHeader,
@@ -27,6 +28,7 @@
     let startDate = $state(data.startDate);
     let endDate = $state(data.endDate);
     let pageSize = $state(data.pagination?.pageSize || 50);
+    const ALL_PARTIES = "__all_parties";
 
     const partyOptions = $derived(
         partyType === "customer" ? data.customers : data.suppliers,
@@ -119,9 +121,27 @@
         window.open(`/api/reports/ledger/csv?${params.toString()}`, "_blank");
     }
 
-    function handlePartyTypeChange(e: Event) {
-        partyType = (e.target as HTMLSelectElement).value as PartyType;
+    function handlePartyTypeChange(value: string) {
+        partyType = value as PartyType;
         selectedPartyId = "";
+    }
+
+    function getPartyTypeLabel() {
+        return partyType === "customer" ? "Customer" : "Supplier";
+    }
+
+    function getSelectedPartyLabel() {
+        if (!selectedPartyId) {
+            return partyType === "customer"
+                ? "Select customer..."
+                : "Select supplier...";
+        }
+        const party = partyOptions.find((item: any) => item.id === selectedPartyId);
+        return party
+            ? `${party.name}${party.companyName ? ` (${party.companyName})` : ""}`
+            : partyType === "customer"
+              ? "Select customer..."
+              : "Select supplier...";
     }
 
     function getDocumentLabel(type: string): string {
@@ -164,40 +184,51 @@
                 <div class="flex flex-wrap items-end gap-4">
                     <div class="space-y-2 min-w-40">
                         <Label for="party-type" variant="form">Party Type</Label>
-                        <select
-                            id="party-type"
+                        <Select.Root
+                            type="single"
                             bind:value={partyType}
-                            onchange={handlePartyTypeChange}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            onValueChange={handlePartyTypeChange}
                         >
-                            <option value="customer">Customer</option>
-                            <option value="supplier">Supplier</option>
-                        </select>
+                            <Select.Trigger id="party-type" class="w-full">
+                                {getPartyTypeLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="customer">Customer</Select.Item>
+                                <Select.Item value="supplier">Supplier</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
                     </div>
 
                     <div class="space-y-2 min-w-72">
                         <Label for="party-id" variant="form">
                             {partyType === "customer" ? "Customer" : "Supplier"}
                         </Label>
-                        <select
-                            id="party-id"
-                            bind:value={selectedPartyId}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                        <Select.Root
+                            type="single"
+                            value={selectedPartyId || ALL_PARTIES}
+                            onValueChange={(value) =>
+                                (selectedPartyId =
+                                    value === ALL_PARTIES ? "" : value)}
                         >
-                            <option value="">
-                                {partyType === "customer"
-                                    ? "Select customer..."
-                                    : "Select supplier..."}
-                            </option>
-                            {#each partyOptions as party}
-                                <option value={party.id}>
-                                    {party.name}
-                                    {#if party.companyName}
-                                        ({party.companyName})
-                                    {/if}
-                                </option>
-                            {/each}
-                        </select>
+                            <Select.Trigger id="party-id" class="w-full">
+                                {getSelectedPartyLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value={ALL_PARTIES}>
+                                    {partyType === "customer"
+                                        ? "Select customer..."
+                                        : "Select supplier..."}
+                                </Select.Item>
+                                {#each partyOptions as party}
+                                    <Select.Item value={party.id}>
+                                        {party.name}
+                                        {#if party.companyName}
+                                            ({party.companyName})
+                                        {/if}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
                     </div>
 
                     <div class="space-y-2">
@@ -212,15 +243,21 @@
 
                     <div class="space-y-2 min-w-28">
                         <Label for="page-size" variant="form">Rows</Label>
-                        <select
-                            id="page-size"
-                            bind:value={pageSize}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
+                        <Select.Root
+                            type="single"
+                            value={`${pageSize}`}
+                            onValueChange={(value) =>
+                                (pageSize = Number(value))}
                         >
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                            <option value={100}>100</option>
-                        </select>
+                            <Select.Trigger id="page-size" class="w-full">
+                                {pageSize}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="25">25</Select.Item>
+                                <Select.Item value="50">50</Select.Item>
+                                <Select.Item value="100">100</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
                     </div>
 
                     <Button onclick={() => applyFilter(1)}>

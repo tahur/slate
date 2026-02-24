@@ -5,9 +5,11 @@ import TableRow from "./table-row.svelte";
 import TableHead from "./table-head.svelte";
 import TableCell from "./table-cell.svelte";
 import TableFooter from "./table-footer.svelte";
+import TableContainer from "./table-container.svelte";
 
 export {
 	Table,
+	TableContainer,
 	TableHeader,
 	TableBody,
 	TableRow,

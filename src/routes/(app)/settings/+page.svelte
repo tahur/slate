@@ -3,9 +3,12 @@
     import { enhance as formEnhance } from "$app/forms";
     import { Card } from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
+    import { Checkbox } from "$lib/components/ui/checkbox";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
+    import { Tabs, TabsList, TabsTrigger } from "$lib/components/ui/tabs";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { toast } from "svelte-sonner";
     import { INDIAN_STATES } from "../customers/new/schema";
     import {
@@ -247,7 +250,7 @@
 
 </script>
 
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-6 overflow-x-hidden">
     <!-- Header -->
     <div>
         <h1 class="text-xl font-bold tracking-tight text-text-strong">
@@ -259,23 +262,28 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="flex overflow-x-auto border-b border-border">
-        {#each tabs as tab}
-            <button
-                onclick={() => (activeTab = tab.id)}
-                class="whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors {activeTab ===
-                tab.id
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-text-muted hover:text-text-strong'}"
-            >
-                <tab.icon class="size-3.5" />
-                {tab.label}
-            </button>
-        {/each}
-    </div>
+    <Tabs
+        value={activeTab}
+        onValueChange={(value) => (activeTab = value)}
+        class="w-full"
+    >
+        <TabsList
+            class="w-full gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+            {#each tabs as tab}
+                <TabsTrigger
+                    value={tab.id}
+                    class="whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm"
+                >
+                    <tab.icon class="size-3.5" />
+                    {tab.label}
+                </TabsTrigger>
+            {/each}
+        </TabsList>
+    </Tabs>
 
     <!-- Content -->
-    <div class="max-w-3xl">
+    <div class="max-w-3xl min-w-0">
         <!-- Business Info Tab -->
         {#if activeTab === "business"}
             <form
@@ -607,7 +615,7 @@
                                             {#if account.is_active}
                                                 <form method="POST" action="?/deletePaymentAccount" use:formEnhance class="inline">
                                                     <input type="hidden" name="id" value={account.id} />
-                                                    <Button variant="ghost" size="icon" class="h-8 w-8 text-text-muted hover:text-destructive" type="submit" title="Remove">
+                                                    <Button variant="ghost" size="icon" class="h-8 w-8" type="submit" title="Remove">
                                                         <Trash2 class="size-3.5" />
                                                     </Button>
                                                 </form>
@@ -690,7 +698,7 @@
                                             {#if mode.is_active}
                                                 <form method="POST" action="?/deletePaymentMode" use:formEnhance class="inline">
                                                     <input type="hidden" name="id" value={mode.id} />
-                                                    <Button variant="ghost" size="icon" class="h-8 w-8 text-text-muted hover:text-destructive" type="submit" title="Remove">
+                                                    <Button variant="ghost" size="icon" class="h-8 w-8" type="submit" title="Remove">
                                                         <Trash2 class="size-3.5" />
                                                     </Button>
                                                 </form>
@@ -747,15 +755,24 @@
                             </div>
                             <div class="space-y-2">
                                 <Label for="account_kind" variant="form">Type <span class="text-destructive">*</span></Label>
-                                <select
-                                    id="account_kind"
-                                    name="kind"
+                                <Select.Root
+                                    type="single"
                                     bind:value={accountKind}
-                                    class="w-full h-9 rounded-md border border-border bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
                                 >
-                                    <option value="bank">Bank</option>
-                                    <option value="cash">Cash</option>
-                                </select>
+                                    <Select.Trigger
+                                        id="account_kind"
+                                        class="w-full h-9 border-border-strong bg-surface-0 text-sm text-text-strong"
+                                    >
+                                        {accountKind === "cash"
+                                            ? "Cash"
+                                            : "Bank"}
+                                    </Select.Trigger>
+                                    <Select.Content>
+                                        <Select.Item value="bank">Bank</Select.Item>
+                                        <Select.Item value="cash">Cash</Select.Item>
+                                    </Select.Content>
+                                </Select.Root>
+                                <input type="hidden" name="kind" value={accountKind} />
                             </div>
                             {#if accountKind === "bank"}
                                 <details class="group rounded-lg border border-border bg-surface-1/50">
@@ -848,17 +865,16 @@
                                     {#each data.paymentAccounts.filter((a) => a.is_active) as account}
                                         <li>
                                             <label class="flex items-center gap-2 p-2 rounded-md hover:bg-surface-1 cursor-pointer {modeLinkedAccountIds.includes(account.id) ? 'bg-surface-2' : ''}">
-                                                <input
-                                                    type="checkbox"
+                                                <Checkbox
                                                     checked={modeLinkedAccountIds.includes(account.id)}
-                                                    onchange={() => {
+                                                    onclick={() => {
                                                         if (modeLinkedAccountIds.includes(account.id)) {
                                                             modeLinkedAccountIds = modeLinkedAccountIds.filter((id) => id !== account.id);
                                                         } else {
                                                             modeLinkedAccountIds = [...modeLinkedAccountIds, account.id];
                                                         }
                                                     }}
-                                                    class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                                                    class="border-border-strong data-[state=checked]:border-primary"
                                                 />
                                                 <span class="text-sm text-text-strong">{account.label}</span>
                                             </label>
@@ -923,12 +939,17 @@
                                 Tax is calculated backwards from the entered amount. This is the default for new invoices — you can override it per invoice.
                             </p>
                         </div>
-                        <input
-                            type="checkbox"
+                        <Checkbox
                             id="prices_include_gst"
-                            name="prices_include_gst"
                             bind:checked={$orgForm.prices_include_gst}
-                            class="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                            class="h-5 w-5 border-border-strong data-[state=checked]:border-primary"
+                        />
+                        <input
+                            type="hidden"
+                            name="prices_include_gst"
+                            value={$orgForm.prices_include_gst
+                                ? "true"
+                                : "false"}
                         />
                     </div>
                 </Card>
@@ -1193,27 +1214,27 @@
                             <Label for="invoice_terms_default"
                                 >Terms & Conditions</Label
                             >
-                            <textarea
+                            <Textarea
                                 id="invoice_terms_default"
                                 name="invoice_terms_default"
                                 bind:value={$orgForm.invoice_terms_default}
-                                rows="4"
-                                class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y min-h-[100px]"
+                                rows={4}
+                                class="min-h-[100px] resize-y"
                                 placeholder="1. Payment is due within 15 days of invoice date.&#10;2. Late payments may incur interest at 18% p.a.&#10;3. Goods once sold cannot be returned."
-                            ></textarea>
+                            />
                         </div>
                         <div class="space-y-2">
                             <Label for="invoice_notes_default"
                                 >Customer Notes</Label
                             >
-                            <textarea
+                            <Textarea
                                 id="invoice_notes_default"
                                 name="invoice_notes_default"
                                 bind:value={$orgForm.invoice_notes_default}
-                                rows="2"
-                                class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                                rows={2}
+                                class="resize-y"
                                 placeholder="Thank you for your business!"
-                            ></textarea>
+                            />
                         </div>
                     </div>
                 </Card>
@@ -1505,13 +1526,14 @@
                             <div class="space-y-2">
                                 <Label>Security</Label>
                                 <div class="flex items-center gap-2 h-9">
-                                    <input
-                                        type="checkbox"
+                                    <Checkbox
                                         id="smtp_secure"
-                                        name="smtp_secure"
                                         bind:checked={$smtpForm.smtp_secure}
-                                        class="rounded border-border"
+                                        class="border-border-strong data-[state=checked]:border-primary"
                                     />
+                                    {#if $smtpForm.smtp_secure}
+                                        <input type="hidden" name="smtp_secure" value="on" />
+                                    {/if}
                                     <label
                                         for="smtp_secure"
                                         class="text-sm text-text-subtle"

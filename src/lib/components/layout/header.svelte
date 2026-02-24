@@ -23,7 +23,7 @@
 </script>
 
 <header
-    class="flex h-14 items-center gap-4 border-b border-border bg-surface-0 px-5"
+    class="flex h-14 items-center gap-4 border-b border-border bg-surface-0 px-4 sm:px-5"
 >
     <!-- Mobile Menu -->
     <div class="md:hidden">
@@ -38,7 +38,10 @@
                 <Menu class="size-5" />
                 <span class="sr-only">Toggle navigation menu</span>
             </SheetTrigger>
-            <SheetContent side="left" class="w-[200px] p-0 border-none">
+            <SheetContent
+                side="left"
+                class="w-[86vw] max-w-[320px] p-0 border-r border-sidebar-border bg-sidebar-bg"
+            >
                 <Sidebar
                     class="flex h-full w-full bg-sidebar-bg"
                     onNavigate={() => (mobileSidebarOpen = false)}

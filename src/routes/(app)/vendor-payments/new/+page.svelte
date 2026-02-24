@@ -2,6 +2,8 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { ArrowLeft, Check, Search } from "lucide-svelte";
     import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance, deserialize } from "$app/forms";
@@ -20,6 +22,7 @@
     let isSubmitting = $state(false);
 
     let selectedVendor = $state(initVendor);
+    const NO_SUPPLIER = "__no_supplier";
     let amount = $state(0);
     const defaultOption = paymentOptions.find((o: any) => o.isDefault) || paymentOptions[0];
     let selectedOptionKey = $state(
@@ -116,11 +119,29 @@
 
         allocations = next;
     }
+
+    function getSupplierLabel(supplier: {
+        display_name?: string | null;
+        name: string;
+        company_name?: string | null;
+    }) {
+        let label = supplier.display_name || supplier.name;
+        if (supplier.company_name) label += ` (${supplier.company_name})`;
+        return label;
+    }
+
+    function getSelectedSupplierLabel() {
+        if (!selectedVendor) return "Select supplier...";
+        const supplier = data.suppliers.find(
+            (item) => item.id === selectedVendor,
+        );
+        return supplier ? getSupplierLabel(supplier) : "Select supplier...";
+    }
 </script>
 
 <div class="page-full-bleed">
     <header
-        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+        class="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <div class="flex items-center gap-4">
             <Button variant="ghost" href="/vendor-payments" size="icon" class="h-8 w-8">
@@ -164,33 +185,42 @@
         <main class="flex-1 overflow-hidden">
             <div class="h-full flex flex-col md:flex-row">
                 <div
-                    class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
+                    class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
                 >
                     <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-6">
                         <div class="space-y-2">
                             <Label for="vendor_id" variant="form">
                                 Supplier <span class="text-destructive">*</span>
                             </Label>
-                            <select
-                                id="vendor_id"
-                                name="vendor_id"
-                                bind:value={selectedVendor}
-                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                                required
+                            <Select.Root
+                                type="single"
+                                value={selectedVendor || NO_SUPPLIER}
+                                onValueChange={(value) =>
+                                    (selectedVendor =
+                                        value === NO_SUPPLIER ? "" : value)}
                             >
-                                <option value="">Select supplier...</option>
-                                {#each data.suppliers as supplier}
-                                    <option value={supplier.id}>
-                                        {supplier.display_name || supplier.name}
-                                        {#if supplier.company_name}
-                                            ({supplier.company_name})
-                                        {/if}
-                                    </option>
-                                {/each}
-                            </select>
+                                <Select.Trigger id="vendor_id" class="w-full">
+                                    {getSelectedSupplierLabel()}
+                                </Select.Trigger>
+                                <Select.Content>
+                                    <Select.Item value={NO_SUPPLIER}>
+                                        Select supplier...
+                                    </Select.Item>
+                                    {#each data.suppliers as supplier}
+                                        <Select.Item value={supplier.id}>
+                                            {getSupplierLabel(supplier)}
+                                        </Select.Item>
+                                    {/each}
+                                </Select.Content>
+                            </Select.Root>
+                            <input
+                                type="hidden"
+                                name="vendor_id"
+                                value={selectedVendor}
+                            />
                         </div>
 
-                        <div class="grid gap-6 grid-cols-2">
+                        <div class="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
                             <div class="space-y-2">
                                 <Label for="amount" variant="form">
                                     Amount <span class="text-destructive">*</span>
@@ -248,18 +278,18 @@
 
                         <div class="space-y-2">
                             <Label for="notes" variant="form">Notes</Label>
-                            <textarea
+                            <Textarea
                                 id="notes"
                                 name="notes"
-                                rows="3"
-                                class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong resize-none placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                                rows={3}
+                                class="min-h-[84px] resize-none"
                                 placeholder="Optional note..."
-                            ></textarea>
+                            />
                         </div>
                     </div>
                 </div>
 
-                <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto">
+                <div class="w-full md:w-96 bg-surface-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
                             <h3 class="text-sm font-bold uppercase tracking-wide text-text-subtle">

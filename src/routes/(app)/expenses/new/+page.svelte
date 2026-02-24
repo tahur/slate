@@ -1,7 +1,10 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button";
+    import { Checkbox } from "$lib/components/ui/checkbox";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { ArrowLeft, Check, Plus } from "lucide-svelte";
     import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance, deserialize } from "$app/forms";
@@ -21,6 +24,8 @@
         data.defaultPaymentStatus === "unpaid" ? "unpaid" : "paid",
     );
     let selectedVendorId = $state(initVendorId || "");
+    const NO_VENDOR = "__no_vendor";
+    let selectedCategoryId = $state("");
     let vendorName = $state("");
     const defaultOption = data.paymentOptions.find((o: any) => o.isDefault) || data.paymentOptions[0];
     let selectedOptionKey = $state(
@@ -100,12 +105,36 @@
     let sgst = $derived(isInterState ? 0 : gstAmount / 2);
     let igst = $derived(isInterState ? gstAmount : 0);
     let total = $derived(amount + gstAmount);
+
+    function getVendorLabel(vendor: {
+        display_name?: string | null;
+        name: string;
+        gstin?: string | null;
+    }) {
+        return `${vendor.display_name || vendor.name}${vendor.gstin ? " (GST)" : ""}`;
+    }
+
+    function getSelectedVendorLabel() {
+        if (!selectedVendorId) return "Select supplier or type below...";
+        const vendor = data.vendors.find((v) => v.id === selectedVendorId);
+        return vendor ? getVendorLabel(vendor) : "Select supplier or type below...";
+    }
+
+    function getSelectedCategoryLabel() {
+        if (!selectedCategoryId) return "Select category...";
+        const account = data.expenseAccounts.find(
+            (item) => item.id === selectedCategoryId,
+        );
+        return account
+            ? `${account.code} - ${account.name}`
+            : "Select category...";
+    }
 </script>
 
 <div class="page-full-bleed">
     <!-- Header -->
     <header
-        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+        class="flex items-center gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <Button variant="ghost" href="/expenses" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
@@ -166,11 +195,11 @@
 
             <!-- LEFT COLUMN: Main Details -->
             <div
-                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
+                class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
                 <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Date & Category Row -->
-                    <div class="grid gap-4 grid-cols-2">
+                    <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                         <div class="space-y-2">
                             <Label for="expense_date" variant="form"
                                 >Date <span class="text-destructive">*</span
@@ -190,19 +219,26 @@
                                 >Category <span class="text-destructive">*</span
                                 ></Label
                             >
-                            <select
-                                id="category"
-                                name="category"
-                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                                required
+                            <Select.Root
+                                type="single"
+                                bind:value={selectedCategoryId}
                             >
-                                <option value="">Select category...</option>
-                                {#each data.expenseAccounts as account}
-                                    <option value={account.id}>
-                                        {account.code} - {account.name}
-                                    </option>
-                                {/each}
-                            </select>
+                                <Select.Trigger id="category" class="w-full">
+                                    {getSelectedCategoryLabel()}
+                                </Select.Trigger>
+                                <Select.Content>
+                                    {#each data.expenseAccounts as account}
+                                        <Select.Item value={account.id}>
+                                            {account.code} - {account.name}
+                                        </Select.Item>
+                                    {/each}
+                                </Select.Content>
+                            </Select.Root>
+                            <input
+                                type="hidden"
+                                name="category"
+                                value={selectedCategoryId}
+                            />
                         </div>
                     </div>
 
@@ -220,24 +256,32 @@
                                 New Supplier
                             </a>
                         </div>
-                        <select
-                            id="vendor_id"
-                            name="vendor_id"
-                            bind:value={selectedVendorId}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                        <Select.Root
+                            type="single"
+                            value={selectedVendorId || NO_VENDOR}
+                            onValueChange={(value) =>
+                                (selectedVendorId =
+                                    value === NO_VENDOR ? "" : value)}
                         >
-                            <option value=""
-                                >Select supplier or type below...</option
-                            >
-                            {#each data.vendors as vendor}
-                                <option value={vendor.id}>
-                                    {vendor.display_name || vendor.name}
-                                    {#if vendor.gstin}
-                                        (GST)
-                                    {/if}
-                                </option>
-                            {/each}
-                        </select>
+                            <Select.Trigger id="vendor_id" class="w-full">
+                                {getSelectedVendorLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value={NO_VENDOR}>
+                                    Select supplier or type below...
+                                </Select.Item>
+                                {#each data.vendors as vendor}
+                                    <Select.Item value={vendor.id}>
+                                        {getVendorLabel(vendor)}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        <input
+                            type="hidden"
+                            name="vendor_id"
+                            value={selectedVendorId}
+                        />
                         {#if !selectedVendorId}
                             <Input
                                 type="text"
@@ -260,25 +304,35 @@
                         <Label for="description" variant="form"
                             >Description</Label
                         >
-                        <textarea
+                        <Textarea
                             id="description"
                             name="description"
-                            rows="3"
-                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong resize-none placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                            rows={3}
+                            class="min-h-[84px] resize-none"
                             placeholder="What was this expense for?"
-                        ></textarea>
+                        />
                     </div>
 
                     <div class="space-y-2">
                         <Label for="payment_status" variant="form">Payment Timing</Label>
-                        <select
-                            id="payment_status"
-                            bind:value={paymentStatus}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                        <Select.Root
+                            type="single"
+                            value={paymentStatus}
+                            onValueChange={(value) =>
+                                (paymentStatus = value as "paid" | "unpaid")}
                         >
-                            <option value="paid">Paid now</option>
-                            <option value="unpaid">On Credit (pay supplier later)</option>
-                        </select>
+                            <Select.Trigger id="payment_status" class="w-full">
+                                {paymentStatus === "paid"
+                                    ? "Paid now"
+                                    : "On Credit (pay supplier later)"}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="paid">Paid now</Select.Item>
+                                <Select.Item value="unpaid">
+                                    On Credit (pay supplier later)
+                                </Select.Item>
+                            </Select.Content>
+                        </Select.Root>
                         <input type="hidden" name="payment_status" value={paymentStatus} />
                     </div>
 
@@ -357,7 +411,7 @@
 
             <!-- RIGHT COLUMN: Financials -->
             <div
-                class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto"
+                class="w-full md:w-96 bg-surface-0 p-4 sm:p-6 lg:p-8 overflow-y-auto"
             >
                 <div class="space-y-6">
                     <h3
@@ -393,29 +447,40 @@
                             <Label for="gst_rate" variant="form"
                                 >GST Rate</Label
                             >
-                            <select
-                                id="gst_rate"
-                                name="gst_rate"
-                                bind:value={gstRate}
-                                class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none"
+                            <Select.Root
+                                type="single"
+                                value={`${gstRate}`}
+                                onValueChange={(value) =>
+                                    (gstRate = Number(value))}
                             >
-                                <option value={0}>0% (No Tax)</option>
-                                <option value={5}>5%</option>
-                                <option value={12}>12%</option>
-                                <option value={18}>18%</option>
-                                <option value={28}>28%</option>
-                            </select>
+                                <Select.Trigger id="gst_rate" class="w-full">
+                                    {gstRate}%{gstRate === 0 ? " (No Tax)" : ""}
+                                </Select.Trigger>
+                                <Select.Content>
+                                    <Select.Item value="0">0% (No Tax)</Select.Item>
+                                    <Select.Item value="5">5%</Select.Item>
+                                    <Select.Item value="12">12%</Select.Item>
+                                    <Select.Item value="18">18%</Select.Item>
+                                    <Select.Item value="28">28%</Select.Item>
+                                </Select.Content>
+                            </Select.Root>
+                            <input
+                                type="hidden"
+                                name="gst_rate"
+                                value={gstRate}
+                            />
                         </div>
 
                         {#if gstRate > 0}
                             <div class="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     id="is_inter_state"
-                                    name="is_inter_state"
                                     bind:checked={isInterState}
-                                    class="h-4 w-4 rounded border-border-strong text-primary"
+                                    class="border-border-strong data-[state=checked]:border-primary"
                                 />
+                                {#if isInterState}
+                                    <input type="hidden" name="is_inter_state" value="on" />
+                                {/if}
                                 <Label
                                     for="is_inter_state"
                                     class="font-normal text-sm text-text-strong cursor-pointer"

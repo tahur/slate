@@ -4,6 +4,7 @@
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
     import { Checkbox } from "$lib/components/ui/checkbox";
+    import { TableContainer } from "$lib/components/ui/table";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
     import { INDIAN_STATES } from "../../customers/new/schema";
@@ -178,19 +179,25 @@
                         Contact
                     </h3>
                     {#if data.vendor.email}
-                        <div class="flex items-center gap-2 text-sm">
+                        <div
+                            class="flex items-center gap-2 text-sm text-text-strong"
+                        >
                             <Mail class="size-4 text-text-muted" />
                             <span>{data.vendor.email}</span>
                         </div>
                     {/if}
                     {#if data.vendor.phone}
-                        <div class="flex items-center gap-2 text-sm">
+                        <div
+                            class="flex items-center gap-2 text-sm text-text-strong"
+                        >
                             <Phone class="size-4 text-text-muted" />
                             <span>{data.vendor.phone}</span>
                         </div>
                     {/if}
                     {#if data.vendor.website}
-                        <div class="flex items-center gap-2 text-sm">
+                        <div
+                            class="flex items-center gap-2 text-sm text-text-strong"
+                        >
                             <Globe class="size-4 text-text-muted" />
                             <a
                                 href={data.vendor.website}
@@ -202,9 +209,11 @@
                         </div>
                     {/if}
                     {#if data.vendor.billing_address || data.vendor.city}
-                        <div class="flex items-start gap-2 text-sm">
+                        <div
+                            class="flex items-start gap-2 text-sm text-text-strong"
+                        >
                             <MapPin class="size-4 text-text-muted mt-0.5" />
-                            <span>
+                            <span class="text-text-strong">
                                 {data.vendor.billing_address || ""}
                                 {data.vendor.city
                                     ? `, ${data.vendor.city}`
@@ -228,14 +237,14 @@
                     </h3>
                     <div class="flex items-center gap-2 text-sm">
                         <Building2 class="size-4 text-text-muted" />
-                        <span class="capitalize"
+                        <span class="capitalize text-text-strong"
                             >{data.vendor.gst_treatment || "Unregistered"}</span
                         >
                     </div>
                     {#if data.vendor.gstin}
                         <div class="text-sm">
                             <span class="text-text-muted">GSTIN:</span>
-                            <span class="font-mono ml-2"
+                            <span class="font-mono ml-2 text-text-strong"
                                 >{data.vendor.gstin}</span
                             >
                         </div>
@@ -243,20 +252,21 @@
                     {#if data.vendor.pan}
                         <div class="text-sm">
                             <span class="text-text-muted">PAN:</span>
-                            <span class="font-mono ml-2">{data.vendor.pan}</span
+                            <span class="font-mono ml-2 text-text-strong"
+                                >{data.vendor.pan}</span
                             >
                         </div>
                     {/if}
                     <div class="text-sm">
                         <span class="text-text-muted">State:</span>
-                        <span class="ml-2"
+                        <span class="ml-2 text-text-strong"
                             >{getStateName(data.vendor.state_code)}</span
                         >
                     </div>
                     {#if data.vendor.tds_applicable}
                         <div class="text-sm">
                             <span class="text-text-muted">TDS:</span>
-                            <span class="ml-2"
+                            <span class="ml-2 text-text-strong"
                                 >{data.vendor.tds_section || "Applicable"}</span
                             >
                         </div>
@@ -360,7 +370,8 @@
                                 </Button>
                             </div>
                         {:else}
-                            <table class="w-full text-sm">
+                            <TableContainer>
+                                <table class="w-full text-sm">
                                 <thead>
                                     <tr
                                         class="text-left text-xs uppercase tracking-wide text-text-muted border-b border-border"
@@ -390,7 +401,7 @@
                                                 >{expense.description || "—"}</td
                                             >
                                             <td
-                                                class="py-3 pr-4 text-right font-mono"
+                                                class="py-3 pr-4 text-right font-mono text-text-strong"
                                                 >{formatINR(expense.amount)}</td
                                             >
                                             <td
@@ -403,13 +414,14 @@
                                                 )}
                                             </td>
                                             <td
-                                                class="py-3 text-right font-mono font-medium"
+                                                class="py-3 text-right font-mono font-medium text-text-strong"
                                                 >{formatINR(expense.total)}</td
                                             >
                                         </tr>
                                     {/each}
                                 </tbody>
-                            </table>
+                                </table>
+                            </TableContainer>
                         {/if}
                     {:else}
                         <div class="space-y-3">
@@ -440,7 +452,7 @@
                                 </div>
                                 <div class="rounded border border-border bg-surface-1 p-3">
                                     <p class="text-[10px] uppercase tracking-wide text-text-muted">Closing</p>
-                                    <p class="text-sm font-semibold font-mono {data.ledger.closing > 0 ? 'text-amber-600' : data.ledger.closing < 0 ? 'text-blue-600' : 'text-text-muted'}">{formatINR(data.ledger.closing)}</p>
+                                    <p class="text-sm font-semibold font-mono {data.ledger.closing > 0 ? 'text-amber-600' : data.ledger.closing < 0 ? 'text-blue-600' : 'text-text-strong'}">{formatINR(data.ledger.closing)}</p>
                                 </div>
                             </div>
 
@@ -450,7 +462,8 @@
                                     <p>No ledger entries in selected period</p>
                                 </div>
                             {:else}
-                                <table class="w-full text-sm">
+                                <TableContainer>
+                                    <table class="w-full text-sm">
                                     <thead>
                                         <tr
                                             class="text-left text-xs uppercase tracking-wide text-text-muted border-b border-border"
@@ -485,13 +498,14 @@
                                                 <td class="py-3 pr-4 text-xs text-text-muted">{entry.methodLabel || "—"}</td>
                                                 <td class="py-3 pr-4 text-right font-mono">{entry.charge > 0 ? formatINR(entry.charge) : "—"}</td>
                                                 <td class="py-3 pr-4 text-right font-mono text-red-600">{entry.settlement > 0 ? formatINR(entry.settlement) : "—"}</td>
-                                                <td class="py-3 text-right font-mono font-medium {entry.balance > 0 ? 'text-amber-600' : entry.balance < 0 ? 'text-blue-600' : 'text-text-muted'}">
+                                                <td class="py-3 text-right font-mono font-medium {entry.balance > 0 ? 'text-amber-600' : entry.balance < 0 ? 'text-blue-600' : 'text-text-subtle'}">
                                                     {formatINR(entry.balance)}
                                                 </td>
                                             </tr>
                                         {/each}
                                     </tbody>
-                                </table>
+                                    </table>
+                                </TableContainer>
                             {/if}
                         </div>
                     {/if}

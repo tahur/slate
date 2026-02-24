@@ -3,6 +3,8 @@
     import { Card } from "$lib/components/ui/card";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { ArrowLeft, Check, Search } from "lucide-svelte";
     import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance, deserialize } from "$app/forms";
@@ -16,6 +18,7 @@
 
     // Form state
     let selectedCustomer = $state(initCustomer);
+    const NO_CUSTOMER = "__no_customer";
     let amount = $state(0);
     const defaultOption = paymentOptions.find((o) => o.isDefault) || paymentOptions[0];
     let selectedOptionKey = $state(
@@ -110,12 +113,33 @@
 
         allocations = newAllocations;
     }
+
+    function getCustomerLabel(customer: {
+        name: string;
+        company_name?: string | null;
+        balance?: number | null;
+    }) {
+        let label = customer.name;
+        if (customer.company_name) label += ` (${customer.company_name})`;
+        if (customer.balance && customer.balance > 0) {
+            label += ` — Pending: ${formatINR(customer.balance)}`;
+        }
+        return label;
+    }
+
+    function getSelectedCustomerLabel() {
+        if (!selectedCustomer) return "Select customer / party...";
+        const customer = data.customers.find(
+            (customer) => customer.id === selectedCustomer,
+        );
+        return customer ? getCustomerLabel(customer) : "Select customer / party...";
+    }
 </script>
 
 <div class="page-full-bleed">
     <!-- Header -->
     <header
-        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+        class="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <div class="flex items-center gap-4">
             <Button
@@ -160,7 +184,7 @@
         >
             <!-- LEFT COLUMN: Payment Details -->
             <div
-                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
+                class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
                 <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Customer Selection -->
@@ -168,33 +192,37 @@
                         <Label for="customer_id" variant="form"
                             >Customer <span class="text-destructive">*</span></Label
                         >
-                        <select
-                            id="customer_id"
-                            name="customer_id"
-                            bind:value={selectedCustomer}
-                            onchange={(e) =>
-                                loadInvoices(e.currentTarget.value)}
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                            required
+                        <Select.Root
+                            type="single"
+                            value={selectedCustomer || NO_CUSTOMER}
+                            onValueChange={(value) => {
+                                selectedCustomer =
+                                    value === NO_CUSTOMER ? "" : value;
+                                void loadInvoices(selectedCustomer);
+                            }}
                         >
-                            <option value="">Select customer / party...</option>
-                            {#each data.customers as customer}
-                                <option value={customer.id}>
-                                    {customer.name}
-                                    {#if customer.company_name}
-                                        ({customer.company_name})
-                                    {/if}
-                                    {#if customer.balance && customer.balance > 0}
-                                        — Pending: {formatINR(
-                                            customer.balance,
-                                        )}
-                                    {/if}
-                                </option>
-                            {/each}
-                        </select>
+                            <Select.Trigger id="customer_id" class="w-full">
+                                {getSelectedCustomerLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value={NO_CUSTOMER}>
+                                    Select customer / party...
+                                </Select.Item>
+                                {#each data.customers as customer}
+                                    <Select.Item value={customer.id}>
+                                        {getCustomerLabel(customer)}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        <input
+                            type="hidden"
+                            name="customer_id"
+                            value={selectedCustomer}
+                        />
                     </div>
 
-                    <div class="grid gap-6 grid-cols-2">
+                    <div class="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
                         <!-- Amount -->
                         <div class="space-y-2">
                             <Label for="amount" variant="form"
@@ -259,19 +287,19 @@
                         <Label for="notes" variant="form"
                             >Notes</Label
                         >
-                        <textarea
+                        <Textarea
                             id="notes"
                             name="notes"
-                            rows="3"
-                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong resize-none placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                            rows={3}
+                            class="min-h-[84px] resize-none"
                             placeholder="Internal notes..."
-                        ></textarea>
+                        />
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT COLUMN: Invoice Allocation -->
-            <div class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto">
+            <div class="w-full md:w-96 bg-surface-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 <div class="space-y-6">
                     <div class="flex items-center justify-between">
                         <h3

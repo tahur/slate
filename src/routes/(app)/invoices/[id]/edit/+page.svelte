@@ -1,8 +1,11 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { onMount } from "svelte";
     import { Button } from "$lib/components/ui/button";
+    import { Checkbox } from "$lib/components/ui/checkbox";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import { Textarea } from "$lib/components/ui/textarea";
 
     import * as Select from "$lib/components/ui/select";
     import {
@@ -66,6 +69,7 @@
 
     // Drag and Drop State
     let dragItemIndex = $state<number | null>(null);
+    let isMobileLineItemEditor = $state(false);
 
     // Track selected customer for inter-state calculation
     let selectedCustomer = $derived(
@@ -158,6 +162,16 @@
         formData.items = items;
         dragItemIndex = null;
     }
+
+    onMount(() => {
+        const mediaQuery = window.matchMedia("(max-width: 639px)");
+        const syncViewport = () => {
+            isMobileLineItemEditor = mediaQuery.matches;
+        };
+        syncViewport();
+        mediaQuery.addEventListener("change", syncViewport);
+        return () => mediaQuery.removeEventListener("change", syncViewport);
+    });
 </script>
 
 <div class="page-full-bleed">
@@ -488,203 +502,400 @@
                                 >
                                     Prices include GST
                                 </span>
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     bind:checked={pricesIncludeGst}
-                                    class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                                    aria-label="Prices include GST"
+                                    class="border-border-strong data-[state=checked]:border-primary"
                                 />
                             </label>
                         </div>
 
-                        <div
-                            class="rounded-lg border border-border overflow-hidden bg-surface-0"
-                        >
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm">
-                                    <thead>
-                                        <tr
-                                            class="border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-subtle bg-surface-2/50"
-                                        >
-                                            <th
-                                                class="px-2 py-3 w-8 text-center"
-                                            ></th>
-                                            <th class="px-4 py-3 text-left"
-                                                >Item Details</th
-                                            >
-                                            <th class="px-3 py-3 text-left w-28"
-                                                >HSN/SAC</th
-                                            >
-                                            <th
-                                                class="px-3 py-3 text-right w-24"
-                                                >Qty</th
-                                            >
-                                            <th
-                                                class="px-3 py-3 text-right w-28"
-                                                >Rate</th
-                                            >
-                                            <th
-                                                class="px-3 py-3 text-right w-24"
-                                                >Tax</th
-                                            >
-                                            <th
-                                                class="px-4 py-3 text-right w-28"
-                                                >Amount</th
-                                            >
-                                            <th class="px-2 py-3 w-10"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="divide-y divide-border-subtle"
+                        {#if isMobileLineItemEditor}
+                            <div class="space-y-3">
+                                {#each formData.items as item, index}
+                                    <article
+                                        class="rounded-lg border border-border bg-surface-0 p-3 space-y-3"
                                     >
-                                        {#each formData.items as item, index}
-                                            <tr
-                                                class="group hover:bg-surface-2/30 transition-colors {dragItemIndex ===
-                                                index
-                                                    ? 'opacity-50 border-2 border-dashed border-primary/50'
-                                                    : ''}"
-                                                draggable={true}
-                                                ondragstart={() =>
-                                                    handleDragStart(index)}
-                                                ondragover={handleDragOver}
-                                                ondrop={() => handleDrop(index)}
+                                        <div
+                                            class="flex items-center justify-between"
+                                        >
+                                            <span
+                                                class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
                                             >
-                                                <td class="px-2 py-3 align-top">
-                                                    <div
-                                                        class="h-9 flex items-center justify-center cursor-move text-text-muted/50 hover:text-text-strong touch-none"
+                                                Item {index + 1}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon-touch"
+                                                class="shrink-0"
+                                                onclick={() =>
+                                                    removeItem(index)}
+                                                disabled={formData.items
+                                                    .length === 1}
+                                                aria-label={`Remove item ${index + 1}`}
+                                            >
+                                                <Trash2 class="size-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div class="space-y-1.5">
+                                            <Label variant="form"
+                                                >Description</Label
+                                            >
+                                            <ItemCombobox
+                                                catalogItems={data.catalogItems}
+                                                bind:value={formData.items[
+                                                    index
+                                                ]}
+                                                onSelect={(item) =>
+                                                    handleItemSelect(
+                                                        index,
+                                                        item,
+                                                    )}
+                                                name="items[{index}].description"
+                                                placeholder="Search or enter item..."
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="items[{index}].item_id"
+                                                value={item.item_id || ""}
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="items[{index}].unit"
+                                                value={item.unit || "nos"}
+                                            />
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="space-y-1.5">
+                                                <Label variant="form"
+                                                    >HSN/SAC</Label
+                                                >
+                                                <Input
+                                                    name="items[{index}].hsn_code"
+                                                    bind:value={item.hsn_code}
+                                                    placeholder="HSN"
+                                                    class="h-9 border-border-strong text-center bg-surface-1 focus:border-primary font-mono"
+                                                />
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <Label variant="form"
+                                                    >Qty</Label
+                                                >
+                                                <Input
+                                                    name="items[{index}].quantity"
+                                                    type="number"
+                                                    bind:value={item.quantity}
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="space-y-1.5">
+                                                <Label variant="form"
+                                                    >Rate</Label
+                                                >
+                                                <Input
+                                                    name="items[{index}].rate"
+                                                    type="number"
+                                                    bind:value={item.rate}
+                                                    min="0"
+                                                    step="0.01"
+                                                    class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                />
+                                            </div>
+                                            <div class="space-y-1.5">
+                                                <Label variant="form"
+                                                    >GST</Label
+                                                >
+                                                <Select.Root
+                                                    type="single"
+                                                    value={`${item.gst_rate}`}
+                                                    onValueChange={(value) =>
+                                                        (item.gst_rate = Number(
+                                                            value,
+                                                        ))}
+                                                >
+                                                    <Select.Trigger
+                                                        class="h-9 w-full border-border-strong bg-surface-1 text-right text-xs font-mono"
                                                     >
-                                                        <GripVertical
-                                                            class="size-4"
-                                                        />
-                                                    </div>
-                                                </td>
-                                                <td class="px-2 py-2 align-top">
-                                                    <div
-                                                        class="relative flex items-center gap-1 w-full"
-                                                    >
-                                                        <ItemCombobox
-                                                            catalogItems={data.catalogItems}
-                                                            bind:value={
-                                                                formData.items[
-                                                                    index
-                                                                ]
-                                                            }
-                                                            onSelect={(item) =>
-                                                                handleItemSelect(
-                                                                    index,
-                                                                    item,
-                                                                )}
-                                                            name="items[{index}].description"
-                                                            placeholder="Search or enter item..."
-                                                        />
-                                                        <input
-                                                            type="hidden"
-                                                            name="items[{index}].item_id"
-                                                            value={item.item_id ||
-                                                                ""}
-                                                        />
-                                                        <input
-                                                            type="hidden"
-                                                            name="items[{index}].unit"
-                                                            value={item.unit ||
-                                                                "nos"}
-                                                        />
-                                                    </div>
-                                                </td>
-                                                <td class="px-2 py-2 align-top">
-                                                    <Input
-                                                        name="items[{index}].hsn_code"
-                                                        bind:value={
-                                                            item.hsn_code
-                                                        }
-                                                        placeholder="HSN"
-                                                        class="h-9 border-border text-center bg-surface-1 focus:border-primary font-mono"
-                                                    />
-                                                </td>
-                                                <td class="px-2 py-2 align-top">
-                                                    <Input
-                                                        name="items[{index}].quantity"
-                                                        type="number"
-                                                        bind:value={
-                                                            item.quantity
-                                                        }
-                                                        min="0.01"
-                                                        step="0.01"
-                                                        class="h-9 border-border text-right bg-surface-1 focus:border-primary font-mono"
-                                                    />
-                                                </td>
-                                                <td class="px-2 py-2 align-top">
-                                                    <Input
-                                                        name="items[{index}].rate"
-                                                        type="number"
-                                                        bind:value={item.rate}
-                                                        min="0"
-                                                        step="0.01"
-                                                        class="h-9 border-border text-right bg-surface-1 focus:border-primary font-mono"
-                                                    />
-                                                </td>
-                                                <td class="px-2 py-2 align-top">
-                                                    <select
-                                                        name="items[{index}].gst_rate"
-                                                        bind:value={
-                                                            item.gst_rate
-                                                        }
-                                                        class="h-9 w-full border border-border rounded-md bg-surface-1 text-right text-xs font-mono focus:border-primary focus:outline-none px-2"
+                                                        {item.gst_rate}%
+                                                    </Select.Trigger>
+                                                    <Select.Content
+                                                        class="min-w-[7rem]"
                                                     >
                                                         {#each GST_RATES as rate}
-                                                            <option value={rate}
-                                                                >{rate}%</option
+                                                            <Select.Item
+                                                                value={`${rate}`}
+                                                                >{rate}%</Select.Item
                                                             >
                                                         {/each}
-                                                    </select>
-                                                </td>
-                                                <td class="px-2 py-2 align-top">
-                                                    <div
-                                                        class="h-9 flex items-center justify-end font-mono font-medium text-text-strong"
-                                                    >
-                                                        {formatINR(
-                                                            getLineAmount(item),
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td class="px-2 py-3 align-top">
-                                                    <div
-                                                        class="h-9 flex items-center justify-center"
-                                                    >
-                                                        <button
-                                                            type="button"
-                                                            class="text-text-muted hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
-                                                            onclick={() =>
-                                                                removeItem(
-                                                                    index,
-                                                                )}
-                                                            disabled={formData
-                                                                .items
-                                                                .length === 1}
-                                                        >
-                                                            <Trash2
-                                                                class="size-4"
-                                                            />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        {/each}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    </Select.Content>
+                                                </Select.Root>
+                                                <input
+                                                    type="hidden"
+                                                    name="items[{index}].gst_rate"
+                                                    value={item.gst_rate}
+                                                />
+                                            </div>
+                                        </div>
 
-                            <div class="border-t border-border p-3">
+                                        <div
+                                            class="flex items-center justify-between rounded-md border border-border-subtle bg-surface-2 px-3 py-2"
+                                        >
+                                            <span
+                                                class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
+                                            >
+                                                Amount
+                                            </span>
+                                            <span
+                                                class="font-mono font-semibold text-text-strong"
+                                            >
+                                                {formatINR(getLineAmount(item))}
+                                            </span>
+                                        </div>
+                                    </article>
+                                {/each}
+
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    size="sm"
+                                    class="h-10 w-full"
                                     onclick={addItem}
                                 >
                                     <Plus class="mr-1 size-4" />
                                     Add Row
                                 </Button>
                             </div>
-                        </div>
+                        {:else}
+                            <div
+                                class="rounded-lg border border-border overflow-hidden bg-surface-0"
+                            >
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr
+                                                class="border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-subtle bg-surface-2/50"
+                                            >
+                                                <th
+                                                    class="px-2 py-3 w-8 text-center"
+                                                ></th>
+                                                <th class="px-4 py-3 text-left"
+                                                    >Item Details</th
+                                                >
+                                                <th
+                                                    class="px-3 py-3 text-left w-28"
+                                                    >HSN/SAC</th
+                                                >
+                                                <th
+                                                    class="px-3 py-3 text-right w-24"
+                                                    >Qty</th
+                                                >
+                                                <th
+                                                    class="px-3 py-3 text-right w-28"
+                                                    >Rate</th
+                                                >
+                                                <th
+                                                    class="px-3 py-3 text-right w-24"
+                                                    >Tax</th
+                                                >
+                                                <th
+                                                    class="px-4 py-3 text-right w-28"
+                                                    >Amount</th
+                                                >
+                                                <th class="px-2 py-3 w-12"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody
+                                            class="divide-y divide-border-subtle"
+                                        >
+                                            {#each formData.items as item, index}
+                                                <tr
+                                                    class="group hover:bg-surface-2/30 transition-colors {dragItemIndex ===
+                                                    index
+                                                        ? 'opacity-50 border-2 border-dashed border-primary/50'
+                                                        : ''}"
+                                                    draggable={true}
+                                                    ondragstart={() =>
+                                                        handleDragStart(index)}
+                                                    ondragover={handleDragOver}
+                                                    ondrop={() =>
+                                                        handleDrop(index)}
+                                                >
+                                                    <td
+                                                        class="px-2 py-3 align-top"
+                                                    >
+                                                        <div
+                                                            class="h-9 flex items-center justify-center cursor-move text-text-muted/50 hover:text-text-strong touch-none"
+                                                        >
+                                                            <GripVertical
+                                                                class="size-4"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-2 align-top"
+                                                    >
+                                                        <div
+                                                            class="relative flex items-center gap-1 w-full"
+                                                        >
+                                                            <ItemCombobox
+                                                                catalogItems={data.catalogItems}
+                                                                bind:value={formData
+                                                                    .items[
+                                                                    index
+                                                                ]}
+                                                                onSelect={(item) =>
+                                                                    handleItemSelect(
+                                                                        index,
+                                                                        item,
+                                                                    )}
+                                                                name="items[{index}].description"
+                                                                placeholder="Search or enter item..."
+                                                            />
+                                                            <input
+                                                                type="hidden"
+                                                                name="items[{index}].item_id"
+                                                                value={item.item_id ||
+                                                                    ""}
+                                                            />
+                                                            <input
+                                                                type="hidden"
+                                                                name="items[{index}].unit"
+                                                                value={item.unit ||
+                                                                    "nos"}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-2 align-top"
+                                                    >
+                                                        <Input
+                                                            name="items[{index}].hsn_code"
+                                                            bind:value={item
+                                                                .hsn_code}
+                                                            placeholder="HSN"
+                                                            class="h-9 border-border-strong text-center bg-surface-1 focus:border-primary font-mono"
+                                                        />
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-2 align-top"
+                                                    >
+                                                        <Input
+                                                            name="items[{index}].quantity"
+                                                            type="number"
+                                                            bind:value={item
+                                                                .quantity}
+                                                            min="0.01"
+                                                            step="0.01"
+                                                            class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                        />
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-2 align-top"
+                                                    >
+                                                        <Input
+                                                            name="items[{index}].rate"
+                                                            type="number"
+                                                            bind:value={item.rate}
+                                                            min="0"
+                                                            step="0.01"
+                                                            class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                        />
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-2 align-top"
+                                                    >
+                                                        <Select.Root
+                                                            type="single"
+                                                            value={`${item.gst_rate}`}
+                                                            onValueChange={(value) =>
+                                                                (item.gst_rate = Number(
+                                                                    value,
+                                                                ))}
+                                                        >
+                                                            <Select.Trigger
+                                                                class="h-9 w-full border-border-strong bg-surface-1 text-right text-xs font-mono"
+                                                            >
+                                                                {item.gst_rate}%
+                                                            </Select.Trigger>
+                                                            <Select.Content
+                                                                class="min-w-[7rem]"
+                                                            >
+                                                                {#each GST_RATES as rate}
+                                                                    <Select.Item
+                                                                        value={`${rate}`}
+                                                                        >{rate}%</Select.Item
+                                                                    >
+                                                                {/each}
+                                                            </Select.Content>
+                                                        </Select.Root>
+                                                        <input
+                                                            type="hidden"
+                                                            name="items[{index}].gst_rate"
+                                                            value={item.gst_rate}
+                                                        />
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-2 align-top"
+                                                    >
+                                                        <div
+                                                            class="h-9 flex items-center justify-end font-mono font-medium text-text-strong"
+                                                        >
+                                                            {formatINR(
+                                                                getLineAmount(
+                                                                    item,
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td
+                                                        class="px-2 py-3 align-top"
+                                                    >
+                                                        <div
+                                                            class="h-11 flex items-center justify-center"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                                                                onclick={() =>
+                                                                    removeItem(
+                                                                        index,
+                                                                    )}
+                                                                disabled={formData
+                                                                    .items
+                                                                    .length === 1}
+                                                            >
+                                                                <Trash2
+                                                                    class="size-4"
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {/each}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="border-t border-border p-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onclick={addItem}
+                                    >
+                                        <Plus class="mr-1 size-4" />
+                                        Add Row
+                                    </Button>
+                                </div>
+                            </div>
+                        {/if}
                     </section>
 
                     <!-- Section: Notes -->
@@ -694,14 +905,14 @@
                         >
                             Notes
                         </h3>
-                        <textarea
+                        <Textarea
                             id="notes"
                             name="notes"
                             bind:value={formData.notes}
-                            rows="3"
+                            rows={3}
                             placeholder="Customer-visible notes (will appear on invoice)"
-                            class="w-full p-3 text-sm border border-border-strong rounded-lg resize-none bg-surface-0 text-text-strong placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                        ></textarea>
+                            class="resize-none"
+                        />
                     </section>
                 </div>
             </div>

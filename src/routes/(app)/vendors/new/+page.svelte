@@ -4,6 +4,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { Checkbox } from "$lib/components/ui/checkbox";
     import { toast } from "svelte-sonner";
     import { INDIAN_STATES, extractStateFromGstin, extractPanFromGstin } from "../../customers/new/schema";
@@ -56,7 +57,7 @@
 <div class="page-full-bleed">
     <!-- Header -->
     <header
-        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+        class="flex items-center gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <Button variant="ghost" href="/vendors" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
@@ -81,7 +82,7 @@
         >
             <!-- LEFT COLUMN: Main Details -->
             <div
-                class="flex-1 p-6 md:p-8 border-b md:border-b-0 md:border-r border-border"
+                class="flex-1 p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border"
             >
                 <div class="max-w-3xl space-y-8">
                     <!-- Section: Basic Information -->
@@ -449,14 +450,14 @@
                         >
                             Notes
                         </h3>
-                        <textarea
+                        <Textarea
                             id="notes"
                             name="notes"
                             bind:value={$form.notes}
-                            rows="3"
-                            class="flex w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong shadow-sm placeholder:text-text-placeholder focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary resize-none"
+                            rows={3}
+                            class="min-h-[84px] resize-none"
                             placeholder="Internal notes..."
-                        ></textarea>
+                        />
                     </section>
                 </div>
             </div>

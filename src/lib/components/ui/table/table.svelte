@@ -13,7 +13,7 @@
 <table
 	bind:this={ref}
 	data-slot="table"
-	class={cn("w-full border-collapse text-[0.8125rem] leading-5", className)}
+	class={cn("w-full border-collapse text-sm md:text-[0.8125rem] leading-5", className)}
 	{...restProps}
 >
 	{@render children?.()}

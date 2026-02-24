@@ -3,6 +3,8 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import * as Select from "$lib/components/ui/select";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { ArrowLeft, Check } from "lucide-svelte";
     import { toast } from "svelte-sonner";
     import { formatINR } from "$lib/utils/currency";
@@ -11,12 +13,31 @@
     let isSubmitting = $state(false);
 
     let amount = $state(0);
+    let selectedCustomerId = $state("");
+    let selectedReason = $state("Return");
+    const NO_CUSTOMER = "__no_customer";
+
+    function getSelectedCustomerLabel() {
+        if (!selectedCustomerId) return "Select Customer";
+        return (
+            data.customers.find((customer) => customer.id === selectedCustomerId)
+                ?.name || "Select Customer"
+        );
+    }
+
+    function getReasonLabel(reason: string) {
+        if (reason === "Return") return "Return of Goods";
+        if (reason === "Damaged") return "Damaged Goods";
+        if (reason === "Discount") return "Discount Error";
+        if (reason === "Writeoff") return "Write Off";
+        return "Other";
+    }
 </script>
 
 <div class="page-full-bleed">
     <!-- Header -->
     <header
-        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
+        class="flex items-center gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
     >
         <Button
             variant="ghost"
@@ -60,7 +81,7 @@
 
             <!-- LEFT COLUMN: Main Details -->
             <div
-                class="flex-1 overflow-y-auto p-6 md:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
+                class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
                 <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
                     <!-- Customer -->
@@ -69,22 +90,35 @@
                             >Customer <span class="text-destructive">*</span
                             ></Label
                         >
-                        <select
-                            name="customer_id"
-                            id="customer_id"
-                            required
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                        <Select.Root
+                            type="single"
+                            value={selectedCustomerId || NO_CUSTOMER}
+                            onValueChange={(value) =>
+                                (selectedCustomerId =
+                                    value === NO_CUSTOMER ? "" : value)}
                         >
-                            <option value="">Select Customer</option>
-                            {#each data.customers as customer}
-                                <option value={customer.id}
-                                    >{customer.name}</option
-                                >
-                            {/each}
-                        </select>
+                            <Select.Trigger id="customer_id" class="w-full">
+                                {getSelectedCustomerLabel()}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value={NO_CUSTOMER}>
+                                    Select Customer
+                                </Select.Item>
+                                {#each data.customers as customer}
+                                    <Select.Item value={customer.id}>
+                                        {customer.name}
+                                    </Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        <input
+                            type="hidden"
+                            name="customer_id"
+                            value={selectedCustomerId}
+                        />
                     </div>
 
-                    <div class="grid gap-4 grid-cols-2">
+                    <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                         <!-- Date -->
                         <div class="space-y-2">
                             <Label for="date" variant="form"
@@ -119,36 +153,45 @@
                             >Reason <span class="text-destructive">*</span
                             ></Label
                         >
-                        <select
-                            name="reason"
-                            id="reason"
-                            required
-                            class="w-full h-9 rounded-md border border-border-strong bg-surface-0 px-3 py-1.5 text-sm text-text-strong focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
-                        >
-                            <option value="Return">Return of Goods</option>
-                            <option value="Damaged">Damaged Goods</option>
-                            <option value="Discount">Discount Error</option>
-                            <option value="Writeoff">Write Off</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <Select.Root type="single" bind:value={selectedReason}>
+                            <Select.Trigger id="reason" class="w-full">
+                                {getReasonLabel(selectedReason)}
+                            </Select.Trigger>
+                            <Select.Content>
+                                <Select.Item value="Return">
+                                    Return of Goods
+                                </Select.Item>
+                                <Select.Item value="Damaged">
+                                    Damaged Goods
+                                </Select.Item>
+                                <Select.Item value="Discount">
+                                    Discount Error
+                                </Select.Item>
+                                <Select.Item value="Writeoff">
+                                    Write Off
+                                </Select.Item>
+                                <Select.Item value="Other">Other</Select.Item>
+                            </Select.Content>
+                        </Select.Root>
+                        <input type="hidden" name="reason" value={selectedReason} />
                     </div>
 
                     <!-- Notes -->
                     <div class="space-y-2">
                         <Label for="notes" variant="form">Notes</Label>
-                        <textarea
+                        <Textarea
                             name="notes"
-                            rows="3"
-                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong resize-none placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                            rows={3}
+                            class="min-h-[84px] resize-none"
                             placeholder="Additional details..."
-                        ></textarea>
+                        />
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT COLUMN: Financials -->
             <div
-                class="w-full md:w-96 bg-surface-0 p-6 md:p-8 overflow-y-auto"
+                class="w-full md:w-96 bg-surface-0 p-4 sm:p-6 lg:p-8 overflow-y-auto"
             >
                 <div class="space-y-6">
                     <h3

@@ -3,6 +3,7 @@
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
     import * as Select from "$lib/components/ui/select";
+    import { TableContainer } from "$lib/components/ui/table";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
     import { INDIAN_STATES, GST_TREATMENTS } from "../new/schema";
@@ -175,21 +176,27 @@
                         Contact
                     </h3>
                     {#if data.customer.email}
-                        <div class="flex items-center gap-2 text-sm">
+                        <div
+                            class="flex items-center gap-2 text-sm text-text-strong"
+                        >
                             <Mail class="size-4 text-text-subtle" />
                             <span>{data.customer.email}</span>
                         </div>
                     {/if}
                     {#if data.customer.phone}
-                        <div class="flex items-center gap-2 text-sm">
+                        <div
+                            class="flex items-center gap-2 text-sm text-text-strong"
+                        >
                             <Phone class="size-4 text-text-subtle" />
                             <span>{data.customer.phone}</span>
                         </div>
                     {/if}
                     {#if data.customer.billing_address || data.customer.city}
-                        <div class="flex items-start gap-2 text-sm">
+                        <div
+                            class="flex items-start gap-2 text-sm text-text-strong"
+                        >
                             <MapPin class="size-4 text-text-muted mt-0.5" />
-                            <span>
+                            <span class="text-text-strong">
                                 {data.customer.billing_address || ""}
                                 {data.customer.city
                                     ? `, ${data.customer.city}`
@@ -213,7 +220,7 @@
                     </h3>
                     <div class="flex items-center gap-2 text-sm">
                         <Building2 class="size-4 text-text-subtle" />
-                        <span class="capitalize"
+                        <span class="capitalize text-text-strong"
                             >{data.customer.gst_treatment ||
                                 "Unregistered"}</span
                         >
@@ -221,14 +228,14 @@
                     {#if data.customer.gstin}
                         <div class="text-sm">
                             <span class="text-text-muted">GSTIN:</span>
-                            <span class="font-mono ml-2"
+                            <span class="font-mono ml-2 text-text-strong"
                                 >{data.customer.gstin}</span
                             >
                         </div>
                     {/if}
                     <div class="text-sm">
                         <span class="text-text-muted">State:</span>
-                        <span class="ml-2"
+                        <span class="ml-2 text-text-strong"
                             >{getStateName(data.customer.state_code)}</span
                         >
                     </div>
@@ -343,7 +350,8 @@
                                 <p>No transactions yet</p>
                             </div>
                         {:else}
-                            <table class="w-full text-sm">
+                            <TableContainer>
+                                <table class="w-full text-sm">
                                 <thead>
                                     <tr
                                         class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
@@ -405,7 +413,7 @@
                                                 class="py-3 pr-4 text-right font-mono {entry.debit >
                                                 0
                                                     ? 'text-text-strong'
-                                                    : 'text-text-muted'}"
+                                                    : 'text-text-subtle'}"
                                             >
                                                 {entry.debit > 0
                                                     ? formatINR(entry.debit)
@@ -415,7 +423,7 @@
                                                 class="py-3 pr-4 text-right font-mono {entry.credit >
                                                 0
                                                     ? 'text-green-600'
-                                                    : 'text-text-muted'}"
+                                                    : 'text-text-subtle'}"
                                             >
                                                 {entry.credit > 0
                                                     ? formatINR(entry.credit)
@@ -441,7 +449,8 @@
                                         </tr>
                                     {/each}
                                 </tbody>
-                            </table>
+                                </table>
+                            </TableContainer>
                         {/if}
                     {:else if activeTab === "invoices"}
                         <!-- Invoices View -->
@@ -461,7 +470,8 @@
                                 </Button>
                             </div>
                         {:else}
-                            <table class="w-full text-sm">
+                            <TableContainer>
+                                <table class="w-full text-sm">
                                 <thead>
                                     <tr
                                         class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
@@ -502,7 +512,7 @@
                                                 )}</td
                                             >
                                             <td
-                                                class="py-3 pr-4 text-right font-mono"
+                                                class="py-3 pr-4 text-right font-mono text-text-strong"
                                                 >{formatINR(invoice.total)}</td
                                             >
                                             <td
@@ -522,7 +532,8 @@
                                         </tr>
                                     {/each}
                                 </tbody>
-                            </table>
+                                </table>
+                            </TableContainer>
                         {/if}
                     {:else if activeTab === "payments"}
                         <!-- Payments View -->
@@ -542,7 +553,8 @@
                                 </Button>
                             </div>
                         {:else}
-                            <table class="w-full text-sm">
+                            <TableContainer>
+                                <table class="w-full text-sm">
                                 <thead>
                                     <tr
                                         class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
@@ -588,7 +600,8 @@
                                         </tr>
                                     {/each}
                                 </tbody>
-                            </table>
+                                </table>
+                            </TableContainer>
                         {/if}
                     {:else if activeTab === "credits"}
                         <!-- Credits View (Credit Notes + Advances) -->
@@ -605,7 +618,8 @@
                                         No credit notes
                                     </p>
                                 {:else}
-                                    <table class="w-full text-sm">
+                                    <TableContainer>
+                                        <table class="w-full text-sm">
                                         <thead>
                                             <tr
                                                 class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
@@ -659,7 +673,7 @@
                                                         class="py-3 pr-4 text-right font-mono {cn.balance &&
                                                         cn.balance > 0
                                                             ? 'text-blue-600'
-                                                            : 'text-text-muted'}"
+                                                            : 'text-text-subtle'}"
                                                     >
                                                         {formatINR(cn.balance)}
                                                     </td>
@@ -672,7 +686,8 @@
                                                 </tr>
                                             {/each}
                                         </tbody>
-                                    </table>
+                                        </table>
+                                    </TableContainer>
                                 {/if}
                             </div>
 
@@ -688,7 +703,8 @@
                                         No advance receipts
                                     </p>
                                 {:else}
-                                    <table class="w-full text-sm">
+                                    <TableContainer>
+                                        <table class="w-full text-sm">
                                         <thead>
                                             <tr
                                                 class="text-left text-xs uppercase tracking-wide text-text-subtle border-b border-border"
@@ -734,7 +750,7 @@
                                                         class="py-3 text-right font-mono {advance.balance >
                                                         0.01
                                                             ? 'text-blue-600 font-medium'
-                                                            : 'text-text-muted'}"
+                                                            : 'text-text-subtle'}"
                                                     >
                                                         {formatINR(
                                                             advance.balance,
@@ -743,7 +759,8 @@
                                                 </tr>
                                             {/each}
                                         </tbody>
-                                    </table>
+                                        </table>
+                                    </TableContainer>
                                 {/if}
                             </div>
                         </div>

@@ -27,13 +27,13 @@
     /* Text (Legible & Easy) */
     --color-text-strong: hsl(220 20% 15%);
     --color-text-subtle: hsl(220 10% 45%);
-    --color-text-muted: hsl(220 10% 65%);
-    --color-text-placeholder: hsl(220 10% 72%);
+    --color-text-muted: hsl(220 10% 55%);
+    --color-text-placeholder: hsl(220 10% 62%);
 
     /* Borders */
-    --color-border-strong: hsl(220 15% 85%);
-    --color-border-subtle: hsl(220 15% 92%);
-    --color-border-dashed: hsl(220 15% 85%);
+    --color-border-strong: hsl(220 15% 82%);
+    --color-border-subtle: hsl(220 15% 88%);
+    --color-border-dashed: hsl(220 15% 84%);
 
     /* Sidebar (Light) */
     --color-sidebar-bg: hsl(0 0% 100%);
@@ -68,8 +68,8 @@
     --color-popover: hsl(0 0% 100%);
     --color-popover-foreground: hsl(220 15% 25%);
 
-    --color-border: hsl(220 15% 92%);
-    --color-input: hsl(220 15% 92%);
+    --color-border: hsl(220 15% 88%);
+    --color-input: hsl(220 15% 86%);
     --color-ring: #fb631b;
 
     --shadow-hairline: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -99,6 +99,10 @@
 }
 
 @layer base {
+    :root {
+        color-scheme: light;
+    }
+
     html,
     body {
         min-height: 100%;
@@ -110,6 +114,33 @@
         background-color: var(--color-surface-1);
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
+        overscroll-behavior-y: contain;
+    }
+
+    /* Keep scrollbars subtle/light across sidebar and form panes */
+    * {
+        scrollbar-color: var(--color-border-strong) var(--color-surface-1);
+        scrollbar-width: thin;
+    }
+
+    *::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: var(--color-surface-1);
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: var(--color-border-strong);
+        border-radius: 9999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background-color: var(--color-text-muted);
     }
 }
 
@@ -220,6 +251,13 @@
         margin: 15mm 12mm;
     }
 
+    :root {
+        --color-border: hsl(220 18% 90%);
+        --color-border-strong: hsl(220 18% 90%);
+        --color-border-subtle: hsl(220 20% 94%);
+        --color-border-dashed: hsl(220 18% 91%);
+    }
+
     /* Colors print accurately */
     * {
         -webkit-print-color-adjust: exact !important;
@@ -299,6 +337,14 @@
         margin: 0 !important;
         padding: 0 !important;
         max-width: none !important;
+    }
+
+    .print-sheet table,
+    .print-sheet th,
+    .print-sheet td,
+    .print-sheet hr,
+    .print-sheet [class*="border"] {
+        border-color: var(--color-border-subtle) !important;
     }
 
     /* 10. Images (logos) must be visible */

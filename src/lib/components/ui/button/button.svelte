@@ -28,6 +28,7 @@
 				icon: "size-8",
 				"icon-sm": "size-7",
 				"icon-lg": "size-9",
+				"icon-touch": "size-11",
 			},
 		},
 		defaultVariants: {

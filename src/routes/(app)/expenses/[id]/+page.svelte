@@ -2,6 +2,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
     import { Label } from "$lib/components/ui/label";
+    import { Textarea } from "$lib/components/ui/textarea";
     import { ArrowLeft, Printer, Lock, X } from "lucide-svelte";
     import PaymentOptionChips from "$lib/components/PaymentOptionChips.svelte";
     import { enhance } from "$app/forms";
@@ -487,14 +488,14 @@
 
                     <div class="space-y-2">
                         <Label for="notes" variant="form">Notes</Label>
-                        <textarea
+                        <Textarea
                             id="notes"
                             name="notes"
                             bind:value={notes}
-                            rows="3"
-                            class="w-full rounded-md border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong placeholder:text-text-placeholder focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring/50"
+                            rows={3}
+                            class="min-h-[84px] resize-none"
                             placeholder="Optional note..."
-                        ></textarea>
+                        />
                     </div>
 
                     <div class="flex items-center justify-end gap-2 border-t border-border pt-4">
