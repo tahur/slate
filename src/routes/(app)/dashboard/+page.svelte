@@ -25,9 +25,9 @@
     let { data }: { data: PageData } = $props();
 
     function getDaysOverdueColor(days: number) {
-        if (days > 30) return "text-red-600 bg-red-100";
-        if (days > 7) return "text-orange-600 bg-orange-100";
-        return "text-yellow-600 bg-yellow-100";
+        if (days > 30) return "border border-red-200 bg-red-50 text-red-700";
+        if (days > 7) return "border border-amber-200 bg-amber-50 text-amber-700";
+        return "border border-yellow-200 bg-yellow-50 text-yellow-700";
     }
 
     const overdueCount = $derived(data.dueInvoices.length);
@@ -38,108 +38,133 @@
 </script>
 
 <div class="flex flex-col gap-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold tracking-tight text-text-strong">
-            Dashboard
-        </h2>
-        <Button
-            href="/invoices/new"
-            size="sm"
-            class="gap-2 shadow-md hover:shadow-lg transition-all"
-        >
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                Dashboard
+            </h1>
+            <p class="text-sm text-text-muted">
+                Sales, cash flow, dues, and activity in one place.
+            </p>
+        </div>
+        <Button href="/invoices/new" size="sm" class="gap-2 self-start md:self-auto">
             <Plus class="size-4" />
             New Invoice
         </Button>
     </div>
 
-    <!-- Bento Grid -->
-    <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <!-- Sales This Month -->
-        <div class="rounded-xl bg-blue-50 border border-blue-200 p-4 flex items-start gap-3">
-            <div class="rounded-lg bg-blue-500 p-2 mt-0.5">
-                <IndianRupee class="size-4 text-white" />
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold uppercase tracking-widest text-blue-600">Sales This Month</p>
-                <p class="text-xl font-extrabold text-blue-900 tracking-tight truncate">{formatINR(data.monthly.sales)}</p>
-            </div>
-        </div>
-
-        <!-- Cash in Hand -->
-        <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 flex items-start gap-3">
-            <div class="rounded-lg bg-emerald-500 p-2 mt-0.5">
-                <Banknote class="size-4 text-white" />
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold uppercase tracking-widest text-emerald-600">Cash in Hand</p>
-                <p class="text-xl font-extrabold text-emerald-900 tracking-tight truncate">{formatINR(data.money.cash)}</p>
-            </div>
-        </div>
-
-        <!-- Bank Balance -->
-        <div class="rounded-xl bg-violet-50 border border-violet-200 p-4 flex items-start gap-3">
-            <div class="rounded-lg bg-violet-500 p-2 mt-0.5">
-                <Landmark class="size-4 text-white" />
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold uppercase tracking-widest text-violet-600">Bank Balance</p>
-                <p class="text-xl font-extrabold text-violet-900 tracking-tight truncate">{formatINR(data.money.bank || 0)}</p>
-            </div>
-        </div>
-
-        <!-- To Collect -->
-        <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
-            <div class="rounded-lg bg-amber-500 p-2 mt-0.5">
-                <FileText class="size-4 text-white" />
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold uppercase tracking-widest text-amber-600">To Collect</p>
-                <p class="text-xl font-extrabold text-amber-900 tracking-tight truncate">{formatINR(data.money.toCollect)}</p>
-            </div>
-        </div>
-
-        <!-- GST Card — spans 2 columns -->
-        <div class="col-span-2 rounded-xl {data.money.gstDue > 0 ? 'bg-orange-50 border-orange-200' : 'bg-teal-50 border-teal-200'} border p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <div class="rounded-lg {data.money.gstDue > 0 ? 'bg-orange-500' : 'bg-teal-500'} p-2">
-                    <Receipt class="size-4 text-white" />
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card>
+            <CardContent class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            Sales This Month
+                        </p>
+                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong">
+                            {formatINR(data.monthly.sales)}
+                        </p>
+                    </div>
+                    <span class="rounded-md bg-primary/10 p-2 text-primary">
+                        <IndianRupee class="size-4" />
+                    </span>
                 </div>
-                <p class="text-xs font-bold uppercase tracking-widest {data.money.gstDue > 0 ? 'text-orange-600' : 'text-teal-600'}">
-                    GST Position
-                </p>
-            </div>
+            </CardContent>
+        </Card>
 
-            <div class="grid grid-cols-3 gap-4">
-                <!-- Output GST -->
-                <div class="rounded-lg bg-white/60 border {data.money.gstDue > 0 ? 'border-orange-200' : 'border-teal-200'} p-3 text-center">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Collected</p>
-                    <p class="text-lg font-extrabold text-text-strong font-mono">{formatINR(data.money.gstOutput)}</p>
-                    <p class="text-[10px] text-text-muted mt-0.5">Output GST</p>
+        <Card>
+            <CardContent class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            Cash in Hand
+                        </p>
+                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong">
+                            {formatINR(data.money.cash)}
+                        </p>
+                    </div>
+                    <span class="rounded-md bg-green-50 p-2 text-green-700">
+                        <Banknote class="size-4" />
+                    </span>
                 </div>
+            </CardContent>
+        </Card>
 
-                <!-- Input GST -->
-                <div class="rounded-lg bg-white/60 border {data.money.gstDue > 0 ? 'border-orange-200' : 'border-teal-200'} p-3 text-center">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Credit</p>
-                    <p class="text-lg font-extrabold text-text-strong font-mono">{formatINR(data.money.gstInput)}</p>
-                    <p class="text-[10px] text-text-muted mt-0.5">Input GST (ITC)</p>
+        <Card>
+            <CardContent class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            Bank Balance
+                        </p>
+                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong">
+                            {formatINR(data.money.bank || 0)}
+                        </p>
+                    </div>
+                    <span class="rounded-md bg-blue-50 p-2 text-blue-700">
+                        <Landmark class="size-4" />
+                    </span>
                 </div>
+            </CardContent>
+        </Card>
 
-                <!-- Net GST -->
-                <div class="rounded-lg {data.money.gstDue > 0 ? 'bg-orange-100 border-orange-300' : 'bg-teal-100 border-teal-300'} border p-3 text-center">
-                    <p class="text-[10px] font-bold uppercase tracking-widest {data.money.gstDue > 0 ? 'text-orange-600' : 'text-teal-600'} mb-1">
-                        {data.money.gstDue > 0 ? "To Pay" : "ITC Carry"}
+        <Card>
+            <CardContent class="p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            To Collect
+                        </p>
+                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-amber-700">
+                            {formatINR(data.money.toCollect)}
+                        </p>
+                    </div>
+                    <span class="rounded-md bg-amber-50 p-2 text-amber-700">
+                        <FileText class="size-4" />
+                    </span>
+                </div>
+            </CardContent>
+        </Card>
+    </div>
+
+    <Card>
+        <CardHeader class="border-b border-border py-4">
+            <CardTitle class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                <Receipt class="size-4 text-primary" />
+                GST Position
+            </CardTitle>
+        </CardHeader>
+        <CardContent class="pt-4">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <div class="rounded-md border border-border bg-surface-1 p-3 text-center">
+                    <p class="text-xs font-medium text-text-muted">Output GST</p>
+                    <p class="mt-1 font-mono text-lg font-semibold text-text-strong">
+                        {formatINR(data.money.gstOutput)}
                     </p>
-                    <p class="text-lg font-extrabold {data.money.gstDue > 0 ? 'text-orange-800' : 'text-teal-800'} font-mono">
+                </div>
+
+                <div class="rounded-md border border-border bg-surface-1 p-3 text-center">
+                    <p class="text-xs font-medium text-text-muted">Input GST (ITC)</p>
+                    <p class="mt-1 font-mono text-lg font-semibold text-text-strong">
+                        {formatINR(data.money.gstInput)}
+                    </p>
+                </div>
+
+                <div
+                    class="rounded-md border p-3 text-center {data.money.gstDue > 0
+                        ? 'border-amber-200 bg-amber-50'
+                        : 'border-green-200 bg-green-50'}"
+                >
+                    <p class="text-xs font-medium {data.money.gstDue > 0 ? 'text-amber-700' : 'text-green-700'}">
+                        {data.money.gstDue > 0 ? "Net GST Payable" : "ITC Carry Forward"}
+                    </p>
+                    <p class="mt-1 font-mono text-lg font-semibold {data.money.gstDue > 0 ? 'text-amber-700' : 'text-green-700'}">
                         {formatINR(Math.abs(data.money.gstDue))}
                     </p>
-                    <p class="text-[10px] {data.money.gstDue > 0 ? 'text-orange-500' : 'text-teal-500'} mt-0.5">
-                        {data.money.gstDue > 0 ? "Net Payable" : "Credit Available"}
-                    </p>
                 </div>
             </div>
-        </div>
-    </div>
+        </CardContent>
+    </Card>
 
     <!-- Action Alerts -->
     {#if overdueCount > 0}
@@ -157,14 +182,12 @@
         </div>
     {/if}
 
-    <!-- Due Invoices + Recent Activity side by side -->
     <div class="grid gap-4 md:grid-cols-2">
-        <!-- Due Invoices -->
-        <Card class="bg-surface-0 shadow-sm border-border">
+        <Card>
             <CardHeader class="border-b border-border py-4">
                 <div class="flex items-center justify-between">
                     <CardTitle
-                        class="text-sm font-bold uppercase tracking-widest text-text-muted flex items-center gap-2"
+                        class="text-xs font-semibold uppercase tracking-wider text-text-muted flex items-center gap-2"
                     >
                         <Clock class="size-4" />
                         Due Invoices
@@ -193,10 +216,10 @@
                         </p>
                     </div>
                 {:else}
-                    <div class="divide-y divide-border-subtle">
+                    <div class="divide-y divide-border">
                         {#each displayedInvoices as invoice}
                             <div
-                                class="flex items-center justify-between p-4 hover:bg-surface-2/50 transition-colors group"
+                                class="group flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40"
                             >
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2 mb-1">
@@ -207,7 +230,7 @@
                                         </span>
                                         {#if invoice.daysOverdue > 0}
                                             <span
-                                                class={`text-[10px] font-bold px-1.5 py-0.5 rounded ${getDaysOverdueColor(invoice.daysOverdue)}`}
+                                                class={`rounded px-1.5 py-0.5 text-xs font-medium ${getDaysOverdueColor(invoice.daysOverdue)}`}
                                             >
                                                 {invoice.daysOverdue}d late
                                             </span>
@@ -230,7 +253,7 @@
                                     </div>
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                        class="text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100"
                                     >
                                         View
                                     </a>
@@ -242,12 +265,11 @@
             </CardContent>
         </Card>
 
-        <!-- Recent Activity -->
-        <Card class="bg-surface-0 shadow-sm border-border">
+        <Card>
             <CardHeader class="border-b border-border py-4">
                 <div class="flex items-center justify-between">
                     <CardTitle
-                        class="text-sm font-bold uppercase tracking-widest text-text-muted flex items-center gap-2"
+                        class="text-xs font-semibold uppercase tracking-wider text-text-muted flex items-center gap-2"
                     >
                         <Activity class="size-4" />
                         Recent Activity
@@ -276,14 +298,14 @@
                         </p>
                     </div>
                 {:else}
-                    <div class="divide-y divide-border-subtle">
+                    <div class="divide-y divide-border">
                         {#each data.recentActivity as item}
-                            <div class="flex items-center justify-between p-4 hover:bg-surface-2/50 transition-colors">
+                            <div class="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40">
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm text-text-strong truncate">
                                         {item.description}
                                     </p>
-                                    <p class="text-[11px] text-text-muted mt-0.5">
+                                    <p class="mt-0.5 text-xs text-text-muted">
                                         {new Date(item.createdAt).toLocaleDateString("en-IN", {
                                             day: "numeric",
                                             month: "short",

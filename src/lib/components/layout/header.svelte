@@ -23,7 +23,7 @@
 </script>
 
 <header
-    class="flex h-14 items-center gap-4 border-b border-border bg-surface-1 px-5"
+    class="flex h-14 items-center gap-4 border-b border-border bg-surface-0 px-5"
 >
     <!-- Mobile Menu -->
     <div class="md:hidden">
@@ -54,9 +54,9 @@
                     class="text-sm font-semibold text-text-strong leading-none"
                     >{data.org.name}</span
                 >
-                <span class="text-[10px] text-text-muted">Organization</span>
+                <span class="text-xs text-text-muted">Organization</span>
             </div>
-            <Avatar.Root class="h-8 w-8 rounded-md border border-border">
+            <Avatar.Root class="h-8 w-8 rounded-md border border-border-strong bg-surface-0">
                 <Avatar.Image src={data.org.logo_url} alt={data.org.name} />
                 <Avatar.Fallback
                     class="rounded-md bg-primary/10 text-primary font-bold text-xs"
