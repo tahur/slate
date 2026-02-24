@@ -26,7 +26,8 @@
 
     function getDaysOverdueColor(days: number) {
         if (days > 30) return "border border-red-200 bg-red-50 text-red-700";
-        if (days > 7) return "border border-amber-200 bg-amber-50 text-amber-700";
+        if (days > 7)
+            return "border border-amber-200 bg-amber-50 text-amber-700";
         return "border border-yellow-200 bg-yellow-50 text-yellow-700";
     }
 
@@ -37,31 +38,38 @@
     const displayedInvoices = $derived(data.dueInvoices.slice(0, 5));
 </script>
 
-<div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+<div class="flex flex-col gap-4 md:gap-6">
+    <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+            <h1
+                class="text-lg md:text-xl font-bold tracking-tight text-text-strong"
+            >
                 Dashboard
             </h1>
-            <p class="text-sm text-text-muted">
-                Sales, cash flow, dues, and activity in one place.
+            <p class="text-xs md:text-sm text-text-muted">
+                Sales, cash flow, dues, and activity.
             </p>
         </div>
-        <Button href="/invoices/new" size="sm" class="gap-2 self-start md:self-auto">
+        <Button href="/invoices/new" size="sm" class="gap-2">
             <Plus class="size-4" />
-            New Invoice
+            <span class="hidden sm:inline">New Invoice</span>
+            <span class="sm:hidden">New</span>
         </Button>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
         <Card>
             <CardContent class="p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <p
+                            class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        >
                             Sales This Month
                         </p>
-                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong">
+                        <p
+                            class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong"
+                        >
                             {formatINR(data.monthly.sales)}
                         </p>
                     </div>
@@ -76,10 +84,14 @@
             <CardContent class="p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <p
+                            class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        >
                             Cash in Hand
                         </p>
-                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong">
+                        <p
+                            class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong"
+                        >
                             {formatINR(data.money.cash)}
                         </p>
                     </div>
@@ -94,10 +106,14 @@
             <CardContent class="p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <p
+                            class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        >
                             Bank Balance
                         </p>
-                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong">
+                        <p
+                            class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong"
+                        >
                             {formatINR(data.money.bank || 0)}
                         </p>
                     </div>
@@ -112,10 +128,14 @@
             <CardContent class="p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        <p
+                            class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        >
                             To Collect
                         </p>
-                        <p class="mt-2 truncate text-2xl font-bold tracking-tight text-amber-700">
+                        <p
+                            class="mt-2 truncate text-2xl font-bold tracking-tight text-amber-700"
+                        >
                             {formatINR(data.money.toCollect)}
                         </p>
                     </div>
@@ -129,36 +149,62 @@
 
     <Card>
         <CardHeader class="border-b border-border py-4">
-            <CardTitle class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+            <CardTitle
+                class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted"
+            >
                 <Receipt class="size-4 text-primary" />
                 GST Position
             </CardTitle>
         </CardHeader>
         <CardContent class="pt-4">
             <div class="grid gap-3 sm:grid-cols-3">
-                <div class="rounded-md border border-border bg-surface-1 p-3 text-center">
-                    <p class="text-xs font-medium text-text-muted">Output GST</p>
-                    <p class="mt-1 font-mono text-lg font-semibold text-text-strong">
+                <div
+                    class="rounded-md border border-border bg-surface-1 p-3 text-center"
+                >
+                    <p class="text-xs font-medium text-text-muted">
+                        Output GST
+                    </p>
+                    <p
+                        class="mt-1 font-mono text-lg font-semibold text-text-strong"
+                    >
                         {formatINR(data.money.gstOutput)}
                     </p>
                 </div>
 
-                <div class="rounded-md border border-border bg-surface-1 p-3 text-center">
-                    <p class="text-xs font-medium text-text-muted">Input GST (ITC)</p>
-                    <p class="mt-1 font-mono text-lg font-semibold text-text-strong">
+                <div
+                    class="rounded-md border border-border bg-surface-1 p-3 text-center"
+                >
+                    <p class="text-xs font-medium text-text-muted">
+                        Input GST (ITC)
+                    </p>
+                    <p
+                        class="mt-1 font-mono text-lg font-semibold text-text-strong"
+                    >
                         {formatINR(data.money.gstInput)}
                     </p>
                 </div>
 
                 <div
-                    class="rounded-md border p-3 text-center {data.money.gstDue > 0
+                    class="rounded-md border p-3 text-center {data.money
+                        .gstDue > 0
                         ? 'border-amber-200 bg-amber-50'
                         : 'border-green-200 bg-green-50'}"
                 >
-                    <p class="text-xs font-medium {data.money.gstDue > 0 ? 'text-amber-700' : 'text-green-700'}">
-                        {data.money.gstDue > 0 ? "Net GST Payable" : "ITC Carry Forward"}
+                    <p
+                        class="text-xs font-medium {data.money.gstDue > 0
+                            ? 'text-amber-700'
+                            : 'text-green-700'}"
+                    >
+                        {data.money.gstDue > 0
+                            ? "Net GST Payable"
+                            : "ITC Carry Forward"}
                     </p>
-                    <p class="mt-1 font-mono text-lg font-semibold {data.money.gstDue > 0 ? 'text-amber-700' : 'text-green-700'}">
+                    <p
+                        class="mt-1 font-mono text-lg font-semibold {data.money
+                            .gstDue > 0
+                            ? 'text-amber-700'
+                            : 'text-green-700'}"
+                    >
                         {formatINR(Math.abs(data.money.gstDue))}
                     </p>
                 </div>
@@ -170,7 +216,9 @@
     {#if overdueCount > 0}
         <div class="flex flex-col gap-3">
             <AlertCard
-                title="{overdueCount} overdue invoice{overdueCount > 1 ? 's' : ''}"
+                title="{overdueCount} overdue invoice{overdueCount > 1
+                    ? 's'
+                    : ''}"
                 amount={formatINR(overdueTotal)}
                 href="/invoices?status=unpaid"
                 variant="warning"
@@ -182,7 +230,7 @@
         </div>
     {/if}
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-3 md:gap-4 md:grid-cols-2">
         <Card>
             <CardHeader class="border-b border-border py-4">
                 <div class="flex items-center justify-between">
@@ -300,13 +348,19 @@
                 {:else}
                     <div class="divide-y divide-border">
                         {#each data.recentActivity as item}
-                            <div class="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40">
+                            <div
+                                class="flex items-center justify-between p-4 transition-colors hover:bg-surface-2/40"
+                            >
                                 <div class="min-w-0 flex-1">
-                                    <p class="text-sm text-text-strong truncate">
+                                    <p
+                                        class="text-sm text-text-strong truncate"
+                                    >
                                         {item.description}
                                     </p>
                                     <p class="mt-0.5 text-xs text-text-muted">
-                                        {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                                        {new Date(
+                                            item.createdAt,
+                                        ).toLocaleDateString("en-IN", {
                                             day: "numeric",
                                             month: "short",
                                             hour: "numeric",
@@ -315,7 +369,9 @@
                                     </p>
                                 </div>
                                 {#if item.amount}
-                                    <span class="font-mono text-sm font-semibold text-text-strong">
+                                    <span
+                                        class="font-mono text-sm font-semibold text-text-strong"
+                                    >
                                         {formatINR(item.amount)}
                                     </span>
                                 {/if}

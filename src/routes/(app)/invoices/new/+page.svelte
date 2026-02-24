@@ -254,32 +254,61 @@
                                 </Label>
                                 {#if selectedCustomer}
                                     <!-- Selected customer card -->
-                                    <input type="hidden" name="customer_id" value={formData.customer_id} />
-                                    <div class="flex items-start gap-4 rounded-lg border border-border bg-surface-0 p-3">
+                                    <input
+                                        type="hidden"
+                                        name="customer_id"
+                                        value={formData.customer_id}
+                                    />
+                                    <div
+                                        class="flex items-start gap-4 rounded-lg border border-border bg-surface-0 p-3"
+                                    >
                                         <div class="flex-1 min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-sm font-semibold text-text-strong truncate">{selectedCustomer.name}</span>
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <span
+                                                    class="text-sm font-semibold text-text-strong truncate"
+                                                    >{selectedCustomer.name}</span
+                                                >
                                                 {#if selectedCustomer.company_name}
-                                                    <span class="text-xs text-text-muted truncate">{selectedCustomer.company_name}</span>
+                                                    <span
+                                                        class="text-xs text-text-muted truncate"
+                                                        >{selectedCustomer.company_name}</span
+                                                    >
                                                 {/if}
                                             </div>
-                                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-text-muted">
+                                            <div
+                                                class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-text-muted"
+                                            >
                                                 {#if selectedCustomer.gstin}
-                                                    <span class="font-mono">{selectedCustomer.gstin}</span>
+                                                    <span class="font-mono"
+                                                        >{selectedCustomer.gstin}</span
+                                                    >
                                                 {:else}
                                                     <span>No GSTIN</span>
                                                 {/if}
                                                 {#if selectedCustomerAddress}
-                                                    <span class="truncate max-w-[250px]">{selectedCustomerAddress}</span>
+                                                    <span
+                                                        class="truncate max-w-[250px]"
+                                                        >{selectedCustomerAddress}</span
+                                                    >
                                                 {/if}
                                             </div>
                                             {#if selectedCustomer.gst_treatment || isInterState}
-                                                <div class="flex items-center gap-2 mt-1.5">
+                                                <div
+                                                    class="flex items-center gap-2 mt-1.5"
+                                                >
                                                     {#if selectedCustomer.gst_treatment}
-                                                        <span class="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{selectedCustomer.gst_treatment}</span>
+                                                        <span
+                                                            class="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted"
+                                                            >{selectedCustomer.gst_treatment}</span
+                                                        >
                                                     {/if}
                                                     {#if isInterState}
-                                                        <span class="rounded-sm bg-info/10 text-info px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">IGST</span>
+                                                        <span
+                                                            class="rounded-sm bg-info/10 text-info px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                            >IGST</span
+                                                        >
                                                     {/if}
                                                 </div>
                                             {/if}
@@ -287,7 +316,9 @@
                                         <button
                                             type="button"
                                             class="text-xs text-primary font-medium hover:underline shrink-0"
-                                            onclick={() => { formData.customer_id = ""; }}
+                                            onclick={() => {
+                                                formData.customer_id = "";
+                                            }}
                                         >
                                             Change
                                         </button>
@@ -303,7 +334,10 @@
                                             id="customer_id"
                                             class="w-full border-border-strong bg-surface-0 focus:ring-1 focus:ring-primary/20"
                                         >
-                                            <span class="text-sm text-text-muted">Select a customer</span>
+                                            <span
+                                                class="text-sm text-text-muted"
+                                                >Select a customer</span
+                                            >
                                         </Select.Trigger>
                                         <Select.Content
                                             class="bg-surface-1 border-border shadow-lg min-w-[22rem]"
@@ -586,9 +620,9 @@
                                             >
                                             <ItemCombobox
                                                 catalogItems={data.catalogItems}
-                                                bind:value={formData.items[
-                                                    index
-                                                ]}
+                                                bind:value={
+                                                    formData.items[index]
+                                                }
                                                 onSelect={(item) =>
                                                     handleItemSelect(
                                                         index,
@@ -622,8 +656,7 @@
                                                 />
                                             </div>
                                             <div class="space-y-1.5">
-                                                <Label variant="form"
-                                                    >Qty</Label
+                                                <Label variant="form">Qty</Label
                                                 >
                                                 <Input
                                                     name="items[{index}].quantity"
@@ -651,16 +684,14 @@
                                                 />
                                             </div>
                                             <div class="space-y-1.5">
-                                                <Label variant="form"
-                                                    >GST</Label
+                                                <Label variant="form">GST</Label
                                                 >
                                                 <Select.Root
                                                     type="single"
                                                     value={`${item.gst_rate}`}
                                                     onValueChange={(value) =>
-                                                        (item.gst_rate = Number(
-                                                            value,
-                                                        ))}
+                                                        (item.gst_rate =
+                                                            Number(value))}
                                                 >
                                                     <Select.Trigger
                                                         class="h-9 w-full border-border-strong bg-surface-1 text-right text-xs font-mono"
@@ -787,11 +818,15 @@
                                                         >
                                                             <ItemCombobox
                                                                 catalogItems={data.catalogItems}
-                                                                bind:value={formData
-                                                                    .items[
-                                                                    index
-                                                                ]}
-                                                                onSelect={(item) =>
+                                                                bind:value={
+                                                                    formData
+                                                                        .items[
+                                                                        index
+                                                                    ]
+                                                                }
+                                                                onSelect={(
+                                                                    item,
+                                                                ) =>
                                                                     handleItemSelect(
                                                                         index,
                                                                         item,
@@ -818,8 +853,9 @@
                                                     >
                                                         <Input
                                                             name="items[{index}].hsn_code"
-                                                            bind:value={item
-                                                                .hsn_code}
+                                                            bind:value={
+                                                                item.hsn_code
+                                                            }
                                                             placeholder="HSN"
                                                             class="h-9 border-border-strong text-center bg-surface-1 focus:border-primary font-mono"
                                                         />
@@ -830,8 +866,9 @@
                                                         <Input
                                                             name="items[{index}].quantity"
                                                             type="number"
-                                                            bind:value={item
-                                                                .quantity}
+                                                            bind:value={
+                                                                item.quantity
+                                                            }
                                                             min="0.01"
                                                             step="0.01"
                                                             class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
@@ -843,7 +880,9 @@
                                                         <Input
                                                             name="items[{index}].rate"
                                                             type="number"
-                                                            bind:value={item.rate}
+                                                            bind:value={
+                                                                item.rate
+                                                            }
                                                             min="0"
                                                             step="0.01"
                                                             class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
@@ -855,10 +894,13 @@
                                                         <Select.Root
                                                             type="single"
                                                             value={`${item.gst_rate}`}
-                                                            onValueChange={(value) =>
-                                                                (item.gst_rate = Number(
-                                                                    value,
-                                                                ))}
+                                                            onValueChange={(
+                                                                value,
+                                                            ) =>
+                                                                (item.gst_rate =
+                                                                    Number(
+                                                                        value,
+                                                                    ))}
                                                         >
                                                             <Select.Trigger
                                                                 class="h-9 w-full border-border-strong bg-surface-1 text-right text-xs font-mono"
@@ -910,7 +952,8 @@
                                                                     )}
                                                                 disabled={formData
                                                                     .items
-                                                                    .length === 1}
+                                                                    .length ===
+                                                                    1}
                                                             >
                                                                 <Trash2
                                                                     class="size-4"
@@ -962,45 +1005,90 @@
 
     <!-- Bottom Action Bar -->
     <div class="action-bar">
-        <div class="flex items-center gap-4 text-sm mr-4 pr-4 border-r border-border">
-            <Tooltip.Root delayDuration={100}>
-                <Tooltip.Trigger>
-                    <span class="inline-flex items-center gap-1.5 text-text-muted cursor-help">
-                        <span>GST</span>
-                        <span class="font-mono font-medium text-text-strong border-b border-dashed border-text-muted/50">{formatINR(isInterState ? totals.igst : totals.cgst + totals.sgst)}</span>
-                    </span>
-                </Tooltip.Trigger>
-                <Tooltip.Content side="top" sideOffset={8}>
-                    <div class="space-y-1 text-xs">
-                        {#if pricesIncludeGst}
-                            <div class="flex justify-between gap-4"><span>Taxable</span><span class="font-mono">{formatINR(totals.taxableAmount)}</span></div>
-                        {:else}
-                            <div class="flex justify-between gap-4"><span>Subtotal</span><span class="font-mono">{formatINR(totals.subtotal)}</span></div>
-                        {/if}
-                        {#if isInterState}
-                            <div class="flex justify-between gap-4"><span>IGST</span><span class="font-mono">{formatINR(totals.igst)}</span></div>
-                        {:else}
-                            <div class="flex justify-between gap-4"><span>CGST</span><span class="font-mono">{formatINR(totals.cgst)}</span></div>
-                            <div class="flex justify-between gap-4"><span>SGST</span><span class="font-mono">{formatINR(totals.sgst)}</span></div>
-                        {/if}
-                    </div>
-                </Tooltip.Content>
-            </Tooltip.Root>
-            <div class="flex items-center gap-1.5 border-l border-border pl-4">
-                <span class="font-semibold text-text-strong">Total</span>
-                <span class="font-mono text-lg font-bold text-primary">{formatINR(totals.total)}</span>
+        <div
+            class="flex items-center gap-2 w-full md:w-auto md:mr-4 md:pr-4 md:border-r md:border-border"
+        >
+            <span
+                class="hidden md:inline-flex items-center gap-1.5 text-text-muted text-sm"
+            >
+                <Tooltip.Root delayDuration={100}>
+                    <Tooltip.Trigger>
+                        <span
+                            class="inline-flex items-center gap-1.5 cursor-help"
+                        >
+                            <span>GST</span>
+                            <span
+                                class="font-mono font-medium text-text-strong border-b border-dashed border-text-muted/50"
+                                >{formatINR(
+                                    isInterState
+                                        ? totals.igst
+                                        : totals.cgst + totals.sgst,
+                                )}</span
+                            >
+                        </span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content side="top" sideOffset={8}>
+                        <div class="space-y-1 text-xs">
+                            {#if pricesIncludeGst}
+                                <div class="flex justify-between gap-4">
+                                    <span>Taxable</span><span class="font-mono"
+                                        >{formatINR(totals.taxableAmount)}</span
+                                    >
+                                </div>
+                            {:else}
+                                <div class="flex justify-between gap-4">
+                                    <span>Subtotal</span><span class="font-mono"
+                                        >{formatINR(totals.subtotal)}</span
+                                    >
+                                </div>
+                            {/if}
+                            {#if isInterState}
+                                <div class="flex justify-between gap-4">
+                                    <span>IGST</span><span class="font-mono"
+                                        >{formatINR(totals.igst)}</span
+                                    >
+                                </div>
+                            {:else}
+                                <div class="flex justify-between gap-4">
+                                    <span>CGST</span><span class="font-mono"
+                                        >{formatINR(totals.cgst)}</span
+                                    >
+                                </div>
+                                <div class="flex justify-between gap-4">
+                                    <span>SGST</span><span class="font-mono"
+                                        >{formatINR(totals.sgst)}</span
+                                    >
+                                </div>
+                            {/if}
+                        </div>
+                    </Tooltip.Content>
+                </Tooltip.Root>
+            </span>
+            <div
+                class="flex items-center gap-1.5 md:border-l md:border-border md:pl-4"
+            >
+                <span class="font-semibold text-text-strong text-sm">Total</span
+                >
+                <span
+                    class="font-mono text-base md:text-lg font-bold text-primary"
+                    >{formatINR(totals.total)}</span
+                >
             </div>
         </div>
-        <div class="action-bar-group">
+        <div class="action-bar-group ml-auto">
             <Button
                 type="submit"
                 form="invoice-form"
                 name="intent"
                 value="issue"
                 disabled={submitting}
+                size="sm"
             >
-                <Save class="mr-2 size-4" />
-                {submitting ? "Saving..." : "Issue Invoice"}
+                <Save class="mr-1.5 size-3.5" />
+                <span class="hidden sm:inline"
+                    >{submitting ? "Saving..." : "Issue Invoice"}</span
+                >
+                <span class="sm:hidden">{submitting ? "..." : "Issue"}</span>
             </Button>
             <Button
                 type="submit"
@@ -1009,10 +1097,12 @@
                 value="draft"
                 disabled={submitting}
                 variant="outline"
+                size="sm"
             >
-                Save Draft
+                <span class="hidden sm:inline">Save Draft</span>
+                <span class="sm:hidden">Draft</span>
             </Button>
-            <Button variant="ghost" href="/invoices">Cancel</Button>
+            <Button variant="ghost" size="sm" href="/invoices">Cancel</Button>
         </div>
     </div>
 </div>
