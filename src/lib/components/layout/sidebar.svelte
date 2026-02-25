@@ -11,6 +11,7 @@
         LogOut,
         Briefcase,
         Package,
+        BarChart3,
         Landmark,
         BookOpen,
     } from "lucide-svelte";
@@ -65,6 +66,7 @@
         {
             title: "REPORTS",
             items: [
+                { href: "/reports", label: "Reports", icon: BarChart3 },
                 {
                     href: "/reports/cashbook",
                     label: "Cashbook",
