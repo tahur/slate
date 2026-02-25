@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
+import { clearUserOrgCache } from '../../hooks.server';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
@@ -8,9 +9,16 @@ export const actions: Actions = {
             return redirect(302, '/login');
         }
 
+        const userId = event.locals.user?.id;
+
         await auth.api.signOut({
             headers: event.request.headers
         });
+
+        // Clear in-memory cache so next login doesn't read stale org/role
+        if (userId) {
+            clearUserOrgCache(userId);
+        }
 
         // Clear ALL Better Auth cookies (plain + __Secure- HTTPS variants)
         const cookiesToClear = [
@@ -26,3 +34,4 @@ export const actions: Actions = {
         redirect(302, '/login');
     }
 };
+

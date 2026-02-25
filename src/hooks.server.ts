@@ -31,6 +31,11 @@ function cacheUserOrg(userId: string, orgId: string, role: string) {
     userOrgCache.set(userId, { orgId, role, expiresAt: Date.now() + USER_CACHE_TTL_MS });
 }
 
+/** Clear a user's cached org/role entry. Call on logout to prevent stale data. */
+export function clearUserOrgCache(userId: string) {
+    userOrgCache.delete(userId);
+}
+
 const API_CORS_ALLOWED_METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
 const API_CORS_ALLOWED_HEADERS = 'Content-Type, Authorization, X-Requested-With, X-Request-Id';
 const CONTENT_SECURITY_POLICY = [
@@ -41,9 +46,9 @@ const CONTENT_SECURITY_POLICY = [
     "object-src 'none'",
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://lh3.googleusercontent.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com"
+    "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://accounts.google.com"
 ].join('; ');
 
 const TRUSTED_ORIGINS = new Set(

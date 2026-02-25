@@ -38,7 +38,10 @@ export const auth_accounts = pgTable('auth_accounts', {
     providerId: text('provider_id').notNull(),
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
-    expiresAt: timestamp('expires_at', { mode: 'date' }),
+    idToken: text('id_token'),
+    accessTokenExpiresAt: timestamp('access_token_expires_at', { mode: 'date' }),
+    refreshTokenExpiresAt: timestamp('refresh_token_expires_at', { mode: 'date' }),
+    scope: text('scope'),
     password: text('password'),
     createdAt: timestamp('created_at', { mode: 'date' }),
     updatedAt: timestamp('updated_at', { mode: 'date' })

@@ -43,6 +43,13 @@
       "when": 1771991315995,
       "tag": "0005_yellow_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772325600000,
+      "tag": "0006_google_oauth_columns",
+      "breakpoints": true
     }
   ]
 }

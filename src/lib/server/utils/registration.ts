@@ -1,25 +1,19 @@
-import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
-import { sql } from 'drizzle-orm';
+/**
+ * Registration gate.
+ * Currently always open for testing/multi-user phase.
+ * To close registration later, set REGISTRATION_MODE=closed in .env.
+ */
 
-// Once a user exists, registration is permanently closed for this process lifetime.
-// This avoids a DB query on every /register and /login page load.
-let registrationClosed = false;
+import { env } from '$env/dynamic/private';
+
+type RegistrationMode = 'open' | 'closed';
+
+function getRegistrationMode(): RegistrationMode {
+    const mode = env.REGISTRATION_MODE?.trim().toLowerCase();
+    if (mode === 'closed') return 'closed';
+    return 'open';
+}
 
 export async function isRegistrationOpen(): Promise<boolean> {
-    if (registrationClosed) return false;
-
-    const result = await db
-        .select({ count: sql<number>`COUNT(*)` })
-        .from(users)
-        .limit(1);
-
-    const count = Number(result[0]?.count) || 0;
-
-    if (count > 0) {
-        registrationClosed = true;
-        return false;
-    }
-
-    return true;
+    return getRegistrationMode() === 'open';
 }

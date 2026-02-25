@@ -7,6 +7,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { forwardAuthCookies } from '$lib/server/utils/cookies';
 import { isRegistrationOpen } from '$lib/server/utils/registration';
+import { env } from '$env/dynamic/private';
 
 const schema = z.object({
     email: z.string().email(),
@@ -25,7 +26,8 @@ export const load: PageServerLoad = async (event) => {
     }
 
     const form = await superValidate(zod(schema));
-    return { form };
+    const googleEnabled = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+    return { form, googleEnabled };
 };
 
 export const actions: Actions = {

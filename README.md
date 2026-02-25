@@ -204,6 +204,12 @@ BETTER_AUTH_SECRET=change-me-to-a-random-64-char-hex
 ORIGIN=http://localhost:3000
 BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000
 
+# Registration mode: open | closed | auto
+# open   -> anyone can sign up (/register)
+# closed -> signup disabled
+# auto   -> signup closes after first user (default behavior)
+REGISTRATION_MODE=auto
+
 # Database path (default: data/slate.db)
 SLATE_DB_PATH=data/slate.db
 
@@ -215,6 +221,9 @@ SMTP_PORT=587
 SMTP_FROM=
 SMTP_SECURE=false
 ```
+
+For hosted free-trial (`slate.bz`), set `REGISTRATION_MODE=open`.
+For FOSS/private deployments, set `REGISTRATION_MODE=closed`.
 
 ---
 

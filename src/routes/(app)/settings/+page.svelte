@@ -33,7 +33,12 @@
     } from "lucide-svelte";
 
     let { data } = $props();
-    const { orgForm: initOrgForm, profileForm: initProfileForm, seriesForm: initSeriesForm, smtpForm: initSmtpForm } = data;
+    const {
+        orgForm: initOrgForm,
+        profileForm: initProfileForm,
+        seriesForm: initSeriesForm,
+        smtpForm: initSmtpForm,
+    } = data;
     let activeTab = $state("business");
 
     const tabs = [
@@ -196,6 +201,26 @@
         isPaymentModeModalOpen = true;
     }
 
+    /** UPI should only link to 1 bank account */
+    function isUpiMethod(label: string): boolean {
+        return /^upi$/i.test(label.trim());
+    }
+
+    function toggleModeAccount(accountId: string) {
+        if (modeLinkedAccountIds.includes(accountId)) {
+            modeLinkedAccountIds = modeLinkedAccountIds.filter(
+                (id) => id !== accountId,
+            );
+        } else {
+            // UPI: only allow 1 linked bank
+            if (isUpiMethod(modeLabel) && modeLinkedAccountIds.length >= 1) {
+                toast.error("UPI can only be linked to one bank account.");
+                return;
+            }
+            modeLinkedAccountIds = [...modeLinkedAccountIds, accountId];
+        }
+    }
+
     function closePaymentModeModal() {
         isPaymentModeModalOpen = false;
         editingMode = null;
@@ -247,7 +272,6 @@
         isPaymentAccountModalOpen = false;
         editingAccount = null;
     }
-
 </script>
 
 <div class="flex flex-col gap-6 overflow-x-hidden">
@@ -560,14 +584,18 @@
         {#if activeTab === "payments"}
             <div class="space-y-8 max-w-2xl">
                 <p class="text-sm text-text-muted">
-                    Add your banks and cash. Then link payment methods (UPI, card, etc.) to them so when you record a payment or expense, you choose where the money goes.
+                    Add your banks and cash. Then link payment methods (UPI,
+                    card, etc.) to them so when you record a payment or expense,
+                    you choose where the money goes.
                 </p>
 
                 <!-- Banks & Cash -->
                 <section>
                     <div class="flex items-end justify-between gap-4 mb-3">
                         <div>
-                            <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            <h2
+                                class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                            >
                                 Banks & Cash
                             </h2>
                             <p class="text-sm text-text-muted mt-0.5">
@@ -581,11 +609,26 @@
                     </div>
                     <Card class="border border-border overflow-hidden">
                         {#if data.paymentAccounts.length === 0}
-                            <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                <Wallet class="size-10 text-text-muted/40 mb-3" />
-                                <p class="text-sm font-medium text-text-strong">No banks or cash yet</p>
-                                <p class="text-xs text-text-muted mt-1 max-w-xs">Add at least one account so you can record payments and expenses.</p>
-                                <Button size="sm" class="mt-4" onclick={openAddAccount}>
+                            <div
+                                class="flex flex-col items-center justify-center py-12 px-4 text-center"
+                            >
+                                <Wallet
+                                    class="size-10 text-text-muted/40 mb-3"
+                                />
+                                <p class="text-sm font-medium text-text-strong">
+                                    No banks or cash yet
+                                </p>
+                                <p
+                                    class="text-xs text-text-muted mt-1 max-w-xs"
+                                >
+                                    Add at least one account so you can record
+                                    payments and expenses.
+                                </p>
+                                <Button
+                                    size="sm"
+                                    class="mt-4"
+                                    onclick={openAddAccount}
+                                >
                                     <Plus class="mr-2 size-3.5" />
                                     Add bank or cash
                                 </Button>
@@ -593,30 +636,71 @@
                         {:else}
                             <ul class="divide-y divide-border">
                                 {#each data.paymentAccounts as account}
-                                    <li class="flex items-center justify-between gap-4 px-4 py-3 {!account.is_active ? 'opacity-60' : ''}">
+                                    <li
+                                        class="flex items-center justify-between gap-4 px-4 py-3 {!account.is_active
+                                            ? 'opacity-60'
+                                            : ''}"
+                                    >
                                         <div class="min-w-0 flex-1">
-                                            <p class="text-sm font-medium text-text-strong truncate">
+                                            <p
+                                                class="text-sm font-medium text-text-strong truncate"
+                                            >
                                                 {account.label}
                                             </p>
-                                            <p class="text-xs text-text-muted mt-0.5 truncate">
-                                                {#if account.kind === 'cash' || account.ledger_code === '1000'}
+                                            <p
+                                                class="text-xs text-text-muted mt-0.5 truncate"
+                                            >
+                                                {#if account.kind === "cash" || account.ledger_code === "1000"}
                                                     Cash
                                                 {:else if account.bank_name || account.account_number_last4}
-                                                    {[account.bank_name, account.account_number_last4 ? `•••• ${account.account_number_last4}` : null].filter(Boolean).join(' · ')}
+                                                    {[
+                                                        account.bank_name,
+                                                        account.account_number_last4
+                                                            ? `•••• ${account.account_number_last4}`
+                                                            : null,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(" · ")}
                                                 {:else}
                                                     Bank account
                                                 {/if}
                                             </p>
                                         </div>
-                                        <div class="flex items-center gap-1 shrink-0">
-                                            <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => openEditAccount(account)} title="Edit">
+                                        <div
+                                            class="flex items-center gap-1 shrink-0"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8"
+                                                onclick={() =>
+                                                    openEditAccount(account)}
+                                                title="Edit"
+                                            >
                                                 <Pencil class="size-3.5" />
                                             </Button>
                                             {#if account.is_active}
-                                                <form method="POST" action="?/deletePaymentAccount" use:formEnhance class="inline">
-                                                    <input type="hidden" name="id" value={account.id} />
-                                                    <Button variant="ghost" size="icon" class="h-8 w-8" type="submit" title="Remove">
-                                                        <Trash2 class="size-3.5" />
+                                                <form
+                                                    method="POST"
+                                                    action="?/deletePaymentAccount"
+                                                    use:formEnhance
+                                                    class="inline"
+                                                >
+                                                    <input
+                                                        type="hidden"
+                                                        name="id"
+                                                        value={account.id}
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        class="h-8 w-8"
+                                                        type="submit"
+                                                        title="Remove"
+                                                    >
+                                                        <Trash2
+                                                            class="size-3.5"
+                                                        />
                                                     </Button>
                                                 </form>
                                             {/if}
@@ -632,11 +716,14 @@
                 <section>
                     <div class="flex items-end justify-between gap-4 mb-3">
                         <div>
-                            <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            <h2
+                                class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                            >
                                 Payment methods
                             </h2>
                             <p class="text-sm text-text-muted mt-0.5">
-                                How you receive and pay — linked to the accounts above.
+                                How you receive and pay — linked to the accounts
+                                above.
                             </p>
                         </div>
                         <Button size="sm" onclick={openAddMode}>
@@ -646,11 +733,26 @@
                     </div>
                     <Card class="border border-border overflow-hidden">
                         {#if data.paymentModes.length === 0}
-                            <div class="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                <Wallet class="size-10 text-text-muted/40 mb-3" />
-                                <p class="text-sm font-medium text-text-strong">No payment methods yet</p>
-                                <p class="text-xs text-text-muted mt-1 max-w-xs">Add UPI, card, etc. and link each to a bank or cash account.</p>
-                                <Button size="sm" class="mt-4" onclick={openAddMode}>
+                            <div
+                                class="flex flex-col items-center justify-center py-12 px-4 text-center"
+                            >
+                                <Wallet
+                                    class="size-10 text-text-muted/40 mb-3"
+                                />
+                                <p class="text-sm font-medium text-text-strong">
+                                    No payment methods yet
+                                </p>
+                                <p
+                                    class="text-xs text-text-muted mt-1 max-w-xs"
+                                >
+                                    Add UPI, card, etc. and link each to a bank
+                                    or cash account.
+                                </p>
+                                <Button
+                                    size="sm"
+                                    class="mt-4"
+                                    onclick={openAddMode}
+                                >
                                     <Plus class="mr-2 size-3.5" />
                                     Add payment method
                                 </Button>
@@ -658,48 +760,110 @@
                         {:else}
                             <ul class="divide-y divide-border">
                                 {#each data.paymentModes as mode}
-                                    <li class="flex items-center gap-3 px-4 py-3 {!mode.is_active ? 'opacity-60' : ''}">
+                                    <li
+                                        class="flex items-center gap-3 px-4 py-3 {!mode.is_active
+                                            ? 'opacity-60'
+                                            : ''}"
+                                    >
                                         {#if mode.is_active}
-                                            <form method="POST" action="?/setDefaultPaymentMode" use:formEnhance class="shrink-0">
-                                                <input type="hidden" name="id" value={mode.id} />
+                                            <form
+                                                method="POST"
+                                                action="?/setDefaultPaymentMode"
+                                                use:formEnhance
+                                                class="shrink-0"
+                                            >
+                                                <input
+                                                    type="hidden"
+                                                    name="id"
+                                                    value={mode.id}
+                                                />
                                                 <button
                                                     type="submit"
-                                                    class="size-4 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 {mode.is_default ? 'border-primary bg-primary' : 'border-border hover:border-primary/50'}"
-                                                    title={mode.is_default ? 'Default' : 'Set as default'}
+                                                    class="size-4 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 {mode.is_default
+                                                        ? 'border-primary bg-primary'
+                                                        : 'border-border hover:border-primary/50'}"
+                                                    title={mode.is_default
+                                                        ? "Default"
+                                                        : "Set as default"}
                                                 >
-                                                    {#if mode.is_default}<div class="size-1.5 rounded-full bg-white"></div>{/if}
+                                                    {#if mode.is_default}<div
+                                                            class="size-1.5 rounded-full bg-white"
+                                                        ></div>{/if}
                                                 </button>
                                             </form>
                                         {:else}
                                             <div class="size-4 shrink-0"></div>
                                         {/if}
                                         <div class="min-w-0 flex-1">
-                                            <p class="text-sm font-medium text-text-strong">
+                                            <p
+                                                class="text-sm font-medium text-text-strong"
+                                            >
                                                 {mode.label}
                                                 {#if mode.is_default}
-                                                    <span class="text-xs font-normal text-text-muted ml-1">(default)</span>
+                                                    <span
+                                                        class="text-xs font-normal text-text-muted ml-1"
+                                                        >(default)</span
+                                                    >
                                                 {/if}
                                                 {#if !mode.is_active}
-                                                    <span class="text-xs text-text-muted ml-1">— Inactive</span>
+                                                    <span
+                                                        class="text-xs text-text-muted ml-1"
+                                                        >— Inactive</span
+                                                    >
                                                 {/if}
                                             </p>
-                                            <p class="text-xs text-text-muted mt-0.5">
+                                            <p
+                                                class="text-xs text-text-muted mt-0.5"
+                                            >
                                                 {#if getLinkedAccounts(mode.id).length > 0}
-                                                    Linked to {getLinkedAccounts(mode.id).map((a) => a.accountLabel).join(', ')}
+                                                    Linked to {getLinkedAccounts(
+                                                        mode.id,
+                                                    )
+                                                        .map(
+                                                            (a) =>
+                                                                a.accountLabel,
+                                                        )
+                                                        .join(", ")}
                                                 {:else}
                                                     Not linked to any account
                                                 {/if}
                                             </p>
                                         </div>
-                                        <div class="flex items-center gap-1 shrink-0">
-                                            <Button variant="ghost" size="icon" class="h-8 w-8" onclick={() => openEditMode(mode)} title="Edit">
+                                        <div
+                                            class="flex items-center gap-1 shrink-0"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8"
+                                                onclick={() =>
+                                                    openEditMode(mode)}
+                                                title="Edit"
+                                            >
                                                 <Pencil class="size-3.5" />
                                             </Button>
                                             {#if mode.is_active}
-                                                <form method="POST" action="?/deletePaymentMode" use:formEnhance class="inline">
-                                                    <input type="hidden" name="id" value={mode.id} />
-                                                    <Button variant="ghost" size="icon" class="h-8 w-8" type="submit" title="Remove">
-                                                        <Trash2 class="size-3.5" />
+                                                <form
+                                                    method="POST"
+                                                    action="?/deletePaymentMode"
+                                                    use:formEnhance
+                                                    class="inline"
+                                                >
+                                                    <input
+                                                        type="hidden"
+                                                        name="id"
+                                                        value={mode.id}
+                                                    />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        class="h-8 w-8"
+                                                        type="submit"
+                                                        title="Remove"
+                                                    >
+                                                        <Trash2
+                                                            class="size-3.5"
+                                                        />
                                                     </Button>
                                                 </form>
                                             {/if}
@@ -714,7 +878,9 @@
 
             <!-- Payment Account Modal -->
             {#if isPaymentAccountModalOpen}
-                <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                >
                     <button
                         type="button"
                         class="absolute inset-0 bg-black/50"
@@ -722,29 +888,54 @@
                         onclick={closePaymentAccountModal}
                         tabindex="-1"
                     ></button>
-                    <div class="relative bg-surface-0 rounded-xl shadow-xl border border-border w-full max-w-md">
-                        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
-                            <h3 class="text-base font-semibold text-text-strong">
-                                {editingAccount ? "Edit account" : "Add bank or cash"}
+                    <div
+                        class="relative bg-surface-0 rounded-xl shadow-xl border border-border w-full max-w-md"
+                    >
+                        <div
+                            class="flex items-center justify-between px-6 py-4 border-b border-border"
+                        >
+                            <h3
+                                class="text-base font-semibold text-text-strong"
+                            >
+                                {editingAccount
+                                    ? "Edit account"
+                                    : "Add bank or cash"}
                             </h3>
-                            <Button variant="ghost" size="icon" class="h-8 w-8" onclick={closePaymentAccountModal} aria-label="Close">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-8 w-8"
+                                onclick={closePaymentAccountModal}
+                                aria-label="Close"
+                            >
                                 <X class="size-4" />
                             </Button>
                         </div>
                         <form
                             method="POST"
-                            action={editingAccount ? "?/updatePaymentAccount" : "?/addPaymentAccount"}
+                            action={editingAccount
+                                ? "?/updatePaymentAccount"
+                                : "?/addPaymentAccount"}
                             use:formEnhance={() => {
-                                closePaymentAccountModal();
-                                return async ({ update }) => { await update(); };
+                                return async ({ update }) => {
+                                    await update();
+                                    closePaymentAccountModal();
+                                };
                             }}
                             class="p-6 space-y-4"
                         >
                             {#if editingAccount}
-                                <input type="hidden" name="id" value={editingAccount.id} />
+                                <input
+                                    type="hidden"
+                                    name="id"
+                                    value={editingAccount.id}
+                                />
                             {/if}
                             <div class="space-y-2">
-                                <Label for="account_label" variant="form">Name <span class="text-destructive">*</span></Label>
+                                <Label for="account_label" variant="form"
+                                    >Name <span class="text-destructive">*</span
+                                    ></Label
+                                >
                                 <Input
                                     id="account_label"
                                     name="label"
@@ -754,7 +945,10 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label for="account_kind" variant="form">Type <span class="text-destructive">*</span></Label>
+                                <Label for="account_kind" variant="form"
+                                    >Type <span class="text-destructive">*</span
+                                    ></Label
+                                >
                                 <Select.Root
                                     type="single"
                                     bind:value={accountKind}
@@ -768,46 +962,120 @@
                                             : "Bank"}
                                     </Select.Trigger>
                                     <Select.Content>
-                                        <Select.Item value="bank">Bank</Select.Item>
-                                        <Select.Item value="cash">Cash</Select.Item>
+                                        <Select.Item value="bank"
+                                            >Bank</Select.Item
+                                        >
+                                        <Select.Item value="cash"
+                                            >Cash</Select.Item
+                                        >
                                     </Select.Content>
                                 </Select.Root>
-                                <input type="hidden" name="kind" value={accountKind} />
+                                <input
+                                    type="hidden"
+                                    name="kind"
+                                    value={accountKind}
+                                />
                             </div>
                             {#if accountKind === "bank"}
-                                <details class="group rounded-lg border border-border bg-surface-1/50">
-                                    <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-medium text-text-subtle select-none">
+                                <details
+                                    class="group rounded-lg border border-border bg-surface-1/50"
+                                >
+                                    <summary
+                                        class="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-medium text-text-subtle select-none"
+                                    >
                                         Optional details (for your reference)
                                     </summary>
-                                    <div class="px-3 pb-3 pt-1 space-y-3 border-t border-border mt-0">
+                                    <div
+                                        class="px-3 pb-3 pt-1 space-y-3 border-t border-border mt-0"
+                                    >
                                         <div class="space-y-1.5">
-                                            <Label for="account_bank_name" variant="form" class="text-xs">Bank name</Label>
-                                            <Input id="account_bank_name" name="bank_name" bind:value={accountBankName} placeholder="HDFC Bank" class="h-9" />
+                                            <Label
+                                                for="account_bank_name"
+                                                variant="form"
+                                                class="text-xs">Bank name</Label
+                                            >
+                                            <Input
+                                                id="account_bank_name"
+                                                name="bank_name"
+                                                bind:value={accountBankName}
+                                                placeholder="HDFC Bank"
+                                                class="h-9"
+                                            />
                                         </div>
                                         <div class="grid grid-cols-2 gap-3">
                                             <div class="space-y-1.5">
-                                                <Label for="account_last4" variant="form" class="text-xs">A/c last 4</Label>
-                                                <Input id="account_last4" name="account_number_last4" bind:value={accountLast4} maxlength={4} placeholder="1234" class="h-9 font-mono" />
+                                                <Label
+                                                    for="account_last4"
+                                                    variant="form"
+                                                    class="text-xs"
+                                                    >A/c last 4</Label
+                                                >
+                                                <Input
+                                                    id="account_last4"
+                                                    name="account_number_last4"
+                                                    bind:value={accountLast4}
+                                                    maxlength={4}
+                                                    placeholder="1234"
+                                                    class="h-9 font-mono"
+                                                />
                                             </div>
                                             <div class="space-y-1.5">
-                                                <Label for="account_ifsc" variant="form" class="text-xs">IFSC</Label>
-                                                <Input id="account_ifsc" name="ifsc" bind:value={accountIfsc} placeholder="HDFC0001234" class="h-9 font-mono uppercase" />
+                                                <Label
+                                                    for="account_ifsc"
+                                                    variant="form"
+                                                    class="text-xs">IFSC</Label
+                                                >
+                                                <Input
+                                                    id="account_ifsc"
+                                                    name="ifsc"
+                                                    bind:value={accountIfsc}
+                                                    placeholder="HDFC0001234"
+                                                    class="h-9 font-mono uppercase"
+                                                />
                                             </div>
                                         </div>
                                         <div class="space-y-1.5">
-                                            <Label for="account_upi_id" variant="form" class="text-xs">UPI ID</Label>
-                                            <Input id="account_upi_id" name="upi_id" bind:value={accountUpiId} placeholder="business@upi" class="h-9 font-mono" />
+                                            <Label
+                                                for="account_upi_id"
+                                                variant="form"
+                                                class="text-xs">UPI ID</Label
+                                            >
+                                            <Input
+                                                id="account_upi_id"
+                                                name="upi_id"
+                                                bind:value={accountUpiId}
+                                                placeholder="business@upi"
+                                                class="h-9 font-mono"
+                                            />
                                         </div>
                                         <div class="space-y-1.5">
-                                            <Label for="account_card_label" variant="form" class="text-xs">Card label</Label>
-                                            <Input id="account_card_label" name="card_label" bind:value={accountCardLabel} placeholder="Corporate Card" class="h-9" />
+                                            <Label
+                                                for="account_card_label"
+                                                variant="form"
+                                                class="text-xs"
+                                                >Card label</Label
+                                            >
+                                            <Input
+                                                id="account_card_label"
+                                                name="card_label"
+                                                bind:value={accountCardLabel}
+                                                placeholder="Corporate Card"
+                                                class="h-9"
+                                            />
                                         </div>
                                     </div>
                                 </details>
                             {/if}
                             <div class="flex justify-end gap-2 pt-2">
-                                <Button variant="outline" type="button" onclick={closePaymentAccountModal}>Cancel</Button>
-                                <Button type="submit">{editingAccount ? "Save" : "Add"}</Button>
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onclick={closePaymentAccountModal}
+                                    >Cancel</Button
+                                >
+                                <Button type="submit"
+                                    >{editingAccount ? "Save" : "Add"}</Button
+                                >
                             </div>
                         </form>
                     </div>
@@ -816,7 +1084,9 @@
 
             <!-- Payment Method Modal -->
             {#if isPaymentModeModalOpen}
-                <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                >
                     <button
                         type="button"
                         class="absolute inset-0 bg-black/50"
@@ -824,32 +1094,61 @@
                         onclick={closePaymentModeModal}
                         tabindex="-1"
                     ></button>
-                    <div class="relative bg-surface-0 rounded-xl shadow-xl border border-border w-full max-w-md">
-                        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
-                            <h3 class="text-base font-semibold text-text-strong">
-                                {editingMode ? "Edit method" : "Add payment method"}
+                    <div
+                        class="relative bg-surface-0 rounded-xl shadow-xl border border-border w-full max-w-md"
+                    >
+                        <div
+                            class="flex items-center justify-between px-6 py-4 border-b border-border"
+                        >
+                            <h3
+                                class="text-base font-semibold text-text-strong"
+                            >
+                                {editingMode
+                                    ? "Edit method"
+                                    : "Add payment method"}
                             </h3>
-                            <Button variant="ghost" size="icon" class="h-8 w-8" onclick={closePaymentModeModal} aria-label="Close">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-8 w-8"
+                                onclick={closePaymentModeModal}
+                                aria-label="Close"
+                            >
                                 <X class="size-4" />
                             </Button>
                         </div>
                         <form
                             method="POST"
-                            action={editingMode ? "?/updatePaymentMode" : "?/addPaymentMode"}
+                            action={editingMode
+                                ? "?/updatePaymentMode"
+                                : "?/addPaymentMode"}
                             use:formEnhance={() => {
-                                closePaymentModeModal();
-                                return async ({ update }) => { await update(); };
+                                return async ({ update }) => {
+                                    await update();
+                                    closePaymentModeModal();
+                                };
                             }}
                             class="p-6 space-y-4"
                         >
                             {#if editingMode}
-                                <input type="hidden" name="id" value={editingMode.id} />
+                                <input
+                                    type="hidden"
+                                    name="id"
+                                    value={editingMode.id}
+                                />
                             {/if}
                             {#each modeLinkedAccountIds as accountId}
-                                <input type="hidden" name="linked_account_ids" value={accountId} />
+                                <input
+                                    type="hidden"
+                                    name="linked_account_ids"
+                                    value={accountId}
+                                />
                             {/each}
                             <div class="space-y-2">
-                                <Label for="mode_label" variant="form">Name <span class="text-destructive">*</span></Label>
+                                <Label for="mode_label" variant="form"
+                                    >Name <span class="text-destructive">*</span
+                                    ></Label
+                                >
                                 <Input
                                     id="mode_label"
                                     name="label"
@@ -859,32 +1158,54 @@
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label variant="form" class="text-xs">Link to accounts</Label>
-                                <p class="text-xs text-text-muted">When someone pays by this method, money goes to:</p>
-                                <ul class="space-y-2 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
+                                <Label variant="form" class="text-xs"
+                                    >Link to accounts</Label
+                                >
+                                <p class="text-xs text-text-muted">
+                                    When someone pays by this method, money goes
+                                    to:
+                                </p>
+                                <ul
+                                    class="space-y-2 max-h-40 overflow-y-auto rounded-lg border border-border p-2"
+                                >
                                     {#each data.paymentAccounts.filter((a) => a.is_active) as account}
                                         <li>
-                                            <label class="flex items-center gap-2 p-2 rounded-md hover:bg-surface-1 cursor-pointer {modeLinkedAccountIds.includes(account.id) ? 'bg-surface-2' : ''}">
+                                            <label
+                                                class="flex items-center gap-2 p-2 rounded-md hover:bg-surface-1 cursor-pointer {modeLinkedAccountIds.includes(
+                                                    account.id,
+                                                )
+                                                    ? 'bg-surface-2'
+                                                    : ''}"
+                                            >
                                                 <Checkbox
-                                                    checked={modeLinkedAccountIds.includes(account.id)}
-                                                    onclick={() => {
-                                                        if (modeLinkedAccountIds.includes(account.id)) {
-                                                            modeLinkedAccountIds = modeLinkedAccountIds.filter((id) => id !== account.id);
-                                                        } else {
-                                                            modeLinkedAccountIds = [...modeLinkedAccountIds, account.id];
-                                                        }
-                                                    }}
+                                                    checked={modeLinkedAccountIds.includes(
+                                                        account.id,
+                                                    )}
+                                                    onclick={() =>
+                                                        toggleModeAccount(
+                                                            account.id,
+                                                        )}
                                                     class="border-border-strong data-[state=checked]:border-primary"
                                                 />
-                                                <span class="text-sm text-text-strong">{account.label}</span>
+                                                <span
+                                                    class="text-sm text-text-strong"
+                                                    >{account.label}</span
+                                                >
                                             </label>
                                         </li>
                                     {/each}
                                 </ul>
                             </div>
                             <div class="flex justify-end gap-2 pt-2">
-                                <Button variant="outline" type="button" onclick={closePaymentModeModal}>Cancel</Button>
-                                <Button type="submit">{editingMode ? "Save" : "Add"}</Button>
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    onclick={closePaymentModeModal}
+                                    >Cancel</Button
+                                >
+                                <Button type="submit"
+                                    >{editingMode ? "Save" : "Add"}</Button
+                                >
                             </div>
                         </form>
                     </div>
@@ -931,12 +1252,18 @@
 
                     <div class="flex items-center justify-between">
                         <div class="space-y-1">
-                            <Label for="prices_include_gst" class="text-sm font-medium text-text-strong">
+                            <Label
+                                for="prices_include_gst"
+                                class="text-sm font-medium text-text-strong"
+                            >
                                 Prices include GST
                             </Label>
                             <p class="text-xs text-text-muted max-w-md">
-                                When enabled, item rates entered on invoices are treated as GST-inclusive.
-                                Tax is calculated backwards from the entered amount. This is the default for new invoices — you can override it per invoice.
+                                When enabled, item rates entered on invoices are
+                                treated as GST-inclusive. Tax is calculated
+                                backwards from the entered amount. This is the
+                                default for new invoices — you can override it
+                                per invoice.
                             </p>
                         </div>
                         <Checkbox
@@ -1532,7 +1859,11 @@
                                         class="border-border-strong data-[state=checked]:border-primary"
                                     />
                                     {#if $smtpForm.smtp_secure}
-                                        <input type="hidden" name="smtp_secure" value="on" />
+                                        <input
+                                            type="hidden"
+                                            name="smtp_secure"
+                                            value="on"
+                                        />
                                     {/if}
                                     <label
                                         for="smtp_secure"

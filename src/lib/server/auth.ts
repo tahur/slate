@@ -2,11 +2,12 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from './db';
 import * as schema from './db/schema';
+import { env } from '$env/dynamic/private';
 
 let _auth: ReturnType<typeof betterAuth> | null = null;
 
 function createAuth() {
-    const { env } = process;
+    const googleEnabled = !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
     return betterAuth({
         database: drizzleAdapter(db, {
             provider: 'pg',
@@ -30,6 +31,14 @@ function createAuth() {
                 await sendPasswordResetEmail(user.email, url);
             }
         },
+        ...(googleEnabled && {
+            socialProviders: {
+                google: {
+                    clientId: env.GOOGLE_CLIENT_ID!,
+                    clientSecret: env.GOOGLE_CLIENT_SECRET!,
+                },
+            },
+        }),
         user: {
             additionalFields: {
                 orgId: { type: 'string', required: false, input: false },
@@ -40,10 +49,8 @@ function createAuth() {
         session: {
             expiresIn: 60 * 60 * 24 * 30,       // 30 days
             updateAge: 60 * 60 * 24,             // refresh DB session daily
-            cookieCache: {
-                enabled: true,
-                maxAge: 60 * 5,                  // 5 minutes — avoids DB hit on every request
-            },
+            // cookieCache DISABLED: it served stale session JWTs for up to 5 min
+            // after logout or OAuth account switches, causing redirect loops.
         },
         advanced: {
             useSecureCookies: !!env.ORIGIN?.startsWith('https'),
