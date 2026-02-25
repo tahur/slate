@@ -5,36 +5,10 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { getFlash, clearFlash } from '$lib/server/flash';
 import { mapErrorToHttp } from '$lib/server/platform/errors';
 import { logger, patchRequestContext, runWithRequestContext } from '$lib/server/platform/observability';
+import { getCachedUserOrg, cacheUserOrg } from '$lib/server/utils/user-cache';
 import { eq } from 'drizzle-orm';
 import type { Handle, HandleServerError, RequestEvent } from '@sveltejs/kit';
 import { building, dev } from '$app/environment';
-
-// Cache user org/role to avoid DB lookup on every request (TTL: 5 min)
-const USER_CACHE_TTL_MS = 5 * 60 * 1000;
-const userOrgCache = new Map<string, { orgId: string; role: string; expiresAt: number }>();
-
-function getCachedUserOrg(userId: string) {
-    const cached = userOrgCache.get(userId);
-    if (!cached || Date.now() > cached.expiresAt) {
-        userOrgCache.delete(userId);
-        return null;
-    }
-    return cached;
-}
-
-function cacheUserOrg(userId: string, orgId: string, role: string) {
-    // Never cache unlinked users (empty org); setup updates would otherwise be hidden behind stale cache.
-    if (!orgId) {
-        userOrgCache.delete(userId);
-        return;
-    }
-    userOrgCache.set(userId, { orgId, role, expiresAt: Date.now() + USER_CACHE_TTL_MS });
-}
-
-/** Clear a user's cached org/role entry. Call on logout to prevent stale data. */
-export function clearUserOrgCache(userId: string) {
-    userOrgCache.delete(userId);
-}
 
 const API_CORS_ALLOWED_METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
 const API_CORS_ALLOWED_HEADERS = 'Content-Type, Authorization, X-Requested-With, X-Request-Id';

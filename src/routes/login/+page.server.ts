@@ -8,7 +8,7 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { loginSchema } from './schema';
 import { forwardAuthCookies } from '$lib/server/utils/cookies';
 import { isRegistrationOpen } from '$lib/server/utils/registration';
-import { clearUserOrgCache } from '../../hooks.server';
+import { clearUserOrgCache } from '$lib/server/utils/user-cache';
 import { env } from '$env/dynamic/private';
 import { logger } from '$lib/server/platform/observability';
 import type { Actions, PageServerLoad } from './$types';

@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
-import { clearUserOrgCache } from '../../hooks.server';
+import { clearUserOrgCache } from '$lib/server/utils/user-cache';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
