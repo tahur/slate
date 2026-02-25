@@ -138,8 +138,10 @@
 <div class="page-full-bleed">
     <!-- Header -->
     <header class="print-hide border-b border-border bg-surface-0 z-20">
-        <!-- Top row: back + invoice info -->
-        <div class="flex items-center gap-3 px-4 md:px-6 py-3">
+        <!-- Header row: back + invoice info + actions -->
+        <div
+            class="flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 px-4 md:px-6 py-3"
+        >
             <Button
                 variant="ghost"
                 href="/invoices"
@@ -148,7 +150,7 @@
             >
                 <ArrowLeft class="size-4" />
             </Button>
-            <div class="flex flex-col min-w-0">
+            <div class="flex flex-col min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                     <h1
                         class="text-sm md:text-xl font-bold tracking-tight text-text-strong font-mono truncate"
@@ -171,101 +173,90 @@
                     </p>
                 {/if}
             </div>
-        </div>
 
-        <!-- Action row: buttons -->
-        <div class="flex items-center gap-2 px-4 md:px-6 pb-3 flex-wrap">
-            {#if data.invoice.status === "draft"}
-                <form method="POST" action="?/issue" use:enhance>
-                    <Button type="submit" size="sm">
-                        <Send class="mr-1.5 size-3" /> Issue
-                    </Button>
-                </form>
+            <div
+                class="flex w-full items-center justify-end gap-2 flex-wrap sm:w-auto sm:flex-nowrap sm:ml-auto"
+            >
+                {#if data.invoice.status === "draft"}
+                    <form method="POST" action="?/issue" use:enhance>
+                        <Button type="submit" size="sm">
+                            <Send class="mr-1.5 size-3" /> Issue
+                        </Button>
+                    </form>
 
-                <Button
-                    variant="outline"
-                    size="sm"
-                    href="/invoices/{data.invoice.id}/edit"
-                >
-                    <Pencil class="size-3.5 mr-1.5" />
-                    Edit
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={downloadPdf}
-                    disabled={isDownloading}
-                >
-                    <Download class="size-3.5 mr-1.5" />
-                    {isDownloading ? "..." : "PDF"}
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={() => window.print()}
-                >
-                    <Printer class="size-3.5 mr-1.5" />
-                    Print
-                </Button>
-
-                <!-- Delete with AlertDialog -->
-                <AlertDialog.Root>
-                    <AlertDialog.Trigger
-                        class={buttonVariants({
-                            variant: "destructive",
-                            size: "icon-sm",
-                        })}
-                        aria-label="Delete draft invoice"
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        href="/invoices/{data.invoice.id}/edit"
                     >
-                        <Trash2 class="size-4" />
-                    </AlertDialog.Trigger>
-                    <AlertDialog.Content>
-                        <AlertDialog.Header>
-                            <AlertDialog.Title
-                                >Delete draft invoice?</AlertDialog.Title
-                            >
-                            <AlertDialog.Description>
-                                This action cannot be undone. This will
-                                permanently delete the draft invoice
-                                <span
-                                    class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded text-slate-900"
-                                    >{data.invoice.invoice_number}</span
+                        <Pencil class="size-3.5 mr-1.5" />
+                        Edit
+                    </Button>
+
+                    <!-- Delete with AlertDialog -->
+                    <AlertDialog.Root>
+                        <AlertDialog.Trigger
+                            class={buttonVariants({
+                                variant: "destructive",
+                                size: "icon-sm",
+                            })}
+                            aria-label="Delete draft invoice"
+                        >
+                            <Trash2 class="size-4" />
+                        </AlertDialog.Trigger>
+                        <AlertDialog.Content>
+                            <AlertDialog.Header>
+                                <AlertDialog.Title
+                                    >Delete draft invoice?</AlertDialog.Title
                                 >
-                                from the database.
-                            </AlertDialog.Description>
-                        </AlertDialog.Header>
-                        <AlertDialog.Footer>
-                            <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                            <form method="POST" action="?/delete" use:enhance>
-                                <AlertDialog.Action
-                                    type="submit"
-                                    variant="destructive"
-                                >
-                                    Delete
-                                </AlertDialog.Action>
-                            </form>
-                        </AlertDialog.Footer>
-                    </AlertDialog.Content>
-                </AlertDialog.Root>
-            {:else}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={downloadPdf}
-                    disabled={isDownloading}
-                >
-                    <Download class="mr-1.5 size-3" />
-                    {isDownloading ? "..." : "PDF"}
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onclick={() => window.print()}
-                >
-                    <Printer class="mr-1.5 size-3" /> Print
-                </Button>
-                <WhatsAppShareButton url={whatsappUrl} />
-            {/if}
+                                <AlertDialog.Description>
+                                    This action cannot be undone. This will
+                                    permanently delete the draft invoice
+                                    <span
+                                        class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded text-slate-900"
+                                        >{data.invoice.invoice_number}</span
+                                    >
+                                    from the database.
+                                </AlertDialog.Description>
+                            </AlertDialog.Header>
+                            <AlertDialog.Footer>
+                                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                                <form method="POST" action="?/delete" use:enhance>
+                                    <AlertDialog.Action
+                                        type="submit"
+                                        variant="destructive"
+                                    >
+                                        Delete
+                                    </AlertDialog.Action>
+                                </form>
+                            </AlertDialog.Footer>
+                        </AlertDialog.Content>
+                    </AlertDialog.Root>
+                {/if}
+
+                {#if data.invoice.status !== "draft"}
+                    <WhatsAppShareButton url={whatsappUrl} />
+                {/if}
+
+                <div class="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={downloadPdf}
+                        disabled={isDownloading}
+                    >
+                        <Download class="mr-1.5 size-3" />
+                        {isDownloading ? "..." : "PDF"}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onclick={() => window.print()}
+                    >
+                        <Printer class="mr-1.5 size-3" /> Print
+                    </Button>
+                </div>
+            </div>
         </div>
     </header>
 

@@ -11,7 +11,8 @@ export type EntityType =
     | 'vendor'
     | 'journal_entry'
     | 'settings'
-    | 'item';
+    | 'item'
+    | 'quotation';
 
 export type ActionType =
     | 'created'
@@ -24,7 +25,11 @@ export type ActionType =
     | 'applied'
     | 'voided'
     | 'activated'
-    | 'deactivated';
+    | 'deactivated'
+    | 'sent'
+    | 'accepted'
+    | 'declined'
+    | 'converted';
 
 export interface LogActivityParams {
     orgId: string;

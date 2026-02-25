@@ -267,10 +267,10 @@
   }
 
   :root {
-    --color-border: hsl(220 18% 90%);
-    --color-border-strong: hsl(220 18% 90%);
-    --color-border-subtle: hsl(220 20% 94%);
-    --color-border-dashed: hsl(220 18% 91%);
+    --color-border: hsl(220 10% 52%);
+    --color-border-strong: hsl(220 12% 40%);
+    --color-border-subtle: hsl(220 10% 58%);
+    --color-border-dashed: hsl(220 10% 46%);
   }
 
   /* Colors print accurately */
@@ -363,7 +363,17 @@
   .print-sheet td,
   .print-sheet hr,
   .print-sheet :not(.print-sheet)[class*="border"] {
-    border-color: var(--color-border-subtle) !important;
+    border-color: var(--color-border-strong) !important;
+  }
+
+  /* Quotation print layout: keep meta block compact and side-by-side */
+  .quotation-meta-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .quotation-meta-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) !important;
   }
 
   /* 10. Images (logos) must be visible */

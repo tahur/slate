@@ -3,10 +3,10 @@
     import {
         LayoutDashboard,
         FileText,
+        FileCheck,
         Banknote,
         Wallet,
         Users,
-        BarChart3,
         Settings,
         LogOut,
         Briefcase,
@@ -41,6 +41,7 @@
                     href: "/dashboard",
                     label: "Dashboard",
                     icon: LayoutDashboard,
+                    exact: true,
                 },
             ],
         },
@@ -48,6 +49,7 @@
             title: "SALES",
             items: [
                 { href: "/invoices", label: "Invoices", icon: FileText },
+                { href: "/quotations", label: "Quotations", icon: FileCheck },
                 { href: "/payments", label: "Receipts", icon: Banknote },
                 { href: "/customers", label: "Customers", icon: Users },
                 { href: "/items", label: "Items", icon: Package },
@@ -63,15 +65,12 @@
         {
             title: "REPORTS",
             items: [
-                { href: "/reports", label: "Overview", icon: BarChart3, exact: true },
-                { href: "/reports/cashbook", label: "Cashbook", icon: Landmark },
+                {
+                    href: "/reports/cashbook",
+                    label: "Cashbook",
+                    icon: Landmark,
+                },
                 { href: "/reports/ledger", label: "Ledger", icon: BookOpen },
-            ],
-        },
-        {
-            title: "SETUP",
-            items: [
-                { href: "/settings", label: "Settings", icon: Settings },
             ],
         },
     ];
@@ -88,11 +87,7 @@
     }
 </script>
 
-<UiSidebar
-    class={className
-        ? className
-        : "hidden w-[220px] md:flex"}
->
+<UiSidebar class={className ? className : "hidden w-[220px] md:flex"}>
     <SidebarHeader>
         <div
             class="flex items-center gap-3 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
@@ -105,7 +100,7 @@
         </div>
     </SidebarHeader>
 
-    <SidebarContent class="space-y-5">
+    <SidebarContent class="space-y-3">
         {#each navSections as section}
             <SidebarGroup>
                 {#if section.title}
@@ -120,7 +115,7 @@
                             <SidebarMenuButton
                                 href={item.href}
                                 active={itemActive}
-                                onNavigate={onNavigate}
+                                {onNavigate}
                             >
                                 <span
                                     class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary transition-opacity duration-150
@@ -141,6 +136,28 @@
     </SidebarContent>
 
     <SidebarFooter>
+        <SidebarMenu class="mb-1.5">
+            {@const settingsActive = isActive("/settings")}
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    href="/settings"
+                    active={settingsActive}
+                    {onNavigate}
+                >
+                    <span
+                        class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary transition-opacity duration-150
+                        {settingsActive ? 'opacity-100' : 'opacity-0'}"
+                    ></span>
+                    <Settings
+                        class="size-4 transition-colors duration-150 {settingsActive
+                            ? 'text-sidebar-primary'
+                            : 'text-sidebar-fg group-hover:text-text-strong'}"
+                    />
+                    <span class="flex-1">Settings</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+
         <form action="/logout" method="POST">
             <button
                 type="submit"
