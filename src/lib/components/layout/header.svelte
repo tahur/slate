@@ -23,16 +23,17 @@
 </script>
 
 <header
-    class="flex h-14 items-center gap-4 border-b border-border bg-surface-0 px-4 sm:px-5"
+    class="header-atmosphere sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border px-4 sm:px-5"
 >
     <!-- Mobile Menu -->
     <div class="md:hidden">
         <Sheet bind:open={mobileSidebarOpen}>
             <SheetTrigger
-                class={buttonVariants({
-                    variant: "ghost",
-                    size: "icon",
-                    className: "md:hidden",
+                    class={buttonVariants({
+                        variant: "ghost",
+                        size: "icon",
+                        className:
+                        "border border-border bg-surface-0 text-text-subtle hover:bg-surface-2 hover:text-text-strong md:hidden",
                 })}
             >
                 <Menu class="size-5" />
@@ -52,17 +53,24 @@
 
     <div class="ml-auto flex items-center gap-3">
         {#if data.org}
+            <span
+                class="hidden rounded-[var(--radius-chip)] border border-border bg-surface-2 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-text-muted lg:inline-flex"
+            >
+                Active
+            </span>
             <div class="flex flex-col items-end hidden md:flex">
                 <span
-                    class="text-sm font-semibold text-text-strong leading-none"
+                    class="text-sm font-semibold leading-none text-text-strong"
                     >{data.org.name}</span
                 >
-                <span class="text-xs text-text-muted">Organization</span>
+                <span class="text-[11px] text-text-muted">Workspace</span>
             </div>
-            <Avatar.Root class="h-8 w-8 rounded-md border border-border-strong bg-surface-0">
+            <Avatar.Root
+                class="h-8 w-8 rounded-md border border-border-strong bg-surface-0 shadow-hairline"
+            >
                 <Avatar.Image src={data.org.logo_url} alt={data.org.name} />
                 <Avatar.Fallback
-                    class="rounded-md bg-primary/10 text-primary font-bold text-xs"
+                    class="rounded-md bg-primary/10 text-xs font-bold text-primary"
                 >
                     {getInitials(data.org.name)}
                 </Avatar.Fallback>

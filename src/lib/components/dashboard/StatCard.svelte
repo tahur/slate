@@ -15,7 +15,7 @@
         $props();
 
     const variantClasses = {
-        default: "bg-surface-1 border-border",
+        default: "bg-surface-0 border-border",
         positive: "bg-positive/5 border-positive/20",
         warning: "bg-warning/5 border-warning/20",
         negative: "bg-negative/5 border-negative/20",
@@ -33,7 +33,7 @@
     <a
         {href}
         class={cn(
-            "stat-card flex flex-col gap-1 rounded-lg border p-4 transition-all hover:shadow-md hover:scale-[1.01]",
+            "stat-card motion-interactive flex flex-col gap-1 rounded-[var(--radius-card)] border p-4 hover:shadow-hairline",
             variantClasses[variant],
         )}
     >
@@ -52,7 +52,7 @@
                 {/if}
                 {#if tooltip}
                     <span
-                        class="cursor-help text-text-muted hover:text-text-subtle transition-colors"
+                        class="cursor-help text-text-muted hover:text-text-subtle motion-interactive"
                         title={tooltip}
                     >
                         <svg
@@ -74,14 +74,14 @@
                 {/if}
             </div>
         </div>
-        <div class="text-2xl font-bold tracking-tight text-text-strong">
+        <div class="type-value-lg tracking-tight text-text-strong">
             {value}
         </div>
     </a>
 {:else}
     <div
         class={cn(
-            "stat-card flex flex-col gap-1 rounded-lg border p-4",
+            "stat-card flex flex-col gap-1 rounded-[var(--radius-card)] border p-4",
             variantClasses[variant],
         )}
     >
@@ -100,7 +100,7 @@
                 {/if}
                 {#if tooltip}
                     <span
-                        class="cursor-help text-text-muted hover:text-text-subtle transition-colors"
+                        class="cursor-help text-text-muted hover:text-text-subtle motion-interactive"
                         title={tooltip}
                     >
                         <svg
@@ -122,7 +122,7 @@
                 {/if}
             </div>
         </div>
-        <div class="text-2xl font-bold tracking-tight text-text-strong">
+        <div class="type-value-lg tracking-tight text-text-strong">
             {value}
         </div>
     </div>

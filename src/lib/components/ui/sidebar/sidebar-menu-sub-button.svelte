@@ -24,7 +24,7 @@
     data-sveltekit-noscroll
     href={href}
     class={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-sidebar-fg transition-colors hover:bg-surface-2 hover:text-text-strong data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-primary",
+        "flex w-full items-center gap-2 rounded-[calc(var(--radius-control)-0.125rem)] px-2 py-1.5 text-xs font-medium text-sidebar-fg transition-[background-color,color,border-color] [transition-duration:var(--motion-fast)] [transition-timing-function:var(--ease-standard)] hover:bg-surface-2 hover:text-text-strong data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-primary",
         className,
     )}
     onclick={() => onNavigate?.()}
@@ -32,4 +32,3 @@
 >
     {@render children?.()}
 </a>
-

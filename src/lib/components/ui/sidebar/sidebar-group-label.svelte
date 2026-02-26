@@ -14,11 +14,10 @@
     bind:this={ref}
     data-slot="sidebar-group-label"
     class={cn(
-        "mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted",
+        "mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted/85",
         className,
     )}
     {...restProps}
 >
     {@render children?.()}
 </h3>
-

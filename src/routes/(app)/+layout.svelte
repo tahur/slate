@@ -10,7 +10,7 @@
     <Sidebar />
     <div class="app-surface flex flex-1 flex-col overflow-hidden">
         <Header {data} />
-        <main class="app-main space-y-5">
+        <main class="app-main space-y-5 motion-enter">
             {@render children()}
         </main>
     </div>

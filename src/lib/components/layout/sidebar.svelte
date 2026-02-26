@@ -66,7 +66,7 @@
         {
             title: "REPORTS",
             items: [
-                { href: "/reports", label: "Reports", icon: BarChart3 },
+                { href: "/reports", label: "Reports", icon: BarChart3, exact: true },
                 {
                     href: "/reports/cashbook",
                     label: "Cashbook",
@@ -89,20 +89,19 @@
     }
 </script>
 
-<UiSidebar class={className ? className : "hidden w-[220px] md:flex"}>
+<UiSidebar class={className ? className : "hidden w-[236px] md:flex"}>
     <SidebarHeader>
-        <div
-            class="flex items-center gap-3 font-bold tracking-tight text-sm uppercase text-sidebar-primary"
-        >
-            <img src="/logo.svg" alt="Logo" class="h-9 w-auto" />
-            <span
-                class="font-display text-xl text-text-strong normal-case tracking-normal mt-1"
-                >Slate</span
-            >
+        <div class="flex items-center gap-2.5">
+            <img
+                src="/logo.svg"
+                alt="Logo"
+                class="h-7 w-7 rounded-[calc(var(--radius-control)-0.15rem)] ring-1 ring-border/70 shadow-hairline"
+            />
+            <span class="font-display text-[15px] font-semibold tracking-tight text-text-strong">Slate</span>
         </div>
     </SidebarHeader>
 
-    <SidebarContent class="space-y-3">
+    <SidebarContent class="space-y-4">
         {#each navSections as section}
             <SidebarGroup>
                 {#if section.title}
@@ -119,14 +118,10 @@
                                 active={itemActive}
                                 {onNavigate}
                             >
-                                <span
-                                    class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary transition-opacity duration-150
-                                    {itemActive ? 'opacity-100' : 'opacity-0'}"
-                                ></span>
                                 <item.icon
-                                    class="size-4 transition-colors duration-150 {itemActive
-                                        ? 'text-sidebar-primary'
-                                        : 'text-sidebar-fg group-hover:text-text-strong'}"
+                                    class="size-4 transition-colors [transition-duration:var(--motion-fast)] {itemActive
+                                        ? 'text-text-strong'
+                                        : 'text-text-placeholder group-hover:text-text-subtle'}"
                                 />
                                 <span class="flex-1">{item.label}</span>
                             </SidebarMenuButton>
@@ -146,14 +141,10 @@
                     active={settingsActive}
                     {onNavigate}
                 >
-                    <span
-                        class="absolute left-0 top-1/2 h-5 w-0.5 rounded-r-full -translate-y-1/2 bg-sidebar-primary transition-opacity duration-150
-                        {settingsActive ? 'opacity-100' : 'opacity-0'}"
-                    ></span>
                     <Settings
-                        class="size-4 transition-colors duration-150 {settingsActive
-                            ? 'text-sidebar-primary'
-                            : 'text-sidebar-fg group-hover:text-text-strong'}"
+                        class="size-4 transition-colors [transition-duration:var(--motion-fast)] {settingsActive
+                            ? 'text-text-strong'
+                            : 'text-text-placeholder group-hover:text-text-subtle'}"
                     />
                     <span class="flex-1">Settings</span>
                 </SidebarMenuButton>
@@ -163,10 +154,10 @@
         <form action="/logout" method="POST">
             <button
                 type="submit"
-                class="group flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-sidebar-fg transition-colors hover:bg-red-50 hover:text-red-600"
+                class="group flex min-h-10 w-full items-center gap-2.5 rounded-[var(--radius-control)] border border-transparent px-3 py-2 text-[13px] font-medium text-text-subtle transition-[background-color,color,border-color] [transition-duration:var(--motion-fast)] [transition-timing-function:var(--ease-standard)] hover:bg-surface-2 hover:text-text-strong"
             >
                 <LogOut
-                    class="size-4 transition-colors group-hover:text-red-500"
+                    class="size-4 text-text-placeholder transition-colors [transition-duration:var(--motion-fast)] group-hover:text-text-strong"
                 />
                 Logout
             </button>

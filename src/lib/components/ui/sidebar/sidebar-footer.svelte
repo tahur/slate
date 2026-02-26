@@ -13,9 +13,11 @@
 <div
     bind:this={ref}
     data-slot="sidebar-footer"
-    class={cn("border-t border-sidebar-border p-3", className)}
+    class={cn(
+        "border-t border-sidebar-border/80 bg-surface-1/55 p-3 backdrop-blur-[1px]",
+        className,
+    )}
     {...restProps}
 >
     {@render children?.()}
 </div>
-

@@ -26,7 +26,7 @@
 <a
     {href}
     class={cn(
-        "alert-card flex items-center gap-4 rounded-lg border px-4 py-3 transition-all hover:shadow-sm",
+        "alert-card motion-interactive flex items-center gap-4 rounded-[var(--radius-card)] border px-4 py-3 hover:shadow-hairline",
         variantClasses[variant],
     )}
 >

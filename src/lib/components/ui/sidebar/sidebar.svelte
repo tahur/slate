@@ -13,12 +13,11 @@
 <aside
     bind:this={ref}
     data-slot="sidebar"
-    class={cn(
-        "flex flex-col border-r border-sidebar-border bg-sidebar-bg text-sidebar-fg",
-        className,
-    )}
+	class={cn(
+		"sidebar-atmosphere flex flex-col border-r border-sidebar-border text-sidebar-fg",
+		className,
+	)}
     {...restProps}
 >
     {@render children?.()}
 </aside>
-

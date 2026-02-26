@@ -13,9 +13,11 @@
 <div
     bind:this={ref}
     data-slot="sidebar-header"
-    class={cn("flex h-14 items-center border-b border-sidebar-border px-4", className)}
+    class={cn(
+        "flex items-center border-b border-sidebar-border/80 bg-sidebar-bg/70 px-4 py-3",
+        className,
+    )}
     {...restProps}
 >
     {@render children?.()}
 </div>
-

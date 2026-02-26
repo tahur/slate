@@ -359,3 +359,27 @@ Phase 2 primitive targets updated:
 2. `badge`.
 3. `select` trigger/content/item/label.
 4. `table` container/head/header/row/cell/footer.
+
+## 14. Phase 3 and 4 Foundations (Started)
+
+Phase 3 - Purposeful motion foundations:
+1. Added motion tokens in `src/app.css`:
+   `--motion-fast`, `--motion-base`, `--motion-slow`,
+   `--ease-standard`, `--ease-emphasized`, `--ease-exit`.
+2. Introduced reusable motion utilities:
+   `motion-interactive`, `motion-enter`, `motion-overlay`.
+3. Added `surface-rise` keyframe for calm content entry.
+4. Added reduced-motion baseline with `prefers-reduced-motion` to suppress non-essential animation.
+5. Applied motion token timing to key overlays/components (`sheet`, `alert-dialog`, `tooltip`, sidebar menu actions).
+
+Phase 4 - Humanized visual layer foundations:
+1. Introduced restrained shell atmosphere in `app-surface`:
+   subtle radial tint + low-noise texture.
+2. Added `sidebar-atmosphere` and `header-atmosphere` treatments:
+   soft gradient, mild texture, and low-strength blur.
+3. Updated sidebar/menu visuals to feel less sterile while preserving enterprise clarity.
+4. Kept document/print experiences neutral and explicitly disabled atmosphere layers in print mode.
+
+Current intent:
+1. Motion is now feedback-oriented (state change + navigation clarity), not decorative.
+2. Humanized styling is limited to shell/navigation surfaces; data tables and financial sheets stay neutral.
