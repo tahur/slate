@@ -257,7 +257,7 @@
                 value={pricesIncludeGst ? "true" : "false"}
             />
 
-            <div class="content-width-standard space-y-8 pt-5">
+            <div class="content-width-standard space-y-8">
                     <!-- Section: Customer & Invoice Details -->
                     <section class="space-y-6">
                         <h3
