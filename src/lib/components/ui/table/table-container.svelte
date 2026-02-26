@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="table-container"
 	class={cn(
-		"w-full overflow-x-auto overscroll-x-contain [scrollbar-gutter:stable] text-sm md:text-[0.8125rem]",
+		"w-full overflow-x-auto overscroll-x-contain rounded-[var(--radius-card)] [scrollbar-gutter:stable] type-table",
 		className
 	)}
 	{...restProps}

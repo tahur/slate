@@ -6,18 +6,30 @@
 
 @theme {
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif,
+    "Manrope", "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
     "Noto Color Emoji";
+  --font-display:
+    "Space Grotesk", "Manrope", "Avenir Next", ui-sans-serif, system-ui, sans-serif;
   --font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
-  --font-display: var(--font-sans);
 
-  --radius: 0.5rem;
-  --radius-lg: 0.625rem;
-  --radius-md: 0.375rem;
-  --radius-sm: 0.25rem;
+  --radius-control: 0.625rem;
+  --radius-card: 0.95rem;
+  --radius-dialog: 1.125rem;
+  --radius-chip: 999px;
+  --radius: var(--radius-control);
+  --radius-lg: var(--radius-card);
+  --radius-md: calc(var(--radius-control) - 0.125rem);
+  --radius-sm: calc(var(--radius-control) - 0.25rem);
+
+  --text-page-title-size: clamp(1.125rem, 1.02rem + 0.45vw, 1.5rem);
+  --text-section-title-size: clamp(0.95rem, 0.9rem + 0.15vw, 1.05rem);
+  --text-section-label-size: 0.6875rem;
+  --text-meta-size: 0.75rem;
+  --text-table-size: 0.8125rem;
+  --text-value-size: 0.9375rem;
 
   --color-brand: #111111;
   --color-brand-hover: #272A2C;
@@ -109,11 +121,25 @@
 
   body {
     font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    font-feature-settings: "cv03" 1, "cv04" 1, "ss03" 1;
     color: var(--color-text-strong);
     background: var(--color-background);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: contain;
+  }
+
+  input[type="number"],
+  input[type="date"],
+  input[type="time"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  .font-mono,
+  code {
+    font-feature-settings: "tnum" 1, "zero" 1, "ss01" 1;
   }
 
   ::selection {
@@ -151,6 +177,76 @@
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
+  }
+
+  .type-page-title {
+    font-family: var(--font-display);
+    font-size: var(--text-page-title-size);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+  }
+
+  .type-section-title {
+    font-family: var(--font-display);
+    font-size: var(--text-section-title-size);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    font-weight: 650;
+  }
+
+  .type-section-label {
+    font-size: var(--text-section-label-size);
+    line-height: 1.35;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .type-meta {
+    font-size: var(--text-meta-size);
+    line-height: 1.35;
+    color: var(--color-text-muted);
+  }
+
+  .type-table {
+    font-size: var(--text-table-size);
+    line-height: 1.35;
+  }
+
+  .type-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-value-size);
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  .type-value-lg {
+    font-family: var(--font-mono);
+    font-size: 1.125rem;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  .shape-control {
+    border-radius: var(--radius-control);
+  }
+
+  .shape-card {
+    border-radius: var(--radius-card);
+  }
+
+  .shape-dialog {
+    border-radius: var(--radius-dialog);
+  }
+
+  .shape-chip {
+    border-radius: var(--radius-chip);
   }
 }
 

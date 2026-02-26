@@ -326,3 +326,36 @@ Mitigation: Accessibility checks embedded into each phase gate.
 2. Start Phase 0 baseline capture and UI debt register.
 3. Convert current `src/app.css` tokens into the finalized semantic map.
 4. Begin Phase 1 by standardizing shell + page container recipes.
+
+## 13. Phase 2 Type and Shape Spec (Implemented Foundation)
+
+Typography strategy:
+1. UI text font: `Manrope` (variable weight support).
+2. Display/headline font: `Space Grotesk`.
+3. Data/financial font: `JetBrains Mono`.
+
+Type scale tokens:
+1. Page title: `--text-page-title-size` (`clamp(1.125rem, 1.02rem + 0.45vw, 1.5rem)`).
+2. Section title: `--text-section-title-size`.
+3. Section label/meta label: `--text-section-label-size` (uppercase utility usage).
+4. Metadata/supporting text: `--text-meta-size`.
+5. Table body baseline: `--text-table-size`.
+6. Financial value baseline: `--text-value-size` + tabular numerals.
+
+Shape tokens:
+1. Control radius: `--radius-control` (inputs, buttons, selects).
+2. Card surface radius: `--radius-card`.
+3. Dialog radius: `--radius-dialog`.
+4. Chip/badge radius: `--radius-chip`.
+5. Backward-compatible bridge via `--radius`, `--radius-lg`, `--radius-md`, `--radius-sm`.
+
+Utility classes introduced:
+1. `type-page-title`, `type-section-title`, `type-section-label`, `type-meta`.
+2. `type-table`, `type-value`, `type-value-lg`.
+3. `shape-control`, `shape-card`, `shape-dialog`, `shape-chip`.
+
+Phase 2 primitive targets updated:
+1. `button`, `input`, `textarea`, `card`.
+2. `badge`.
+3. `select` trigger/content/item/label.
+4. `table` container/head/header/row/cell/footer.

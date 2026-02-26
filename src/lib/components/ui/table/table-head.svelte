@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="table-head"
 	class={cn(
-		"px-4 py-2.5 text-left text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-text-muted whitespace-nowrap",
+		"whitespace-nowrap px-4 py-2.5 text-left text-[var(--text-section-label-size)] leading-[1.35] font-semibold uppercase tracking-[0.08em] text-text-muted",
 		className
 	)}
 	{...restProps}

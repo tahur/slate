@@ -9,7 +9,7 @@
 		...restProps
 	}: LabelPrimitive.RootProps & { variant?: "form" } = $props();
 
-	const formClasses = "text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-text-subtle";
+	const formClasses = "type-section-label";
 </script>
 
 <LabelPrimitive.Root

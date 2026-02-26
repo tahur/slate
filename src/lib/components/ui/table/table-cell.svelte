@@ -13,7 +13,10 @@
 <td
 	bind:this={ref}
 	data-slot="table-cell"
-	class={cn("px-4 py-3 text-text-strong border-b border-border align-middle", className)}
+	class={cn(
+		"align-middle border-b border-border-subtle px-4 py-3 text-[var(--text-table-size)] leading-[1.35] text-text-strong",
+		className
+	)}
 	{...restProps}
 >
 	{@render children?.()}

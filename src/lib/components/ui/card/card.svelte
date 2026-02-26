@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="card"
 	class={cn(
-		"bg-card text-card-foreground rounded-lg border border-border",
+		"rounded-[var(--radius-card)] border border-border bg-surface-0 text-card-foreground shadow-hairline",
 		className,
 	)}
 	{...restProps}
