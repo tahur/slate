@@ -2,8 +2,10 @@ node_modules
 .svelte-kit
 build
 dist-electron
+google-cloud-sdk
 *.db
 .env*
 .git
 HSN_SAC.xlsx
 hsn_*
+run_drizzle.exp

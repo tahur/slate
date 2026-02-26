@@ -66,7 +66,7 @@
                         {data.expense.expense_number}
                     </h1>
                     <span
-                        class="text-text-muted"
+                        class="text-slate-700"
                         title="This expense is posted and cannot be modified"
                     >
                         <Lock class="size-4" />
@@ -79,7 +79,7 @@
                         {data.canSettleCredit ? "Credit" : "Paid"}
                     </span>
                 </div>
-                <p class="text-xs text-text-muted mt-0.5">
+                <p class="text-xs text-slate-700 mt-0.5">
                     {data.expense.category_name} · Posted {formatDate(data.expense.expense_date)}
                 </p>
             </div>
@@ -104,10 +104,11 @@
 
     <!-- Content: Paper View -->
     <div class="page-body pb-32 print-bg-white">
-        <div class="mx-auto max-w-4xl">
-            <div
-                class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet"
-            >
+        <div class="content-width-standard">
+            <div class="mx-auto w-full max-w-[210mm]">
+                <div
+                    class="invoice-a4-sheet bg-white border border-slate-300 shadow-sm p-8 space-y-8 print-sheet"
+                >
                 <!-- Top Header: Logo + Org Details -->
                 <div class="flex justify-between items-start">
                     <div class="space-y-4">
@@ -119,45 +120,44 @@
                             />
                         {/if}
                         <div>
-                            <h2 class="text-2xl font-bold text-text-strong">
+                            <h2 class="text-2xl font-bold text-[#111]">
                                 Expense Voucher
                             </h2>
-                            <p class="text-sm text-text-subtle font-mono">
+                            <p class="text-sm text-slate-700 font-mono">
                                 # {data.expense.expense_number}
                             </p>
                         </div>
                     </div>
                     <div class="text-right space-y-1">
-                        <h3 class="font-semibold text-text-strong">
+                        <h3 class="font-semibold text-[#111]">
                             {data.org?.name}
                         </h3>
-                        {#if data.org?.address}
-                            <div
-                                class="text-sm text-text-subtle whitespace-pre-line max-w-xs ml-auto"
-                            >
-                                {data.org.address}{data.org.state_code ? `, ${data.org.state_code}` : ""}{data.org.pincode ? ` - ${data.org.pincode}` : ""}
-                            </div>
-                        {/if}
-                        {#if data.org?.gstin}
-                            <p class="text-xs text-text-muted font-mono">
-                                GSTIN: {data.org.gstin}
-                            </p>
-                        {/if}
+                        <div
+                            class="text-sm text-slate-700 whitespace-pre-line max-w-xs ml-auto"
+                        >
+                            {[data.org?.address, data.org?.city, data.org?.pincode]
+                                .filter(Boolean)
+                                .join(", ") || "Address not set in Settings"}
+                        </div>
+                        <p class="text-xs text-slate-700 font-mono">
+                            State: {data.org?.state_code || "-"} · GSTIN: {data
+                                .org?.gstin || "UNREGISTERED"}
+                        </p>
                     </div>
                 </div>
 
-                <hr class="border-border" />
+                <hr class="border-slate-300" />
 
                 <!-- Vendor + Expense Meta -->
                 <div class="flex justify-between items-start">
                     <div class="space-y-2">
                         {#if data.expense.vendor_display_name || data.expense.vendor_actual_name || data.expense.vendor_name}
                             <p
-                                class="text-xs font-bold uppercase tracking-wide text-text-muted"
+                                class="text-xs font-bold uppercase tracking-wide text-slate-700"
                             >
                                 Supplier
                             </p>
-                            <h3 class="font-semibold text-text-strong">
+                            <h3 class="font-semibold text-[#111]">
                                 {data.expense.vendor_display_name || data.expense.vendor_actual_name || data.expense.vendor_name}
                             </h3>
                         {/if}
@@ -165,31 +165,31 @@
                     <div class="text-right space-y-4">
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-slate-700"
                             >
                                 Expense Date
                             </p>
-                            <p class="font-mono text-text-strong">
+                            <p class="font-mono text-[#111]">
                                 {formatDate(data.expense.expense_date)}
                             </p>
                         </div>
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-slate-700"
                             >
                                 Category
                             </p>
-                            <p class="text-text-strong">
+                            <p class="text-[#111]">
                                 {data.expense.category_name}
                             </p>
                         </div>
                         <div class="space-y-1">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
+                                class="text-[10px] font-bold uppercase tracking-wide text-slate-700"
                             >
                                 {data.canSettleCredit ? "Credit Balance" : "Paid Through"}
                             </p>
-                            <p class="text-text-strong">
+                            <p class="text-[#111]">
                                 {data.canSettleCredit
                                     ? formatINR(data.balanceDue)
                                     : data.paymentAccountName}
@@ -198,11 +198,11 @@
                         {#if data.expense.reference}
                             <div class="space-y-1">
                                 <p
-                                    class="text-[10px] font-bold uppercase tracking-wide text-text-muted"
+                                    class="text-[10px] font-bold uppercase tracking-wide text-slate-700"
                                 >
                                     Reference
                                 </p>
-                                <p class="font-mono text-text-strong">
+                                <p class="font-mono text-[#111]">
                                     {data.expense.reference}
                                 </p>
                             </div>
@@ -211,34 +211,34 @@
                 </div>
 
                 <!-- Details Table -->
-                <div class="border rounded-md overflow-hidden">
+                <div class="border border-slate-300 overflow-hidden">
                     <table class="w-full text-sm">
-                        <thead class="bg-surface-2/50 border-b border-border">
+                        <thead class="bg-slate-100/60 border-b border-slate-300">
                             <tr>
                                 <th
-                                    class="px-4 py-3 text-left font-medium text-text-subtle text-[10px] uppercase tracking-wide"
+                                    class="px-4 py-3 text-left font-medium text-slate-700 text-[10px] uppercase tracking-wide"
                                     >Description</th
                                 >
                                 <th
-                                    class="px-4 py-3 text-right font-medium text-text-subtle text-[10px] uppercase tracking-wide"
+                                    class="px-4 py-3 text-right font-medium text-slate-700 text-[10px] uppercase tracking-wide"
                                     >Amount</th
                                 >
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="px-4 py-4 text-text-strong">
+                                <td class="px-4 py-4 text-[#111]">
                                     <p class="font-medium">
                                         {data.expense.category_name}
                                     </p>
                                     {#if data.expense.description}
-                                        <p class="text-text-subtle mt-1">
+                                        <p class="text-slate-800 mt-1">
                                             {data.expense.description}
                                         </p>
                                     {/if}
                                 </td>
                                 <td
-                                    class="px-4 py-4 text-right font-mono text-text-strong"
+                                    class="px-4 py-4 text-right font-mono text-[#111]"
                                 >
                                     {formatINR(data.expense.amount)}
                                 </td>
@@ -251,10 +251,10 @@
                 <div class="flex justify-end pt-4">
                     <div class="w-64 space-y-3">
                         <div
-                            class="flex justify-between items-center text-sm text-text-subtle"
+                            class="flex justify-between items-center text-sm text-slate-700"
                         >
                             <span>Base Amount</span>
-                            <span class="font-mono font-medium text-text-strong">
+                            <span class="font-mono font-medium text-[#111]">
                                 {formatINR(data.expense.amount)}
                             </span>
                         </div>
@@ -262,27 +262,27 @@
                         {#if data.expense.gst_rate && data.expense.gst_rate > 0}
                             {#if data.expense.igst && data.expense.igst > 0}
                                 <div
-                                    class="flex justify-between items-center text-sm text-text-subtle"
+                                    class="flex justify-between items-center text-sm text-slate-700"
                                 >
                                     <span>IGST ({data.expense.gst_rate}%)</span>
-                                    <span class="font-mono font-medium text-text-strong">
+                                    <span class="font-mono font-medium text-[#111]">
                                         {formatINR(data.expense.igst)}
                                     </span>
                                 </div>
                             {:else}
                                 <div
-                                    class="flex justify-between items-center text-sm text-text-subtle"
+                                    class="flex justify-between items-center text-sm text-slate-700"
                                 >
                                     <span>CGST ({(data.expense.gst_rate || 0) / 2}%)</span>
-                                    <span class="font-mono font-medium text-text-strong">
+                                    <span class="font-mono font-medium text-[#111]">
                                         {formatINR(data.expense.cgst)}
                                     </span>
                                 </div>
                                 <div
-                                    class="flex justify-between items-center text-sm text-text-subtle"
+                                    class="flex justify-between items-center text-sm text-slate-700"
                                 >
                                     <span>SGST ({(data.expense.gst_rate || 0) / 2}%)</span>
-                                    <span class="font-mono font-medium text-text-strong">
+                                    <span class="font-mono font-medium text-[#111]">
                                         {formatINR(data.expense.sgst)}
                                     </span>
                                 </div>
@@ -290,9 +290,9 @@
                         {/if}
 
                         <div
-                            class="flex justify-between items-center pt-3 border-t border-dashed border-border"
+                            class="flex justify-between items-center pt-3 border-t border-dashed border-slate-300"
                         >
-                            <span class="font-bold text-text-strong">Total</span>
+                            <span class="font-bold text-[#111]">Total</span>
                             <span
                                 class="font-bold font-mono text-xl text-negative"
                             >
@@ -303,22 +303,22 @@
                 </div>
 
                 {#if data.settlements.length > 0}
-                    <div class="space-y-3 border-t border-border pt-6">
+                    <div class="space-y-3 border-t border-slate-300 pt-6">
                         <h3
-                            class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                            class="text-xs font-semibold uppercase tracking-wider text-slate-700"
                         >
                             Settlements
                         </h3>
                         <div class="space-y-2">
                             {#each data.settlements as settlement}
                                 <div
-                                    class="flex items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2"
+                                    class="flex items-center justify-between border border-slate-300 bg-slate-50 px-3 py-2"
                                 >
                                     <div class="space-y-0.5">
-                                        <p class="text-sm font-mono text-text-strong">
+                                        <p class="text-sm font-mono text-[#111]">
                                             {settlement.payment_number}
                                         </p>
-                                        <p class="text-xs text-text-muted">
+                                        <p class="text-xs text-slate-700">
                                             {formatDate(settlement.date)}
                                             {#if settlement.method_label}
                                                 · {settlement.method_label}
@@ -339,19 +339,20 @@
 
                 <!-- Footer / Signature line -->
                 <div
-                    class="border-t border-border pt-8 mt-8 flex justify-between items-end"
+                    class="border-t border-slate-300 pt-8 mt-8 flex justify-between items-end"
                 >
-                    <div class="text-xs text-text-muted">
+                    <div class="text-xs text-slate-700">
                         This is a computer-generated expense voucher.
                     </div>
                     <div class="text-center">
                         <div
-                            class="w-48 border-b border-text-muted mb-1"
+                            class="w-48 border-b border-slate-400 mb-1"
                         ></div>
-                        <p class="text-xs text-text-muted">
+                        <p class="text-xs text-slate-700">
                             Authorised Signatory
                         </p>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

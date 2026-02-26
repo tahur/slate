@@ -236,7 +236,7 @@
 <div bind:this={wrapperRef} class="relative flex-1 w-full min-w-[120px]">
     <div class="relative">
         <Search
-            class="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-text-muted pointer-events-none"
+            class="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none"
         />
         <input
             bind:this={inputRef}
@@ -249,7 +249,7 @@
             onkeydown={handleKeydown}
             {placeholder}
             autocomplete="off"
-            class="h-9 w-full pl-7 pr-2 border border-border-strong hover:border-border focus:border-primary bg-surface-0 text-sm font-medium text-text-strong placeholder:text-text-placeholder rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/20"
+            class="h-9 w-full pl-7 pr-2 border border-slate-300 hover:border-slate-200 focus:border-blue-400 bg-white text-sm font-medium text-[#111] placeholder:text-slate-400 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-blue-200/40"
         />
     </div>
 </div>
@@ -258,13 +258,13 @@
 {#if isOpen && (filteredItems.length > 0 || searchQuery.trim())}
     <div
         bind:this={dropdownRef}
-        class="fixed z-[9999] bg-surface-0 rounded-lg border border-border shadow-xl overflow-hidden"
+        class="fixed z-[9999] bg-white rounded-lg border border-slate-200 shadow-xl overflow-hidden"
         style="top: {dropdownPosition.top}px; left: {dropdownPosition.left}px; width: {dropdownPosition.width}px;"
     >
         {#if filteredItems.length > 0}
             <div class="px-2 pt-2 pb-1">
                 <span
-                    class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
+                    class="text-[10px] uppercase tracking-wide text-slate-400 font-semibold"
                 >
                     Catalog Items
                 </span>
@@ -276,20 +276,20 @@
                         data-option
                         class="w-full text-left px-3 py-2 transition-colors flex items-center gap-3 {highlightedIndex ===
                         index
-                            ? 'bg-primary/10'
-                            : 'hover:bg-surface-2'}"
+                            ? 'bg-slate-100'
+                            : 'hover:bg-slate-100'}"
                         onmouseenter={() => (highlightedIndex = index)}
                         onclick={() => selectCatalogItem(item)}
                     >
-                        <Package class="size-4 text-text-muted shrink-0" />
+                        <Package class="size-4 text-slate-400 shrink-0" />
                         <div class="flex-1 min-w-0">
                             <div
-                                class="text-sm font-medium text-text-strong truncate"
+                                class="text-sm font-medium text-[#111] truncate"
                             >
                                 {item.name}
                             </div>
                             <div
-                                class="flex items-center gap-2 text-[10px] text-text-muted"
+                                class="flex items-center gap-2 text-[10px] text-slate-400"
                             >
                                 <span class="capitalize"
                                     >{item.type || "goods"}</span
@@ -306,7 +306,7 @@
                             <div class="text-sm font-mono font-medium">
                                 {formatINR(item.rate)}
                             </div>
-                            <div class="text-[10px] text-text-muted">
+                            <div class="text-[10px] text-slate-400">
                                 /{item.unit || "nos"}
                             </div>
                         </div>
@@ -316,26 +316,26 @@
         {/if}
 
         {#if searchQuery.trim()}
-            <div class="border-t border-border">
+            <div class="border-t border-slate-200">
                 <button
                     type="button"
                     data-option
                     class="w-full text-left px-3 py-2.5 transition-colors flex items-center gap-3 {highlightedIndex ===
                     filteredItems.length
-                        ? 'bg-primary/10'
-                        : 'hover:bg-surface-2'}"
+                        ? 'bg-slate-100'
+                        : 'hover:bg-slate-100'}"
                     onmouseenter={() =>
                         (highlightedIndex = filteredItems.length)}
                     onclick={selectAdHoc}
                 >
-                    <Pencil class="size-4 text-text-muted shrink-0" />
+                    <Pencil class="size-4 text-slate-400 shrink-0" />
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm text-text-strong">
+                        <div class="text-sm text-[#111]">
                             Use "<span class="font-medium"
                                 >{searchQuery.trim()}</span
                             >" as custom item
                         </div>
-                        <div class="text-[10px] text-text-muted">
+                        <div class="text-[10px] text-slate-400">
                             Enter details manually
                         </div>
                     </div>
@@ -344,7 +344,7 @@
         {/if}
 
         {#if filteredItems.length === 0 && !searchQuery.trim()}
-            <div class="px-3 py-4 text-xs text-text-muted text-center">
+            <div class="px-3 py-4 text-xs text-slate-400 text-center">
                 Start typing to search catalog or enter custom item
             </div>
         {/if}

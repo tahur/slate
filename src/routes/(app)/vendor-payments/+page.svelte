@@ -17,7 +17,7 @@
 </script>
 
 <div class="page-full-bleed">
-    <header class="page-header">
+    <header class="page-header items-center">
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Supplier Payments

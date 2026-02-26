@@ -39,7 +39,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="page-header">
+    <header class="page-header items-center">
         <div>
             <div class="flex items-center gap-2">
                 <Tooltip.Root>

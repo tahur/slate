@@ -26,7 +26,7 @@
 		data-slot={dataSlot}
 		class={cn(
 			"flex h-10 w-full min-w-0 rounded-[var(--radius-control)] border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong shadow-hairline outline-none transition-[color,border-color,box-shadow,background-color] selection:bg-surface-3 selection:text-text-strong placeholder:text-text-placeholder disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-muted",
-			"focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/20",
+			"focus-visible:border-blue-400 focus-visible:ring-[3px] focus-visible:ring-blue-200/40",
 			"aria-invalid:border-destructive aria-invalid:ring-destructive/25",
 			className
 		)}
@@ -41,7 +41,7 @@
 		data-slot={dataSlot}
 		class={cn(
 			"flex h-10 w-full min-w-0 rounded-[var(--radius-control)] border border-border-strong bg-surface-0 px-3 py-2 text-sm text-text-strong shadow-hairline outline-none transition-[color,border-color,box-shadow,background-color] selection:bg-surface-3 selection:text-text-strong placeholder:text-text-placeholder disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-muted",
-			"focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/20",
+			"focus-visible:border-blue-400 focus-visible:ring-[3px] focus-visible:ring-blue-200/40",
 			"aria-invalid:border-destructive aria-invalid:ring-destructive/25",
 			className
 		)}

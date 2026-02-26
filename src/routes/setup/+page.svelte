@@ -32,31 +32,29 @@
     );
 </script>
 
-<div class="min-h-screen bg-surface-1 flex flex-col">
+<div class="flex min-h-screen flex-col bg-[#F8F8F8]">
     <!-- Header -->
-    <header class="border-b border-border bg-surface-0 px-6 py-4">
+    <header
+        class="border-b border-slate-200 bg-white px-5 py-4 sm:px-6"
+    >
         <div class="max-w-2xl mx-auto flex items-center gap-3">
-            <div class="bg-primary/10 p-2 rounded-lg">
-                <img src="/logo.svg" alt="Slate Logo" class="w-6 h-6" />
-            </div>
-            <span class="font-display text-xl font-bold text-text-strong"
-                >Slate</span
-            >
+            <img src="/logo.svg" alt="Slate Logo" class="h-7 w-7 rounded-lg" />
+            <span class="text-lg font-semibold tracking-tight text-[#111]">Slate</span>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 flex items-center justify-center p-6">
+    <main class="flex flex-1 items-center justify-center p-4 sm:p-6">
         <div class="w-full max-w-2xl">
             <!-- Card -->
-            <Card class="p-8 bg-surface-0 border-border shadow-lg">
+            <Card class="border-border bg-surface-0 p-6 shadow-[var(--shadow-soft)] sm:p-8">
                 <div class="text-center mb-8">
                     <div
-                        class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4"
+                        class="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-slate-100"
                     >
-                        <Building2 class="size-7 text-primary" />
+                        <Building2 class="size-7 text-slate-500" />
                     </div>
-                    <h2 class="text-3xl font-bold text-text-strong mb-2">
+                    <h2 class="text-2xl font-semibold tracking-tight text-[#111] mb-2">
                         Set up your business
                     </h2>
                     <p class="text-text-muted">
@@ -93,7 +91,7 @@
                                 {/if}
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label for="email" class="text-text-subtle"
                                         >Email</Label
@@ -149,7 +147,7 @@
                                 {/if}
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div class="space-y-2 relative">
                                     <Label
                                         for="state_code"
@@ -269,9 +267,9 @@
                             </div>
 
                             <div
-                                class="bg-blue-50 border border-blue-200 rounded-lg p-4"
+                                class="rounded-lg border border-slate-200 bg-slate-50 p-4"
                             >
-                                <p class="text-sm text-blue-800">
+                                <p class="text-sm text-slate-600">
                                     <strong>Not registered for GST?</strong> You
                                     can still create invoices without GSTIN. Add
                                     it later when you register.

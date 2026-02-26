@@ -1,668 +1,287 @@
 <script lang="ts">
-    import {
-        Code2,
-        Scale,
-        ShieldCheck,
-        FileText,
-        Wallet,
-        Receipt,
-        IndianRupee,
-        BarChart3,
-        Lock,
-        ArrowRight,
-        Check,
-        Github,
-    } from "lucide-svelte";
-    const currentYear = new Date().getFullYear();
-
-    const businessActions = [
-        { action: "Create Invoice", result: "Sent to customer, GST calculated, books updated", icon: FileText },
-        { action: "Receive Payment", result: "Matched to invoice, bank balance updated", icon: Wallet },
-        { action: "Add Expense", result: "Categorized, tax tracked, cash adjusted", icon: Receipt },
-    ] as const;
+	import {
+		FileText,
+		Wallet,
+		Receipt,
+		Check,
+		Github,
+		Database,
+		Shield,
+		Globe,
+		Zap,
+		Layers,
+		BarChart3,
+		Plug,
+	} from "lucide-svelte";
+	const currentYear = new Date().getFullYear();
 </script>
 
 <svelte:head>
-    <title>Slate — Simple Invoicing & Accounting for Indian Small Businesses</title>
-    <meta
-        name="description"
-        content="Create invoices, receive payments, and track expenses. Slate handles GST, bookkeeping, and compliance in the background. Free, open-source, and built for Indian small businesses."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin="anonymous"
-    />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
-        rel="stylesheet"
-    />
+	<title>Slate — Simple Invoicing & Accounting for Indian Small Businesses</title>
+	<meta
+		name="description"
+		content="Create GST invoices, track payments, and manage expenses. Open-source invoicing and accounting for Indian small businesses."
+	/>
 </svelte:head>
 
-<div class="landing-shell min-h-screen">
-    <div class="ambient" aria-hidden="true"></div>
+<div class="landing">
+	<header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+		<div class="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-5">
+			<a href="/" class="flex items-center gap-2.5">
+				<img src="/logo.svg" alt="Slate" class="h-7 w-7 rounded-md" />
+				<span class="text-[1.1rem] font-semibold tracking-tight text-[#111]">Slate</span>
+			</a>
 
-    <header
-        class="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--surface)]/95 backdrop-blur"
-    >
-        <div
-            class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6"
-        >
-            <a href="/" class="flex items-center gap-2.5">
-                <img src="/logo.svg" alt="Slate" class="logo-mark" />
-                <span class="wordmark">Slate</span>
-            </a>
+			<nav class="hidden items-center gap-6 md:flex">
+				<a href="#features" class="text-sm text-slate-500 font-medium hover:text-[#111] transition-colors">Features</a>
+				<a href="#stack" class="text-sm text-slate-500 font-medium hover:text-[#111] transition-colors">Stack</a>
+				<a href="#open-source" class="text-sm text-slate-500 font-medium hover:text-[#111] transition-colors">Open Source</a>
+			</nav>
 
-            <nav class="hidden items-center gap-7 md:flex">
-                <a href="#product" class="nav-link">Features</a>
-                <a href="#business-first" class="nav-link">What you get</a>
-                <a href="#tech" class="nav-link">Open source</a>
-            </nav>
+			<div class="flex items-center gap-3">
+				<a href="https://github.com/tahur/slate" target="_blank" rel="noopener" class="text-slate-400 hover:text-[#111] transition-colors hidden sm:inline-flex" title="GitHub">
+					<Github class="size-5" />
+				</a>
+				<a href="/login" class="text-sm font-medium text-slate-600 hover:text-[#111] transition-colors hidden sm:inline-flex">Login</a>
+				<a href="/register" class="inline-flex items-center rounded-md bg-[#111] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#272A2C]">Start free</a>
+			</div>
+		</div>
+	</header>
 
-            <div class="flex items-center gap-3">
-                <a href="https://github.com/tahur/slate" target="_blank" rel="noopener" class="nav-link hidden sm:inline-flex" title="GitHub">
-                    <Github class="size-5" />
-                </a>
-                <a href="/login" class="nav-link hidden sm:inline-flex">Login</a>
-                <a href="/register" class="btn-dark">Start free</a>
-            </div>
-        </div>
-    </header>
+	<main>
+		<!-- Hero -->
+		<section class="relative overflow-hidden px-5 pt-16 pb-20 lg:pt-24 lg:pb-28">
+			<div class="hero-glow"></div>
 
-    <main class="relative z-10">
-        <!-- Hero -->
-        <section class="px-4 pb-14 pt-12 sm:px-6 lg:pb-20 lg:pt-16">
-            <div
-                class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center"
-            >
-                <div class="reveal" style="--delay: 40ms">
-                    <p class="kicker">Built for Indian small businesses</p>
-                    <h1 class="hero-title">
-                        Run your business.
-                        <span>We keep the books.</span>
-                    </h1>
-                    <p class="hero-copy">
-                        Create invoices, receive payments, and track expenses in plain language.
-                        Slate handles GST, bookkeeping, and compliance automatically.
-                        No accounting knowledge needed.
-                    </p>
+			<div class="relative mx-auto max-w-5xl">
+				<div class="max-w-2xl">
+					<p class="inline-flex rounded-full border border-blue-200 bg-blue-50/80 px-3 py-1 text-xs font-medium text-blue-600">
+						Free & open source
+					</p>
+					<h1 class="mt-5 text-4xl font-bold tracking-tight text-[#111] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.08]">
+						Open-source invoicing for Indian small businesses.
+					</h1>
+					<p class="mt-5 max-w-lg text-base text-slate-500 leading-relaxed sm:text-lg">
+						Create GST invoices, track payments, and manage expenses. Slate handles the bookkeeping and compliance automatically.
+					</p>
 
-                    <div class="mt-7 flex flex-wrap gap-3">
-                        <a href="/register" class="btn-dark">Get started free</a>
-                        <a href="/login" class="btn-light">Login</a>
-                    </div>
+					<div class="mt-8 flex flex-wrap gap-3">
+						<a href="/register" class="inline-flex items-center rounded-md bg-[#111] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#272A2C]">
+							Get started free
+						</a>
+						<a href="/login" class="inline-flex items-center rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-[#111] shadow-sm transition-colors hover:bg-slate-50">
+							Login
+						</a>
+					</div>
 
-                    <ul class="mt-8 grid gap-2.5 text-sm text-[var(--muted)]">
-                        <li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-[var(--accent-dark-orange)]" /> GST invoices with CGST, SGST, IGST — done right</li>
-                        <li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-[var(--accent-dark-orange)]" /> Track who owes you and what you owe</li>
-                        <li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-[var(--accent-dark-orange)]" /> Free and open source — your data, your server</li>
-                    </ul>
-                </div>
+					<ul class="mt-8 flex flex-col gap-2 text-sm text-slate-500">
+						<li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-blue-500" /> GST invoices with CGST, SGST, IGST</li>
+						<li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-blue-500" /> Track who owes you and what you owe</li>
+						<li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-blue-500" /> Free and open source — your data, your server</li>
+					</ul>
+				</div>
+			</div>
+		</section>
 
-                <article class="panel reveal" style="--delay: 120ms">
-                    <header class="panel-head">
-                        <span class="label">You do this</span>
-                        <span class="label">Slate takes care of the rest</span>
-                    </header>
+		<!-- Features -->
+		<section class="px-5 pb-20" id="features">
+			<div class="mx-auto max-w-5xl">
+				<h2 class="text-2xl font-bold tracking-tight text-[#111] sm:text-3xl">
+					Everything to run your finances.
+				</h2>
+				<p class="mt-2 max-w-lg text-base text-slate-500">
+					Simple for you, proper accounting underneath.
+				</p>
 
-                    <div class="action-map">
-                        {#each businessActions as item}
-                            <div class="action-row">
-                                <div class="action-cell">
-                                    <item.icon class="shrink-0 size-4 text-[var(--muted)]" />
-                                    <span>{item.action}</span>
-                                </div>
-                                <ArrowRight class="shrink-0 size-4 text-[var(--muted)] max-sm:rotate-90 max-sm:ml-6" />
-                                <span class="action-result">{item.result}</span>
-                            </div>
-                        {/each}
-                    </div>
+				<div class="mt-10 grid gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200 sm:grid-cols-2 lg:grid-cols-3">
+					<article class="bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<FileText class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">GST Invoicing</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Add line items, pick the GST rate, and send. CGST/SGST or IGST calculated automatically based on your customer's state.
+						</p>
+					</article>
 
-                    <p class="panel-note">
-                        Proper double-entry bookkeeping runs under the hood — you never have to think about it.
-                    </p>
-                </article>
-            </div>
-        </section>
+					<article class="bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<Wallet class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Payment Tracking</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Record payments against invoices. Track outstanding balances, partial payments, and aging — updated in real time.
+						</p>
+					</article>
 
-        <!-- Product pillars -->
-        <section class="px-4 pb-12 sm:px-6" id="product">
-            <div
-                class="mx-auto grid max-w-6xl gap-3 sm:grid-cols-2 xl:grid-cols-4"
-            >
-                <article class="proof-card reveal" style="--delay: 60ms">
-                    <IndianRupee class="mb-3 size-6 text-[var(--muted)]" />
-                    <p>Made for India</p>
-                    <h3>GST invoicing built in</h3>
-                </article>
-                <article class="proof-card reveal" style="--delay: 100ms">
-                    <Code2 class="mb-3 size-6 text-[var(--muted)]" />
-                    <p>100% open source</p>
-                    <h3>Your data, your server</h3>
-                </article>
-                <article class="proof-card reveal" style="--delay: 140ms">
-                    <Scale class="mb-3 size-6 text-[var(--muted)]" />
-                    <p>Accurate books</p>
-                    <h3>Proper accounting under the hood</h3>
-                </article>
-                <article class="proof-card reveal" style="--delay: 180ms">
-                    <ShieldCheck class="mb-3 size-6 text-[var(--muted)]" />
-                    <p>Reliable</p>
-                    <h3>Nothing gets lost or duplicated</h3>
-                </article>
-            </div>
-        </section>
+					<article class="bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<Receipt class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Expense Tracking</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Log expenses by category, supplier, and payment method. Input tax is tracked automatically for filing time.
+						</p>
+					</article>
 
-        <!-- What you get -->
-        <section class="px-4 py-10 sm:px-6 lg:py-14" id="business-first">
-            <div class="mx-auto max-w-6xl">
-                <div class="mb-7">
-                    <p class="kicker">What you get</p>
-                    <h2 class="section-title">
-                        Everything to run your business finances.
-                    </h2>
-                </div>
+					<article class="bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<BarChart3 class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Reports</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Cashbook, receivables, and tax summaries. The reports you need without the ones you don't.
+						</p>
+					</article>
 
-                <div
-                    class="grid auto-rows-[minmax(150px,auto)] gap-3 lg:grid-cols-12"
-                >
-                    <article
-                        class="feature feature-wide reveal lg:col-span-7"
-                        style="--delay: 80ms"
-                    >
-                        <div class="mb-4 flex items-center gap-3">
-                            <FileText class="size-5 text-[var(--muted)]" />
-                            <p class="chip">Invoicing</p>
-                        </div>
-                        <h3>Professional GST invoices in seconds.</h3>
-                        <p>
-                            Add line items, pick the GST rate, and send. Slate calculates
-                            CGST/SGST or IGST based on your customer's state, numbers your
-                            invoices, and generates a PDF ready to share.
-                        </p>
-                    </article>
+					<article class="bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<Globe class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Made for India</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							HSN/SAC codes, multi-rate GST (0–28%), inter/intra-state tax handling, and INR formatting built in.
+						</p>
+					</article>
 
-                    <article
-                        class="feature reveal lg:col-span-5"
-                        style="--delay: 120ms"
-                    >
-                        <div class="mb-4 flex items-center gap-3">
-                            <Wallet class="size-5 text-[var(--muted)]" />
-                            <p class="chip">Payments</p>
-                        </div>
-                        <h3>Know who paid and who hasn't.</h3>
-                        <p>
-                            Receive payments against invoices. Slate tracks outstanding
-                            balances, partial payments, and updates your books automatically.
-                        </p>
-                    </article>
+					<article class="bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<Shield class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Reliable</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Every action saves completely or not at all. Double-entry bookkeeping ensures your numbers always balance.
+						</p>
+					</article>
+				</div>
+			</div>
+		</section>
 
-                    <article
-                        class="feature reveal lg:col-span-4"
-                        style="--delay: 160ms"
-                    >
-                        <div class="mb-4 flex items-center gap-3">
-                            <Receipt class="size-5 text-[var(--muted)]" />
-                            <p class="chip">Expenses</p>
-                        </div>
-                        <h3>Track every rupee going out.</h3>
-                        <p>
-                            Log expenses by category, supplier, and payment method.
-                            Input tax is tracked so nothing is missed at filing time.
-                        </p>
-                    </article>
+		<!-- Tech Stack -->
+		<section class="px-5 pb-20" id="stack">
+			<div class="mx-auto max-w-5xl">
+				<h2 class="text-2xl font-bold tracking-tight text-[#111] sm:text-3xl">
+					Built on tools you trust.
+				</h2>
+				<p class="mt-2 max-w-lg text-base text-slate-500 leading-relaxed">
+					Modern, open-source stack. Your data lives in your own Supabase PostgreSQL database — fully under your control.
+				</p>
 
-                    <article
-                        class="feature reveal lg:col-span-4"
-                        style="--delay: 200ms"
-                    >
-                        <div class="mb-4 flex items-center gap-3">
-                            <BarChart3 class="size-5 text-[var(--muted)]" />
-                            <p class="chip">Reports</p>
-                        </div>
-                        <h3>See where your money is.</h3>
-                        <p>
-                            Cashbook, receivables, tax summaries — the reports you
-                            actually need, without the ones you don't.
-                        </p>
-                    </article>
+				<div class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+					<div class="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
+						<div class="flex size-9 items-center justify-center rounded-md bg-blue-100 text-blue-600 shrink-0">
+							<Database class="size-4" />
+						</div>
+						<div>
+							<p class="text-sm font-semibold text-[#111]">Supabase</p>
+							<p class="text-xs text-slate-500">PostgreSQL storage</p>
+						</div>
+					</div>
+					<div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+						<div class="flex size-9 items-center justify-center rounded-md bg-slate-100 text-slate-600 shrink-0">
+							<Zap class="size-4" />
+						</div>
+						<div>
+							<p class="text-sm font-semibold text-[#111]">SvelteKit</p>
+							<p class="text-xs text-slate-500">Full-stack framework</p>
+						</div>
+					</div>
+					<div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+						<div class="flex size-9 items-center justify-center rounded-md bg-slate-100 text-slate-600 shrink-0">
+							<Layers class="size-4" />
+						</div>
+						<div>
+							<p class="text-sm font-semibold text-[#111]">Drizzle ORM</p>
+							<p class="text-xs text-slate-500">Type-safe queries</p>
+						</div>
+					</div>
+					<div class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+						<div class="flex size-9 items-center justify-center rounded-md bg-slate-100 text-slate-600 shrink-0">
+							<svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+							</svg>
+						</div>
+						<div>
+							<p class="text-sm font-semibold text-[#111]">TailwindCSS</p>
+							<p class="text-xs text-slate-500">Utility-first CSS</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 
-                    <article
-                        class="feature reveal lg:col-span-4"
-                        style="--delay: 240ms"
-                    >
-                        <div class="mb-4 flex items-center gap-3">
-                            <Lock class="size-5 text-[var(--muted)]" />
-                            <p class="chip">Reliability</p>
-                        </div>
-                        <h3>Your data is always safe.</h3>
-                        <p>
-                            Every action saves completely or not at all — no half-done
-                            entries. Accidental double-clicks won't create duplicate records.
-                        </p>
-                    </article>
-                </div>
-            </div>
-        </section>
+		<!-- MCP Server -->
+		<section class="px-5 pb-20">
+			<div class="mx-auto max-w-5xl rounded-xl border border-blue-100 bg-blue-50/40 p-8 sm:p-12 text-center">
+				<p class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-blue-600">
+					Coming soon
+				</p>
+				<h2 class="mt-4 text-2xl font-bold tracking-tight text-[#111] sm:text-3xl">
+					MCP Server
+				</h2>
+				<p class="mx-auto mt-3 max-w-lg text-base text-slate-500 leading-relaxed">
+					Connect Slate to AI assistants via the Model Context Protocol. Create invoices, check balances, and pull reports — through natural language.
+				</p>
+				<div class="mt-6 flex items-center justify-center gap-4 text-sm text-slate-400">
+					<span class="flex items-center gap-1.5"><Plug class="size-4" /> Claude, ChatGPT, Cursor & more</span>
+				</div>
+			</div>
+		</section>
 
-        <!-- For developers -->
-        <section class="px-4 py-10 sm:px-6 lg:py-14" id="tech">
-            <div class="mx-auto max-w-6xl">
-                <div class="mb-7">
-                    <p class="kicker">Open source</p>
-                    <h2 class="section-title">
-                        Built by developers, for everyone.
-                    </h2>
-                    <p class="section-subtitle">
-                        Slate is fully open source. Self-host it on your own server, inspect
-                        every line of code, or contribute. No vendor lock-in, no subscription fees.
-                    </p>
-                </div>
+		<!-- Open Source -->
+		<section class="px-5 pb-20" id="open-source">
+			<div class="mx-auto max-w-5xl rounded-xl border border-slate-200 bg-white p-8 sm:p-12">
+					<p class="inline-flex rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500">
+						Open source
+					</p>
+					<h2 class="mt-4 text-2xl font-bold tracking-tight text-[#111] sm:text-3xl">
+						Your data belongs to you.
+					</h2>
+					<p class="mt-3 max-w-xl text-base text-slate-500 leading-relaxed">
+						Slate is fully open source and self-hostable. Deploy to your own server, connect your own Supabase project, and own every byte of your financial data. No monthly subscriptions, no feature gates, no vendor lock-in.
+					</p>
+					<div class="mt-6 flex flex-wrap gap-3">
+						<a href="/register" class="inline-flex items-center rounded-md bg-[#111] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#272A2C]">
+							Get started free
+						</a>
+						<a href="https://github.com/tahur/slate" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-[#111] shadow-sm transition-colors hover:bg-slate-50">
+							<Github class="size-4" />
+							View on GitHub
+						</a>
+					</div>
+			</div>
+		</section>
+	</main>
 
-                <div class="tech-strip reveal" style="--delay: 80ms">
-                    <span class="tech-tag">Svelte 5</span>
-                    <span class="tech-tag">SvelteKit</span>
-                    <span class="tech-tag">TypeScript</span>
-                    <span class="tech-tag">Postgres</span>
-                    <span class="tech-tag">Supabase</span>
-                    <span class="tech-tag">Drizzle ORM</span>
-                    <span class="tech-tag">Tailwind v4</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- CTA -->
-        <section class="px-4 pb-14 pt-6 sm:px-6 lg:pb-20" id="reliability">
-            <div
-                class="mx-auto max-w-6xl border border-[var(--ink)] bg-[var(--ink)] p-6 text-[var(--surface)] sm:p-8"
-            >
-                <p class="kicker kicker-invert">No fees, no lock-in</p>
-                <h2 class="section-title-invert">
-                    Your business data belongs to you.
-                </h2>
-                <p class="mt-3 max-w-2xl text-sm text-white/75 sm:text-base">
-                    No monthly subscriptions. No feature gates. Host Slate on your own
-                    server or use our managed version. Your invoices, payments, and
-                    financial data stay under your control — always.
-                </p>
-                <div class="mt-6 flex flex-wrap gap-3">
-                    <a href="/register" class="btn-white">Get started free</a>
-                    <a href="/login" class="btn-ghost">Login</a>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="border-t border-[var(--line)] bg-[var(--surface)]">
-        <div
-            class="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6"
-        >
-            <p>
-                © {currentYear} Slate. Simple invoicing and accounting for Indian small businesses.
-            </p>
-            <div class="flex items-center gap-5">
-                <a class="nav-link" href="#product">Features</a>
-                <a class="nav-link" href="#business-first">What you get</a>
-                <a class="nav-link" href="#tech">Open source</a>
-            </div>
-        </div>
-    </footer>
+	<footer class="border-t border-slate-200 bg-white">
+		<div class="mx-auto flex w-full max-w-5xl flex-col gap-3 px-5 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+			<p>&copy; {currentYear} Slate</p>
+			<div class="flex items-center gap-5">
+				<a class="hover:text-[#111] transition-colors" href="#features">Features</a>
+				<a class="hover:text-[#111] transition-colors" href="#stack">Stack</a>
+				<a class="hover:text-[#111] transition-colors" href="#open-source">Open Source</a>
+			</div>
+		</div>
+	</footer>
 </div>
 
 <style>
-    :global(body) {
-        background: #f3f3f3;
-    }
+	.landing {
+		background:
+			radial-gradient(circle, #c8ccd0 1px, transparent 1px) 0 0 / 22px 22px,
+			#ffffff;
+		color: #111111;
+		font-family: var(--font-sans);
+	}
 
-    .landing-shell {
-        --ink: #111111;
-        --surface: #fcfcfc;
-        --soft: #f4f4f4;
-        --muted: #5f5f5f;
-        --line: #d4d4d4;
-        --accent-dark-orange: var(--color-primary);
-        background: #f3f3f3;
-        color: var(--ink);
-        font-family: "Manrope", "Helvetica Neue", Helvetica, sans-serif;
-    }
-
-    .landing-shell h1,
-    .landing-shell h2,
-    .landing-shell h3 {
-        color: var(--ink);
-        font-family: "Space Grotesk", "Manrope", "Helvetica Neue", Helvetica,
-            sans-serif;
-        letter-spacing: -0.02em;
-    }
-
-    .ambient {
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
-        background-image: radial-gradient(
-                circle at 15% 6%,
-                rgb(0 0 0 / 0.08) 0,
-                transparent 30%
-            ),
-            radial-gradient(
-                circle at 90% 0%,
-                rgb(26 18 14 / 0.1) 0,
-                transparent 32%
-            ),
-            linear-gradient(rgb(0 0 0 / 0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgb(0 0 0 / 0.06) 1px, transparent 1px);
-        background-size:
-            auto,
-            auto,
-            56px 56px,
-            56px 56px;
-        mask-image: linear-gradient(
-            to bottom,
-            black 0%,
-            rgb(0 0 0 / 0.85) 48%,
-            transparent 100%
-        );
-    }
-
-    .logo-mark {
-        width: 2rem;
-        height: 2rem;
-        border-radius: 6px;
-    }
-
-    .wordmark {
-        font-family: "Space Grotesk", "Manrope", sans-serif;
-        font-weight: 700;
-        font-size: 1.25rem;
-        letter-spacing: -0.03em;
-        color: var(--ink);
-    }
-
-    .kicker {
-        display: inline-flex;
-        border: 1px solid var(--ink);
-        background: var(--surface);
-        color: var(--ink);
-        font-size: 0.69rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        padding: 0.34rem 0.55rem;
-        text-transform: uppercase;
-        border-radius: var(--radius);
-    }
-
-    .kicker-invert {
-        border-color: rgb(255 255 255 / 0.3);
-        color: white;
-        background: transparent;
-    }
-
-    .hero-title {
-        margin-top: 0.95rem;
-        max-width: 14ch;
-        font-size: clamp(2rem, 5vw, 3.6rem);
-        line-height: 1.03;
-    }
-
-    .hero-title span {
-        color: var(--accent-dark-orange);
-    }
-
-    .hero-copy {
-        margin-top: 1rem;
-        max-width: 56ch;
-        color: var(--muted);
-        font-size: 1rem;
-    }
-
-    .btn-dark,
-    .btn-light,
-    .btn-white,
-    .btn-ghost {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid var(--ink);
-        font-size: 0.86rem;
-        font-weight: 700;
-        padding: 0.62rem 1rem;
-        transition: all 180ms ease;
-        border-radius: var(--radius);
-    }
-
-    .btn-dark {
-        background: var(--color-primary);
-        color: var(--color-primary-foreground, white);
-        border-color: var(--color-primary);
-    }
-
-    .btn-dark:hover {
-        background: var(--color-brand-hover, #e04f0d);
-        border-color: var(--color-brand-hover, #e04f0d);
-    }
-
-    .btn-light {
-        background: var(--surface);
-        color: var(--ink);
-    }
-
-    .btn-light:hover {
-        background: #efefef;
-    }
-
-    .btn-white {
-        background: white;
-        color: var(--ink);
-        border-color: white;
-    }
-
-    .btn-white:hover {
-        background: #ededed;
-    }
-
-    .btn-ghost {
-        background: transparent;
-        color: white;
-        border-color: rgb(255 255 255 / 0.4);
-    }
-
-    .btn-ghost:hover {
-        border-color: white;
-    }
-
-    .nav-link {
-        color: var(--muted);
-        font-size: 0.88rem;
-        font-weight: 600;
-        transition: color 180ms ease;
-    }
-
-    .nav-link:hover {
-        color: var(--ink);
-    }
-
-    .panel {
-        border: 1px solid var(--line);
-        background: var(--surface);
-        padding: 1.25rem;
-        border-radius: var(--radius);
-    }
-
-    .panel-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .label {
-        border: 1px solid var(--line);
-        background: var(--soft);
-        color: var(--muted);
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        padding: 0.24rem 0.46rem;
-        text-transform: uppercase;
-        border-radius: var(--radius);
-    }
-
-    .action-map {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .action-row {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-        padding: 0.6rem 0;
-        border-top: 1px solid var(--line);
-    }
-
-    .action-row:first-child {
-        border-top: 0;
-        padding-top: 0;
-    }
-
-    .action-cell {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        min-width: 0;
-        flex: 1;
-        font-size: 0.9rem;
-        color: var(--ink);
-    }
-
-    .action-result {
-        font-size: 0.82rem;
-        color: var(--muted);
-        font-weight: 500;
-        flex: 1.2;
-    }
-
-    .panel-note {
-        margin-top: 1rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid var(--line);
-        font-size: 0.78rem;
-        color: var(--muted);
-    }
-
-    .proof-card,
-    .feature {
-        border: 1px solid var(--line);
-        background: var(--surface);
-        padding: 0.95rem;
-        border-radius: var(--radius);
-    }
-
-    .section-title {
-        margin-top: 0.75rem;
-        font-size: clamp(1.4rem, 2.8vw, 2rem);
-        line-height: 1.15;
-    }
-
-    .section-subtitle {
-        margin-top: 0.5rem;
-        max-width: 52ch;
-        font-size: 1rem;
-        color: var(--muted);
-    }
-
-    .section-title-invert {
-        margin-top: 0.6rem;
-        color: white;
-        font-size: clamp(1.35rem, 2.8vw, 1.95rem);
-        line-height: 1.15;
-    }
-
-    .feature h3 {
-        margin-top: 0.5rem;
-        font-size: 1.05rem;
-        line-height: 1.2;
-    }
-
-    .feature p {
-        margin-top: 0.45rem;
-        color: var(--muted);
-        font-size: 0.86rem;
-    }
-
-    .feature-wide {
-        background-image: linear-gradient(
-                to right,
-                rgb(0 0 0 / 0.04) 1px,
-                transparent 1px
-            ),
-            linear-gradient(to bottom, rgb(0 0 0 / 0.04) 1px, transparent 1px);
-        background-size: 26px 26px;
-    }
-
-    .chip {
-        display: inline-flex;
-        border: 1px solid var(--line);
-        background: var(--soft);
-        color: var(--muted);
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        padding: 0.2rem 0.44rem;
-        text-transform: uppercase;
-        border-radius: var(--radius);
-    }
-
-    /* Tech section */
-    .tech-strip {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    .tech-tag {
-        display: inline-flex;
-        align-items: center;
-        border: 1px solid var(--line);
-        background: var(--surface);
-        color: var(--muted);
-        font-size: 0.82rem;
-        font-weight: 600;
-        padding: 0.45rem 0.85rem;
-        border-radius: var(--radius);
-    }
-
-    .reveal {
-        opacity: 0;
-        transform: translateY(8px);
-        animation: riseIn 520ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-        animation-delay: var(--delay, 0ms);
-    }
-
-    @keyframes riseIn {
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @media (max-width: 640px) {
-        .action-row {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.35rem;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .reveal {
-            animation: none !important;
-            opacity: 1;
-            transform: none;
-        }
-    }
+	.hero-glow {
+		position: absolute;
+		top: -30%;
+		right: -10%;
+		width: 600px;
+		height: 600px;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+		pointer-events: none;
+	}
 </style>

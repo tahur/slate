@@ -13,9 +13,8 @@
 <ul
     bind:this={ref}
     data-slot="sidebar-menu"
-    class={cn("space-y-0.5", className)}
+    class={cn("space-y-1", className)}
     {...restProps}
 >
     {@render children?.()}
 </ul>
-

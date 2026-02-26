@@ -14,7 +14,7 @@
     bind:this={ref}
     data-slot="sidebar-header"
     class={cn(
-        "flex items-center border-b border-sidebar-border/80 bg-sidebar-bg/70 px-4 py-3",
+        "flex min-h-[4.25rem] items-center border-b border-sidebar-border/80 bg-sidebar-bg/70 px-4",
         className,
     )}
     {...restProps}

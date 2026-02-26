@@ -137,10 +137,10 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="print-hide page-header p-0">
+    <header class="print-hide page-header items-center">
         <!-- Header row: back + invoice info + actions -->
         <div
-            class="flex w-full flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 px-4 md:px-6 py-3"
+            class="flex w-full flex-wrap items-start gap-3 sm:flex-nowrap sm:items-center"
         >
             <Button
                 variant="ghost"
@@ -307,10 +307,10 @@
         class="page-body print-bg-white"
     >
         <div class="content-width-standard">
-        <div class="mx-auto max-w-4xl">
+        <div class="mx-auto w-full max-w-[210mm]">
             <!-- Main Paper Sheet -->
             <div
-                class="bg-white border border-slate-300 rounded-lg shadow-sm print-sheet"
+                class="invoice-a4-sheet bg-white border border-slate-300 shadow-sm print-sheet"
             >
                 <!-- ═══ Compact Header: Company + Customer + Invoice Meta ═══ -->
                 <div
@@ -330,35 +330,38 @@
                             >
                                 {data.org?.name || "COMPANY NAME"}
                             </h2>
-                            <p class="text-[11px] print:text-[10px] text-slate-400 leading-tight">
+                            <p class="text-[11px] print:text-[10px] text-slate-700 leading-tight">
                                 {[
                                     data.org?.address,
                                     data.org?.city,
                                     data.org?.pincode,
                                 ]
                                     .filter(Boolean)
-                                    .join(", ")}
+                                    .join(", ") || "Address not set in Settings"}
                             </p>
                             <div
-                                class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] print:text-[10px] text-slate-400"
+                                class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] print:text-[10px] text-slate-700"
                             >
-                                {#if data.org?.state_code}
-                                    <span>State: {stateName(data.org.state_code)}</span>
-                                {/if}
-                                {#if data.org?.gstin}
-                                    <span class="font-mono text-[#111]"
-                                        >GSTIN: {data.org.gstin}</span
-                                    >
-                                {/if}
+                                <span
+                                    >State: {data.org?.state_code
+                                        ? stateName(data.org.state_code)
+                                        : "-"}</span
+                                >
+                                <span class="font-mono text-[#111]"
+                                    >GSTIN: {data.org?.gstin || "UNREGISTERED"}</span
+                                >
                                 {#if data.org?.phone}
                                     <span>Phone: {data.org.phone}</span>
+                                {/if}
+                                {#if data.org?.email}
+                                    <span>{data.org.email}</span>
                                 {/if}
                             </div>
                         </div>
 
                         <div class="text-right space-y-1 shrink-0">
                             <p
-                                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"
+                                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-700"
                             >
                                 Document Type
                             </p>
@@ -386,14 +389,14 @@
                     <div
                         class="quotation-meta-grid mt-2 grid grid-cols-1 md:grid-cols-[1.35fr_1fr] print:grid-cols-[1.35fr_1fr] gap-2 print:gap-1.5"
                     >
-                        <div class="border border-slate-200 rounded-sm p-2 print:p-1.5">
+                        <div class="border border-slate-200 p-2 print:p-1.5">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5"
+                                class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-0.5"
                             >
                                 Customer Details
                             </p>
                             <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5 text-[10px]">
-                                <span class="text-slate-400">Name</span>
+                                <span class="text-slate-700">Name</span>
                                 <span class="text-[#111] font-medium truncate">
                                     {data.customer?.name || "UNKNOWN"}{#if data
                                         .customer
@@ -401,26 +404,26 @@
                                         · {data.customer.company_name}{/if}
                                 </span>
 
-                                <span class="text-slate-400">Address</span>
-                                <span class="text-slate-500 truncate">
+                                <span class="text-slate-700">Address</span>
+                                <span class="text-slate-800 truncate">
                                     {[
                                         data.customer?.billing_address,
                                         data.customer?.city,
                                         data.customer?.pincode,
                                     ]
                                         .filter(Boolean)
-                                        .join(", ")}
+                                        .join(", ") || "-"}
                                 </span>
 
                                 {#if data.customer?.state_code}
-                                    <span class="text-slate-400">State</span>
-                                    <span class="text-slate-500 truncate">
+                                    <span class="text-slate-700">State</span>
+                                    <span class="text-slate-800 truncate">
                                         {stateName(data.customer.state_code)}
                                     </span>
                                 {/if}
 
                                 {#if data.customer?.gstin}
-                                    <span class="text-slate-400">GSTIN</span>
+                                    <span class="text-slate-700">GSTIN</span>
                                     <span class="font-mono text-[#111] truncate">
                                         {data.customer.gstin}
                                     </span>
@@ -428,31 +431,31 @@
                             </div>
                         </div>
 
-                        <div class="border border-slate-200 rounded-sm p-2 print:p-1.5">
+                        <div class="border border-slate-200 p-2 print:p-1.5">
                             <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5"
+                                class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-0.5"
                             >
                                 Invoice Details
                             </p>
                             <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5 text-[10px]">
-                                <span class="text-slate-400">Invoice No</span>
+                                <span class="text-slate-700">Invoice No</span>
                                 <span
                                     class="text-right font-mono font-semibold text-[#111]"
                                     >{data.invoice.invoice_number}</span
                                 >
 
-                                <span class="text-slate-400">Date</span>
+                                <span class="text-slate-700">Date</span>
                                 <span class="text-right text-[#111]"
                                     >{formatDate(data.invoice.invoice_date)}</span
                                 >
 
-                                <span class="text-slate-400">Due Date</span>
+                                <span class="text-slate-700">Due Date</span>
                                 <span class="text-right font-semibold text-[#111]"
                                     >{formatDate(data.invoice.due_date)}</span
                                 >
 
                                 {#if data.customer?.state_code}
-                                    <span class="text-slate-400"
+                                    <span class="text-slate-700"
                                         >Place of Supply</span
                                     >
                                     <span class="text-right text-[#111]"
@@ -463,14 +466,14 @@
                                 {/if}
 
                                 {#if data.invoice.order_number}
-                                    <span class="text-slate-400">Order No</span>
+                                    <span class="text-slate-700">Order No</span>
                                     <span
                                         class="text-right font-mono text-[#111]"
                                         >{data.invoice.order_number}</span
                                     >
                                 {/if}
 
-                                <span class="text-slate-400">Supply Type</span>
+                                <span class="text-slate-700">Supply Type</span>
                                 <span class="text-right text-[#111]">
                                     {data.invoice.is_inter_state
                                         ? "Inter-State (IGST)"
@@ -486,13 +489,11 @@
 
                 <!-- ═══ Items Table ═══ -->
                 <div class="px-4 py-3 md:px-6 md:py-4">
-                    <div
-                        class="border border-slate-300 rounded-sm overflow-hidden"
-                    >
+                    <div class="border border-slate-300 overflow-hidden">
                         <table class="w-full table-fixed border-collapse text-[11px]">
                             <thead>
                                 <tr
-                                    class="bg-slate-100/60 text-[10px] uppercase tracking-wider font-bold text-slate-400"
+                                    class="bg-slate-100/60 text-[10px] uppercase tracking-wider font-bold text-slate-700"
                                 >
                                     <th
                                         class="border border-slate-200 px-2 py-1.5 text-center w-8"
@@ -532,7 +533,7 @@
                                     {@const descLines = item.description.split("\n")}
                                     <tr>
                                         <td
-                                            class="border border-slate-200 px-2 py-1.5 text-center text-[11px] text-slate-400 align-top"
+                                            class="border border-slate-200 px-2 py-1.5 text-center text-[11px] text-slate-700 align-top"
                                             >{i + 1}</td
                                         >
                                         <td class="border border-slate-200 px-2 py-1.5 align-top">
@@ -542,34 +543,34 @@
                                                 {descLines[0]}
                                             </div>
                                             {#if descLines.length > 1}
-                                                <div class="text-[10px] text-slate-400 mt-0.5 whitespace-pre-wrap">
+                                                <div class="text-[10px] text-slate-700 mt-0.5 whitespace-pre-wrap">
                                                     {descLines.slice(1).join("\n")}
                                                 </div>
                                             {/if}
                                             {#if item.unit && item.unit !== "nos"}
                                                 <div
-                                                    class="text-[10px] text-slate-400 mt-0.5"
+                                                    class="text-[10px] text-slate-700 mt-0.5"
                                                 >
                                                     Unit: {item.unit}
                                                 </div>
                                             {/if}
                                         </td>
                                         <td
-                                            class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-400 align-top"
+                                            class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-700 align-top"
                                             >{item.hsn_code || "—"}</td
                                         >
                                         <td
-                                            class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-400 align-top"
+                                            class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-700 align-top"
                                             >{item.quantity}</td
                                         >
                                         <td
-                                            class="border border-slate-200 px-2 py-1.5 text-right font-mono text-[11px] text-slate-400 align-top"
+                                            class="border border-slate-200 px-2 py-1.5 text-right font-mono text-[11px] text-slate-700 align-top"
                                             >{formatINR(item.rate)}</td
                                         >
                                         {#if data.invoice.is_inter_state}
                                             <td class="border border-slate-200 px-2 py-1.5 text-right align-top">
                                                 <div class="font-mono text-[11px]">
-                                                    <span class="text-slate-400"
+                                                    <span class="text-slate-700"
                                                         >{item.gst_rate}% · </span
                                                     >
                                                     {formatINR(lineIgst)}
@@ -578,7 +579,7 @@
                                         {:else}
                                             <td class="border border-slate-200 px-2 py-1.5 text-right align-top">
                                                 <div class="font-mono text-[11px]">
-                                                    <span class="text-slate-400"
+                                                    <span class="text-slate-700"
                                                         >{halfRate}% · </span
                                                     >
                                                     {formatINR(lineCgst)}
@@ -586,7 +587,7 @@
                                             </td>
                                             <td class="border border-slate-200 px-2 py-1.5 text-right align-top">
                                                 <div class="font-mono text-[11px]">
-                                                    <span class="text-slate-400"
+                                                    <span class="text-slate-700"
                                                         >{halfRate}% · </span
                                                     >
                                                     {formatINR(lineSgst)}
@@ -611,7 +612,7 @@
                         <div class="flex-1 space-y-4">
                             <div>
                                 <p
-                                    class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1"
+                                    class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
                                 >
                                     Total In Words
                                 </p>
@@ -625,12 +626,12 @@
                             {#if data.org?.bank_name || data.org?.account_number}
                                 <div>
                                     <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1"
+                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
                                     >
                                         Bank Details
                                     </p>
                                     <div
-                                        class="text-xs text-slate-500 space-y-0.5 leading-relaxed"
+                                        class="text-xs text-slate-800 space-y-0.5 leading-relaxed"
                                     >
                                         {#if data.org?.bank_name}<p>
                                                 Bank: {data.org.bank_name}
@@ -656,12 +657,12 @@
                             {#if data.invoice.notes}
                                 <div>
                                     <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1"
+                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
                                     >
                                         Notes
                                     </p>
                                     <p
-                                        class="text-xs text-slate-500 whitespace-pre-wrap"
+                                        class="text-xs text-slate-800 whitespace-pre-wrap"
                                     >
                                         {data.invoice.notes}
                                     </p>
@@ -671,12 +672,12 @@
                             {#if data.invoice.terms}
                                 <div>
                                     <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1"
+                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
                                     >
                                         Terms & Conditions
                                     </p>
                                     <p
-                                        class="text-xs text-slate-500 whitespace-pre-wrap leading-relaxed"
+                                        class="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed"
                                     >
                                         {data.invoice.terms}
                                     </p>
@@ -688,7 +689,7 @@
                         <div class="w-full md:w-72 space-y-4">
                             <div class="space-y-2 text-sm">
                                 <div
-                                    class="flex justify-between text-slate-400"
+                                    class="flex justify-between text-slate-700"
                                 >
                                     <span class="text-xs">Sub Total</span>
                                     <span
@@ -701,7 +702,7 @@
 
                                 {#if data.invoice.is_inter_state}
                                     <div
-                                        class="flex justify-between text-slate-400"
+                                        class="flex justify-between text-slate-700"
                                     >
                                         <span class="text-xs">IGST</span>
                                         <span
@@ -713,7 +714,7 @@
                                     </div>
                                 {:else}
                                     <div
-                                        class="flex justify-between text-slate-400"
+                                        class="flex justify-between text-slate-700"
                                     >
                                         <span class="text-xs">CGST</span>
                                         <span
@@ -724,7 +725,7 @@
                                         >
                                     </div>
                                     <div
-                                        class="flex justify-between text-slate-400"
+                                        class="flex justify-between text-slate-700"
                                     >
                                         <span class="text-xs">SGST</span>
                                         <span
@@ -737,7 +738,7 @@
                                 {/if}
 
                                 <div
-                                    class="border-t border-slate-300 pt-2 flex justify-between items-center bg-slate-100/50 -mx-2 px-2 py-1.5 rounded"
+                                    class="border-t border-slate-300 pt-2 flex justify-between items-center bg-slate-100/50 -mx-2 px-2 py-1.5"
                                 >
                                     <span
                                         class="font-bold text-sm text-[#111]"
@@ -757,7 +758,7 @@
                                             <div
                                                 class="flex justify-between text-xs"
                                             >
-                                                <span class="text-slate-400">
+                                                <span class="text-slate-700">
                                                     {#if txn.type === "credit_note"}
                                                         <span
                                                             class="text-blue-600"

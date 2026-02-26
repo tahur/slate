@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="table-row"
 	class={cn(
-		"transition-colors duration-150 hover:bg-surface-2/60",
+		"transition-colors duration-150 hover:bg-blue-50/50",
 		className
 	)}
 	{...restProps}

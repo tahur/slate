@@ -13,9 +13,8 @@
 <div
     bind:this={ref}
     data-slot="sidebar-group"
-    class={cn("space-y-0.5", className)}
+    class={cn("space-y-1", className)}
     {...restProps}
 >
     {@render children?.()}
 </div>
-

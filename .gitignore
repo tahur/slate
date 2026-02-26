@@ -38,6 +38,10 @@ add-columns.js
 test-*.js
 verify_*.js
 fix_*.ts
+run_drizzle.exp
+
+# Local toolchains
+google-cloud-sdk/
 
 # IDE
 .vscode

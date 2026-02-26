@@ -44,8 +44,8 @@
                 Icon = AlertCircle;
                 break;
             case "draft":
-                variant = "secondary";
-                Icon = AlertTriangle;
+                variant = "info";
+                Icon = Clock;
                 break;
             case "cancelled":
             case "void":

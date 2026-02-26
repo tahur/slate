@@ -58,7 +58,7 @@
                 <div
                     class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-strong bg-surface-0 py-20"
                 >
-                    <Receipt class="size-12 text-text-muted/30 mb-4" />
+                    <Receipt class="size-12 text-blue-300 mb-4" />
                     <h3 class="text-lg font-bold text-text-strong">
                         No expenses yet
                     </h3>

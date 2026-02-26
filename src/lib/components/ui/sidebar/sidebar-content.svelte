@@ -13,9 +13,8 @@
 <div
     bind:this={ref}
     data-slot="sidebar-content"
-    class={cn("flex-1 overflow-auto px-2.5 py-3", className)}
+    class={cn("flex-1 overflow-auto px-3 py-4", className)}
     {...restProps}
 >
     {@render children?.()}
 </div>
-

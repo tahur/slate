@@ -7,10 +7,10 @@
 </script>
 
 <div class="flex h-screen w-full flex-col bg-background text-foreground md:flex-row">
-    <Sidebar />
+    <Sidebar {data} />
     <div class="app-surface flex flex-1 flex-col overflow-hidden">
         <Header {data} />
-        <main class="app-main space-y-5 motion-enter">
+        <main class="app-main motion-enter">
             {@render children()}
         </main>
     </div>

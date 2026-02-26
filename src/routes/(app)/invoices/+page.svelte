@@ -69,7 +69,7 @@
                 <div
                     class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white py-20"
                 >
-                    <FileText class="size-12 text-text-muted/30 mb-4" />
+                    <FileText class="size-12 text-blue-300 mb-4" />
                     <h3 class="text-lg font-bold text-text-strong">
                         No invoices yet
                     </h3>

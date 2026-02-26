@@ -41,7 +41,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="page-header">
+    <header class="page-header items-center">
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Customers
@@ -140,7 +140,7 @@
                 <div
                     class="flex min-h-[20rem] flex-col items-center justify-center rounded-xl border border-border bg-surface-0 p-8 text-center"
                 >
-                    <Users class="size-16 text-text-muted/30 mb-4" />
+                    <Users class="size-16 text-blue-300 mb-4" />
                     {#if searchQuery}
                         <h3 class="text-lg font-medium text-text-strong">
                             No customers found
@@ -167,13 +167,13 @@
                         {#each filteredCustomers as customer}
                             <a
                                 href="/customers/{customer.id}"
-                                class="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-surface-2/50 sm:px-5"
+                                class="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-blue-50/50 sm:px-5"
                             >
                                 <!-- Avatar -->
                                 <div
-                                    class="size-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0"
+                                    class="size-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0"
                                 >
-                                    <span class="text-lg font-semibold text-primary">
+                                    <span class="text-lg font-semibold text-blue-600">
                                         {customer.name.charAt(0).toUpperCase()}
                                     </span>
                                 </div>

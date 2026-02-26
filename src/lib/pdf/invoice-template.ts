@@ -2,467 +2,835 @@ import type { TDocumentDefinitions, Content, TableCell } from 'pdfmake/interface
 import type { InvoicePdfData } from './types';
 import { numberToWords } from '$lib/utils/currency';
 
-// Indian state code → name mapping for PDF
 const STATE_NAMES: Record<string, string> = {
-	'01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
-	'05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan',
-	'09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh',
-	'13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura',
-	'17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand',
-	'21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
-	'26': 'Dadra & Nagar Haveli and Daman & Diu', '27': 'Maharashtra', '29': 'Karnataka',
-	'30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu',
-	'34': 'Puducherry', '35': 'Andaman & Nicobar Islands', '36': 'Telangana',
-	'37': 'Andhra Pradesh', '38': 'Ladakh'
+    '01': 'Jammu & Kashmir',
+    '02': 'Himachal Pradesh',
+    '03': 'Punjab',
+    '04': 'Chandigarh',
+    '05': 'Uttarakhand',
+    '06': 'Haryana',
+    '07': 'Delhi',
+    '08': 'Rajasthan',
+    '09': 'Uttar Pradesh',
+    '10': 'Bihar',
+    '11': 'Sikkim',
+    '12': 'Arunachal Pradesh',
+    '13': 'Nagaland',
+    '14': 'Manipur',
+    '15': 'Mizoram',
+    '16': 'Tripura',
+    '17': 'Meghalaya',
+    '18': 'Assam',
+    '19': 'West Bengal',
+    '20': 'Jharkhand',
+    '21': 'Odisha',
+    '22': 'Chhattisgarh',
+    '23': 'Madhya Pradesh',
+    '24': 'Gujarat',
+    '26': 'Dadra & Nagar Haveli and Daman & Diu',
+    '27': 'Maharashtra',
+    '29': 'Karnataka',
+    '30': 'Goa',
+    '31': 'Lakshadweep',
+    '32': 'Kerala',
+    '33': 'Tamil Nadu',
+    '34': 'Puducherry',
+    '35': 'Andaman & Nicobar Islands',
+    '36': 'Telangana',
+    '37': 'Andhra Pradesh',
+    '38': 'Ladakh'
 };
 
 function stateName(code: string | null | undefined): string {
-	if (!code) return '';
-	return STATE_NAMES[code] || code;
+    if (!code) return '';
+    return STATE_NAMES[code] || code;
 }
 
-/** Format INR amount — uses Rs. prefix (Helvetica lacks ₹ glyph) */
-function fmt(amount: number | null | undefined): string {
-	const value = amount || 0;
-	return 'Rs.' + new Intl.NumberFormat('en-IN', {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2
-	}).format(value);
+function clean(value: string | null | undefined): string {
+    return (value || '').trim();
 }
 
-function fmtDate(dateStr: string | null | undefined): string {
-	if (!dateStr) return '\u2014';
-	return new Date(dateStr).toLocaleDateString('en-IN', {
-		day: '2-digit',
-		month: 'short',
-		year: 'numeric'
-	});
+function upper(value: string | null | undefined): string {
+    return clean(value).toUpperCase();
 }
 
-/** Uppercase text for names/addresses */
-function uc(text: string | null | undefined): string {
-	return (text || '').toUpperCase();
+function fmtMoney(value: number | null | undefined): string {
+    const amount = Number(value || 0);
+    return `Rs.${new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount)}`;
+}
+
+function fmtDate(value: string | null | undefined): string {
+    if (!value) return '-';
+    return new Date(value).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+}
+
+function fmtQty(value: number | null | undefined): string {
+    const qty = Number(value || 0);
+    if (Number.isInteger(qty)) return String(qty);
+    return qty.toFixed(3).replace(/\.?0+$/, '');
+}
+
+function buildMetaTable(pairs: Array<[string, string]>): Content {
+    const rows: TableCell[][] = pairs
+        .filter(([, value]) => clean(value).length > 0)
+        .map(([label, value]) => [
+            { text: label, style: 'metaLabel' },
+            { text: value, style: 'metaValue' }
+        ]);
+
+    if (rows.length === 0) {
+        rows.push([
+            { text: '-', style: 'metaLabel' },
+            { text: '-', style: 'metaValue' }
+        ]);
+    }
+
+    return {
+        table: {
+            widths: [72, '*'],
+            body: rows
+        },
+        layout: {
+            hLineWidth: () => 0,
+            vLineWidth: () => 0,
+            paddingLeft: () => 0,
+            paddingRight: () => 0,
+            paddingTop: () => 1,
+            paddingBottom: () => 1
+        }
+    };
+}
+
+function buildAddressLines(data: InvoicePdfData): string[] {
+    const { customer } = data;
+    const lines: string[] = [];
+
+    const customerHeading = upper(customer?.company_name || customer?.name) || 'CUSTOMER';
+    lines.push(customerHeading);
+
+    if (customer?.company_name && customer?.name) {
+        lines.push(`Attn: ${upper(customer.name)}`);
+    }
+
+    if (customer?.billing_address) lines.push(upper(customer.billing_address));
+
+    const cityStatePin = [
+        upper(customer?.city),
+        customer?.state_code ? stateName(customer.state_code).toUpperCase() : '',
+        customer?.pincode
+    ]
+        .filter((part) => clean(part).length > 0)
+        .join(', ');
+
+    if (cityStatePin) lines.push(cityStatePin);
+
+    if (customer?.gstin) lines.push(`GSTIN: ${customer.gstin}`);
+
+    return lines;
 }
 
 export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefinitions {
-	const { org, invoice, items, customer } = data;
-	const isIntra = !invoice.is_inter_state;
-	const isPaid = (invoice.balance_due || 0) <= 0.01;
+    const { org, invoice, items, customer } = data;
 
-	// ── Header: Logo + Company Info + "TAX INVOICE" ──
-	const headerLeft: Content[] = [];
+    const isIntra = !invoice.is_inter_state;
+    const amountPaid = Number(invoice.amount_paid || 0);
+    const balanceDue = Number(invoice.balance_due || 0);
+    const isPaid = balanceDue <= 0.01;
 
-	// Logo (if available)
-	if (org?.logo_url) {
-		headerLeft.push({
-			image: org.logo_url,
-			width: 60,
-			margin: [0, 0, 0, 6] as [number, number, number, number]
-		});
-	}
+    const placeOfSupplyCode = customer?.place_of_supply || customer?.state_code || null;
+    const supplyType = isIntra ? 'Intra-State (CGST + SGST)' : 'Inter-State (IGST)';
 
-	headerLeft.push(
-		{ text: uc(org?.name) || 'COMPANY NAME', fontSize: 14, bold: true },
-		{ text: uc(org?.address), fontSize: 8, margin: [0, 2, 0, 0] as [number, number, number, number] },
-		{
-			text: [uc(org?.city), org?.pincode ? ' - ' + org.pincode : ''].filter(Boolean).join(''),
-			fontSize: 8
-		},
-		{
-			text: org?.state_code ? `State: ${stateName(org.state_code)} (${org.state_code})` : '',
-			fontSize: 8
-		}
-	);
+    const orgLines: Content[] = [
+        {
+            text: upper(org?.name) || 'COMPANY NAME',
+            style: 'orgName'
+        }
+    ];
 
-	if (org?.gstin) {
-		headerLeft.push({ text: `GSTIN: ${org.gstin}`, fontSize: 8, bold: true, margin: [0, 2, 0, 0] as [number, number, number, number] });
-	}
-	if (org?.email) {
-		headerLeft.push({ text: `Email: ${org.email}`, fontSize: 8 });
-	}
-	if (org?.phone) {
-		headerLeft.push({ text: `Phone: ${org.phone}`, fontSize: 8 });
-	}
+    const orgAddress = [
+        upper(org?.address),
+        upper(org?.city),
+        org?.pincode
+    ]
+        .filter((part) => clean(part).length > 0)
+        .join(', ');
+    orgLines.push({
+        text: orgAddress || 'Address not set in Settings',
+        style: 'orgMeta'
+    });
+    orgLines.push({
+        text: org?.state_code
+            ? `State: ${stateName(org.state_code)} (${org.state_code})`
+            : 'State: -',
+        style: 'orgMeta'
+    });
+    orgLines.push({
+        text: `GSTIN: ${org?.gstin || 'UNREGISTERED'}`,
+        style: 'orgMetaStrong'
+    });
+    if (org?.phone) orgLines.push({ text: `Phone: ${org.phone}`, style: 'orgMeta' });
+    if (org?.email) orgLines.push({ text: `Email: ${org.email}`, style: 'orgMeta' });
 
-	// ── Item rows ──
-	const itemHeaderCols: TableCell[] = [
-		{ text: '#', style: 'tableHeader', alignment: 'center' },
-		{ text: 'Description', style: 'tableHeader' },
-		{ text: 'HSN/SAC', style: 'tableHeader', alignment: 'center' },
-		{ text: 'Qty', style: 'tableHeader', alignment: 'center' },
-		{ text: 'Rate', style: 'tableHeader', alignment: 'right' },
-		{ text: 'Amount', style: 'tableHeader', alignment: 'right' }
-	];
+    const leftMetaPairs: Array<[string, string]> = [
+        ['Invoice #', clean(invoice.invoice_number)],
+        ['Invoice Date', fmtDate(invoice.invoice_date)],
+        ['Due Date', fmtDate(invoice.due_date)],
+        ['Order / PO', clean(invoice.order_number)]
+    ];
 
-	if (isIntra) {
-		itemHeaderCols.splice(5, 0,
-			{ text: 'CGST', style: 'tableHeader', alignment: 'right' },
-			{ text: 'SGST', style: 'tableHeader', alignment: 'right' }
-		);
-	} else {
-		itemHeaderCols.splice(5, 0,
-			{ text: 'IGST', style: 'tableHeader', alignment: 'right' }
-		);
-	}
+    const rightMetaPairs: Array<[string, string]> = [
+        ['Supply Type', supplyType],
+        [
+            'Place of Supply',
+            placeOfSupplyCode
+                ? `${stateName(placeOfSupplyCode)} (${placeOfSupplyCode})`
+                : '-'
+        ],
+        ['GST Mode', invoice.prices_include_gst ? 'Prices include GST' : 'Prices exclude GST'],
+        ['Status', String(invoice.status || '').toUpperCase()]
+    ];
 
-	const itemRows: TableCell[][] = items.map((item, i) => {
-		const rate = item.gst_rate || 0;
-		const halfRate = rate / 2;
-		const lineCgst = item.cgst || 0;
-		const lineSgst = item.sgst || 0;
-		const lineIgst = item.igst || 0;
+    const billAddressLines = buildAddressLines(data);
+    const shipAddressLines = [...billAddressLines];
 
-		const row: TableCell[] = [
-			{ text: String(i + 1), alignment: 'center', fontSize: 8 },
-			{
-				stack: [
-					{ text: item.description || '', fontSize: 9 },
-					...(item.hsn_code ? [{ text: '', fontSize: 0 }] : [])
-				]
-			},
-			{ text: item.hsn_code || '', alignment: 'center', fontSize: 8 },
-			{ text: `${item.quantity}  ${item.unit || ''}`, alignment: 'center', fontSize: 8 },
-			{ text: fmt(item.rate), alignment: 'right', fontSize: 8 }
-		];
+    const itemWidths = isIntra
+        ? [18, '*', 50, 34, 50, 28, 46, 28, 46, 58]
+        : [18, '*', 52, 36, 54, 30, 48, 64];
 
-		if (isIntra) {
-			row.push(
-				{
-					stack: [
-						{ text: `${halfRate}%`, fontSize: 7, color: '#666' },
-						{ text: fmt(lineCgst), fontSize: 8 }
-					],
-					alignment: 'right'
-				},
-				{
-					stack: [
-						{ text: `${halfRate}%`, fontSize: 7, color: '#666' },
-						{ text: fmt(lineSgst), fontSize: 8 }
-					],
-					alignment: 'right'
-				}
-			);
-		} else {
-			row.push({
-				stack: [
-					{ text: `${rate}%`, fontSize: 7, color: '#666' },
-					{ text: fmt(lineIgst), fontSize: 8 }
-				],
-				alignment: 'right'
-			});
-		}
+    const headerRows: TableCell[][] = isIntra
+        ? [
+              [
+                  { text: '#', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                  { text: 'Item & Description', style: 'itemHead', rowSpan: 2 },
+                  { text: 'HSN/SAC', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                  { text: 'Qty', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                  { text: 'Rate', style: 'itemHead', alignment: 'right', rowSpan: 2 },
+                  { text: 'CGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
+                  {} as TableCell,
+                  { text: 'SGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
+                  {} as TableCell,
+                  { text: 'Amount', style: 'itemHead', alignment: 'right', rowSpan: 2 }
+              ],
+              [
+                  {} as TableCell,
+                  {} as TableCell,
+                  {} as TableCell,
+                  {} as TableCell,
+                  {} as TableCell,
+                  { text: '%', style: 'itemSubHead', alignment: 'right' },
+                  { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
+                  { text: '%', style: 'itemSubHead', alignment: 'right' },
+                  { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
+                  {} as TableCell
+              ]
+          ]
+        : [
+              [
+                  { text: '#', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                  { text: 'Item & Description', style: 'itemHead', rowSpan: 2 },
+                  { text: 'HSN/SAC', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                  { text: 'Qty', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                  { text: 'Rate', style: 'itemHead', alignment: 'right', rowSpan: 2 },
+                  { text: 'IGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
+                  {} as TableCell,
+                  { text: 'Amount', style: 'itemHead', alignment: 'right', rowSpan: 2 }
+              ],
+              [
+                  {} as TableCell,
+                  {} as TableCell,
+                  {} as TableCell,
+                  {} as TableCell,
+                  {} as TableCell,
+                  { text: '%', style: 'itemSubHead', alignment: 'right' },
+                  { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
+                  {} as TableCell
+              ]
+          ];
 
-		row.push({ text: fmt(item.total), alignment: 'right', bold: true, fontSize: 9 });
-		return row;
-	});
+    const itemRows: TableCell[][] = items.map((item, index) => {
+        const descriptionParts = clean(item.description).split('\n');
+        const itemName = descriptionParts[0] || '-';
+        const itemNotes = descriptionParts.slice(1).join(' ').trim();
 
-	const itemWidths = isIntra
-		? [20, '*', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto']
-		: [20, '*', 'auto', 'auto', 'auto', 'auto', 'auto'];
+        const descriptionCell: TableCell = itemNotes
+            ? {
+                  stack: [
+                      { text: itemName, style: 'itemName' },
+                      { text: itemNotes, style: 'itemNote' }
+                  ]
+              }
+            : {
+                  text: itemName,
+                  style: 'itemName'
+              };
 
-	// ── Tax summary (right side) ──
-	const taxRows: TableCell[][] = [];
+        if (isIntra) {
+            const halfRate = Number(item.gst_rate || 0) / 2;
+            return [
+                { text: String(index + 1), style: 'cell', alignment: 'center' },
+                descriptionCell,
+                { text: clean(item.hsn_code) || '-', style: 'cell', alignment: 'center' },
+                {
+                    text: `${fmtQty(item.quantity)}${item.unit ? ` ${item.unit}` : ''}`,
+                    style: 'cell',
+                    alignment: 'center'
+                },
+                { text: fmtMoney(item.rate), style: 'cell', alignment: 'right' },
+                { text: `${halfRate}%`, style: 'cellMuted', alignment: 'right' },
+                { text: fmtMoney(item.cgst), style: 'cell', alignment: 'right' },
+                { text: `${halfRate}%`, style: 'cellMuted', alignment: 'right' },
+                { text: fmtMoney(item.sgst), style: 'cell', alignment: 'right' },
+                { text: fmtMoney(item.total), style: 'cellStrong', alignment: 'right' }
+            ];
+        }
 
-	taxRows.push([
-		{ text: 'Sub Total', fontSize: 9 },
-		{ text: fmt(invoice.subtotal), alignment: 'right', fontSize: 9 }
-	]);
+        return [
+            { text: String(index + 1), style: 'cell', alignment: 'center' },
+            descriptionCell,
+            { text: clean(item.hsn_code) || '-', style: 'cell', alignment: 'center' },
+            {
+                text: `${fmtQty(item.quantity)}${item.unit ? ` ${item.unit}` : ''}`,
+                style: 'cell',
+                alignment: 'center'
+            },
+            { text: fmtMoney(item.rate), style: 'cell', alignment: 'right' },
+            { text: `${Number(item.gst_rate || 0)}%`, style: 'cellMuted', alignment: 'right' },
+            { text: fmtMoney(item.igst), style: 'cell', alignment: 'right' },
+            { text: fmtMoney(item.total), style: 'cellStrong', alignment: 'right' }
+        ];
+    });
 
-	if (isIntra) {
-		taxRows.push(
-			[
-				{ text: 'CGST', fontSize: 9 },
-				{ text: fmt(invoice.cgst), alignment: 'right', fontSize: 9 }
-			],
-			[
-				{ text: 'SGST', fontSize: 9 },
-				{ text: fmt(invoice.sgst), alignment: 'right', fontSize: 9 }
-			]
-		);
-	} else {
-		taxRows.push([
-			{ text: 'IGST', fontSize: 9 },
-			{ text: fmt(invoice.igst), alignment: 'right', fontSize: 9 }
-		]);
-	}
+    if (itemRows.length === 0) {
+        const colCount = isIntra ? 10 : 8;
+        itemRows.push([
+            {
+                text: 'No line items',
+                colSpan: colCount,
+                alignment: 'center',
+                style: 'emptyRow'
+            },
+            ...Array.from({ length: colCount - 1 }, () => ({} as TableCell))
+        ]);
+    }
 
-	// Total row (highlighted)
-	taxRows.push([
-		{ text: 'TOTAL', bold: true, fontSize: 10, fillColor: '#f0f0f0' },
-		{ text: fmt(invoice.total), bold: true, fontSize: 10, alignment: 'right', fillColor: '#f0f0f0' }
-	]);
+    const taxRows: TableCell[][] = [
+        [
+            { text: 'Sub Total', style: 'summaryLabel' },
+            { text: fmtMoney(invoice.subtotal), style: 'summaryValue', alignment: 'right' }
+        ]
+    ];
 
-	// Only show payment/balance if partially paid (not for fully paid or unpaid)
-	if ((invoice.amount_paid || 0) > 0.01) {
-		taxRows.push([
-			{ text: 'Less: Payment Received', fontSize: 8, color: '#16a34a' },
-			{ text: `(-) ${fmt(invoice.amount_paid)}`, alignment: 'right', fontSize: 8, color: '#16a34a' }
-		]);
+    if (isIntra) {
+        taxRows.push(
+            [
+                { text: 'CGST', style: 'summaryLabel' },
+                { text: fmtMoney(invoice.cgst), style: 'summaryValue', alignment: 'right' }
+            ],
+            [
+                { text: 'SGST', style: 'summaryLabel' },
+                { text: fmtMoney(invoice.sgst), style: 'summaryValue', alignment: 'right' }
+            ]
+        );
+    } else {
+        taxRows.push([
+            { text: 'IGST', style: 'summaryLabel' },
+            { text: fmtMoney(invoice.igst), style: 'summaryValue', alignment: 'right' }
+        ]);
+    }
 
-		if (!isPaid) {
-			taxRows.push([
-				{ text: 'BALANCE DUE', bold: true, fontSize: 10, color: '#dc2626' },
-				{ text: fmt(invoice.balance_due), bold: true, fontSize: 10, alignment: 'right', color: '#dc2626' }
-			]);
-		}
-	}
+    const roundOff =
+        Math.round(
+            (Number(invoice.total || 0) -
+                (Number(invoice.subtotal || 0) +
+                    Number(invoice.cgst || 0) +
+                    Number(invoice.sgst || 0) +
+                    Number(invoice.igst || 0))) *
+                100,
+        ) / 100;
 
-	// ── Total in words ──
-	const totalWords = numberToWords(invoice.total || 0);
+    if (Math.abs(roundOff) >= 0.01) {
+        taxRows.push([
+            { text: 'Round Off', style: 'summaryLabel' },
+            { text: fmtMoney(roundOff), style: 'summaryValue', alignment: 'right' }
+        ]);
+    }
 
-	// ── Bank details ──
-	const bankLines: string[] = [];
-	if (org?.bank_name) bankLines.push(`Bank: ${org.bank_name}`);
-	if (org?.account_number) bankLines.push(`A/c No: ${org.account_number}`);
-	if (org?.ifsc) bankLines.push(`IFSC: ${org.ifsc}`);
-	if (org?.branch) bankLines.push(`Branch: ${org.branch}`);
-	if ((org as any)?.upi_id) bankLines.push(`UPI: ${(org as any).upi_id}`);
+    taxRows.push([
+        { text: 'Grand Total', style: 'summaryTotalLabel', fillColor: '#eef2f7' },
+        {
+            text: fmtMoney(invoice.total),
+            style: 'summaryTotalValue',
+            alignment: 'right',
+            fillColor: '#eef2f7'
+        }
+    ]);
 
-	// ── Customer address block ──
-	const customerAddress: Content[] = [
-		{ text: uc(customer?.name) || 'UNKNOWN', bold: true, fontSize: 10 }
-	];
-	if (customer?.company_name) {
-		customerAddress.push({ text: uc(customer.company_name), fontSize: 8 });
-	}
-	if (customer?.billing_address) {
-		customerAddress.push({ text: uc(customer.billing_address), fontSize: 8 });
-	}
-	const cityLine = [uc(customer?.city), customer?.pincode].filter(Boolean).join(' - ');
-	if (cityLine) {
-		customerAddress.push({ text: cityLine, fontSize: 8 });
-	}
-	if (customer?.state_code) {
-		customerAddress.push({
-			text: `State: ${stateName(customer.state_code)} (${customer.state_code})`,
-			fontSize: 8
-		});
-	}
-	if (customer?.gstin) {
-		customerAddress.push({
-			text: `GSTIN: ${customer.gstin}`,
-			fontSize: 8, bold: true,
-			margin: [0, 2, 0, 0] as [number, number, number, number]
-		});
-	}
+    if (amountPaid > 0.01) {
+        taxRows.push([
+            { text: 'Payment Received', style: 'paymentLabel' },
+            { text: `(-) ${fmtMoney(amountPaid)}`, style: 'paymentValue', alignment: 'right' }
+        ]);
+    }
 
-	// ── Place of Supply ──
-	const placeOfSupply = customer?.place_of_supply || customer?.state_code || '';
+    if (!isPaid) {
+        taxRows.push([
+            { text: 'Balance Due', style: 'balanceLabel' },
+            { text: fmtMoney(balanceDue), style: 'balanceValue', alignment: 'right' }
+        ]);
+    }
 
-	// ── Build document ──
-	const content: Content[] = [
-		{
-			table: {
-				widths: ['*'],
-				body: [[{
-					stack: [
-						// ─── Header ───
-						{
-							columns: [
-								{ width: '*', stack: headerLeft },
-								{
-									width: 'auto',
-									stack: [
-										{ text: 'TAX INVOICE', fontSize: 18, bold: true, alignment: 'right' },
-										...(isPaid ? [{
-											text: 'PAID',
-											fontSize: 12, bold: true, color: '#16a34a',
-											alignment: 'right' as const,
-											margin: [0, 4, 0, 0] as [number, number, number, number]
-										}] : [])
-									]
-								}
-							],
-							margin: [0, 0, 0, 8] as [number, number, number, number]
-						},
+    const bankDetails: string[] = [];
+    if (org?.bank_name) bankDetails.push(`Bank: ${org.bank_name}`);
+    if (org?.account_number) bankDetails.push(`A/c No: ${org.account_number}`);
+    if (org?.ifsc) bankDetails.push(`IFSC: ${org.ifsc}`);
+    if (org?.branch) bankDetails.push(`Branch: ${org.branch}`);
+    if (org?.upi_id) bankDetails.push(`UPI: ${org.upi_id}`);
 
-						// ─── Separator ───
-						{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 1, lineColor: '#000' }] },
+    const footerLeft: Content[] = [
+        { text: 'Total In Words', style: 'sectionLabel' },
+        { text: numberToWords(Number(invoice.total || 0)), style: 'wordsValue' }
+    ];
 
-						// ─── Invoice meta + Customer info ───
-						{
-							columns: [
-								{
-									width: '50%',
-									stack: [
-										{ text: 'Bill To', bold: true, fontSize: 8, color: '#666', margin: [0, 6, 0, 4] as [number, number, number, number] },
-										...customerAddress
-									]
-								},
-								{
-									width: '50%',
-									stack: [
-										{
-											text: [
-												{ text: 'Invoice No: ', fontSize: 9 },
-												{ text: invoice.invoice_number, bold: true, fontSize: 10 }
-											],
-											margin: [0, 6, 0, 0] as [number, number, number, number]
-										},
-										{
-											text: [
-												{ text: 'Date: ', fontSize: 9 },
-												{ text: fmtDate(invoice.invoice_date), fontSize: 9, bold: true }
-											],
-											margin: [0, 3, 0, 0] as [number, number, number, number]
-										},
-										{
-											text: [
-												{ text: 'Due Date: ', fontSize: 9 },
-												{ text: fmtDate(invoice.due_date), fontSize: 9, bold: true }
-											],
-											margin: [0, 3, 0, 0] as [number, number, number, number]
-										},
-										...(placeOfSupply ? [{
-											text: [
-												{ text: 'Place of Supply: ', fontSize: 8 },
-												{ text: `${stateName(placeOfSupply)} (${placeOfSupply})`, fontSize: 8, bold: true }
-											],
-											margin: [0, 3, 0, 0] as [number, number, number, number]
-										}] : []),
-										...(invoice.order_number ? [{
-											text: [
-												{ text: 'Order No: ', fontSize: 8 },
-												{ text: invoice.order_number, fontSize: 8 }
-											],
-											margin: [0, 3, 0, 0] as [number, number, number, number]
-										}] : [])
-									],
-									alignment: 'right'
-								}
-							],
-							margin: [0, 0, 0, 8] as [number, number, number, number],
-							columnGap: 10
-						},
+    if (bankDetails.length > 0) {
+        footerLeft.push(
+            {
+                text: 'Bank Details',
+                style: 'sectionLabel',
+                margin: [0, 8, 0, 0] as [number, number, number, number]
+            },
+            {
+                text: bankDetails.join('\n'),
+                style: 'detailText'
+            }
+        );
+    }
 
-						// ─── Separator ───
-						{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5 }] },
+    if (clean(invoice.notes)) {
+        footerLeft.push(
+            {
+                text: 'Notes',
+                style: 'sectionLabel',
+                margin: [0, 8, 0, 0] as [number, number, number, number]
+            },
+            {
+                text: clean(invoice.notes),
+                style: 'detailText'
+            }
+        );
+    }
 
-						// ─── Items table ───
-						{
-							table: {
-								headerRows: 1,
-								widths: itemWidths,
-								body: [itemHeaderCols, ...itemRows]
-							},
-							layout: {
-								hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? 0.5 : 0.3,
-								vLineWidth: () => 0.3,
-								hLineColor: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length) ? '#000' : '#ccc',
-								vLineColor: () => '#ccc',
-								fillColor: (rowIndex: number) => rowIndex === 0 ? '#f3f4f6' : null,
-								paddingLeft: () => 4,
-								paddingRight: () => 4,
-								paddingTop: () => 4,
-								paddingBottom: () => 4
-							},
-							fontSize: 9,
-							margin: [0, 4, 0, 0] as [number, number, number, number]
-						},
+    if (clean(invoice.terms)) {
+        footerLeft.push(
+            {
+                text: 'Terms & Conditions',
+                style: 'sectionLabel',
+                margin: [0, 8, 0, 0] as [number, number, number, number]
+            },
+            {
+                text: clean(invoice.terms),
+                style: 'detailText'
+            }
+        );
+    }
 
-						// ─── Footer: Total in words + Bank | Totals + Signature ───
-						{
-							columns: [
-								{
-									width: '55%',
-									stack: [
-										{ text: 'Total In Words:', fontSize: 8, color: '#666', margin: [0, 8, 0, 2] as [number, number, number, number] },
-										{ text: totalWords, italics: true, bold: true, fontSize: 9, margin: [0, 0, 0, 12] as [number, number, number, number] },
-										...(bankLines.length > 0 ? [
-											{ text: 'Bank Details', bold: true, fontSize: 9, margin: [0, 0, 0, 2] as [number, number, number, number] },
-											{ text: bankLines.join('\n'), fontSize: 8, lineHeight: 1.5 }
-										] as Content[] : []),
-										...(invoice.notes ? [
-											{ text: 'Notes:', bold: true, fontSize: 8, color: '#666', margin: [0, 8, 0, 2] as [number, number, number, number] },
-											{ text: invoice.notes, fontSize: 8, color: '#333' }
-										] as Content[] : []),
-										...(invoice.terms ? [
-											{ text: 'Terms & Conditions:', bold: true, fontSize: 8, color: '#666', margin: [0, 6, 0, 2] as [number, number, number, number] },
-											{ text: invoice.terms, fontSize: 8, color: '#333' }
-										] as Content[] : [])
-									]
-								},
-								{
-									width: '45%',
-									stack: [
-										{
-											table: {
-												widths: ['*', 'auto'],
-												body: taxRows
-											},
-											layout: {
-												hLineWidth: () => 0,
-												vLineWidth: () => 0,
-												paddingLeft: () => 4,
-												paddingRight: () => 4,
-												paddingTop: () => 3,
-												paddingBottom: () => 3
-											},
-											margin: [0, 4, 0, 0] as [number, number, number, number]
-										},
-										// Signature
-										{
-											stack: [
-												{ text: '', margin: [0, 20, 0, 0] as [number, number, number, number] },
-												...(((org as any)?.signature_url) ? [{
-													image: (org as any).signature_url,
-													width: 80,
-													alignment: 'center' as const,
-													margin: [0, 0, 0, 4] as [number, number, number, number]
-												}] : []),
-												{ canvas: [{ type: 'line', x1: 30, y1: 0, x2: 180, y2: 0, lineWidth: 0.5 }] },
-												{
-													text: `For ${uc(org?.name) || 'COMPANY'}`,
-													bold: true, alignment: 'center', fontSize: 8,
-													margin: [0, 4, 0, 0] as [number, number, number, number]
-												},
-												{
-													text: 'Authorized Signatory',
-													alignment: 'center', fontSize: 7, color: '#666',
-													margin: [0, 2, 0, 0] as [number, number, number, number]
-												}
-											]
-										}
-									]
-								}
-							],
-							columnGap: 10
-						}
-					],
-					margin: [10, 10, 10, 10]
-				}]]
-			},
-			layout: {
-				hLineWidth: () => 1,
-				vLineWidth: () => 1,
-				hLineColor: () => '#000',
-				vLineColor: () => '#000'
-			}
-		},
-		// Disclaimer
-		{
-			text: 'This is a computer-generated invoice and does not require a physical signature.',
-			alignment: 'center',
-			fontSize: 7,
-			color: '#999',
-			margin: [0, 8, 0, 0]
-		}
-	];
+    const summaryAndSign: Content[] = [
+        {
+            table: {
+                widths: ['*', 86],
+                body: taxRows
+            },
+            layout: {
+                hLineWidth: (i: number, node: any) =>
+                    i === 0 || i === node.table.body.length ? 0 : 0.5,
+                vLineWidth: () => 0,
+                hLineColor: () => '#c6ccd4',
+                paddingLeft: () => 4,
+                paddingRight: () => 2,
+                paddingTop: () => 3,
+                paddingBottom: () => 3
+            }
+        },
+        {
+            stack: [
+                { text: ' ', margin: [0, 20, 0, 0] as [number, number, number, number] },
+                ...(org?.signature_url
+                    ? [
+                          {
+                              image: org.signature_url,
+                              width: 90,
+                              alignment: 'center' as const,
+                              margin: [0, 0, 0, 4] as [number, number, number, number]
+                          }
+                      ]
+                    : []),
+                {
+                    canvas: [
+                        {
+                            type: 'line',
+                            x1: 22,
+                            y1: 0,
+                            x2: 178,
+                            y2: 0,
+                            lineWidth: 0.7,
+                            lineColor: '#9aa4b2'
+                        }
+                    ]
+                },
+                {
+                    text: `For ${upper(org?.name) || 'COMPANY'}`,
+                    style: 'signName',
+                    alignment: 'center',
+                    margin: [0, 4, 0, 0] as [number, number, number, number]
+                },
+                {
+                    text: 'Authorized Signatory',
+                    style: 'signLabel',
+                    alignment: 'center',
+                    margin: [0, 2, 0, 0] as [number, number, number, number]
+                }
+            ]
+        }
+    ];
 
-	return {
-		pageSize: 'A4',
-		pageMargins: [28, 28, 28, 28],
-		content,
-		defaultStyle: {
-			font: 'Helvetica',
-			fontSize: 10
-		},
-		styles: {
-			tableHeader: {
-				bold: true,
-				fontSize: 8,
-				fillColor: '#f3f4f6'
-			}
-		}
-	};
+    const mainSheet: Content = {
+        table: {
+            widths: ['*'],
+            body: [
+                [
+                    {
+                        columns: [
+                            {
+                                width: '70%',
+                                stack: [
+                                    org?.logo_url
+                                        ? {
+                                              columns: [
+                                                  {
+                                                      width: 58,
+                                                      image: org.logo_url,
+                                                      fit: [54, 54]
+                                                  },
+                                                  {
+                                                      width: '*',
+                                                      stack: orgLines,
+                                                      margin: [8, 0, 0, 0] as [
+                                                          number,
+                                                          number,
+                                                          number,
+                                                          number
+                                                      ]
+                                                  }
+                                              ]
+                                          }
+                                        : { stack: orgLines }
+                                ]
+                            },
+                            {
+                                width: '30%',
+                                stack: [
+                                    {
+                                        text: 'TAX INVOICE',
+                                        style: 'invoiceTitle',
+                                        alignment: 'right' as const
+                                    },
+                                    ...(isPaid
+                                        ? [
+                                                  {
+                                                      text: 'PAID',
+                                                      style: 'paidStamp',
+                                                      alignment: 'right' as const,
+                                                      margin: [0, 6, 0, 0] as [
+                                                          number,
+                                                          number,
+                                                      number,
+                                                      number
+                                                  ]
+                                              }
+                                          ]
+                                        : [])
+                                ]
+                            }
+                        ],
+                        margin: [10, 8, 10, 8] as [number, number, number, number]
+                    }
+                ],
+                [
+                    {
+                        columns: [
+                            {
+                                width: '50%',
+                                stack: [
+                                    { text: 'Invoice Details', style: 'sectionLabel' },
+                                    buildMetaTable(leftMetaPairs)
+                                ]
+                            },
+                            {
+                                width: '50%',
+                                stack: [
+                                    { text: 'Supply Details', style: 'sectionLabel' },
+                                    buildMetaTable(rightMetaPairs)
+                                ]
+                            }
+                        ],
+                        columnGap: 14,
+                        margin: [10, 6, 10, 8] as [number, number, number, number]
+                    }
+                ],
+                [
+                    {
+                        columns: [
+                            {
+                                width: '50%',
+                                stack: [
+                                    { text: 'Bill To', style: 'sectionLabel' },
+                                    ...billAddressLines.map((line, idx) => ({
+                                        text: line,
+                                        style: idx === 0 ? 'partyName' : idx === billAddressLines.length - 1 && line.startsWith('GSTIN') ? 'partyMetaStrong' : 'partyMeta'
+                                    }))
+                                ]
+                            },
+                            {
+                                width: '50%',
+                                stack: [
+                                    { text: 'Ship To', style: 'sectionLabel' },
+                                    ...shipAddressLines.map((line, idx) => ({
+                                        text: line,
+                                        style: idx === 0 ? 'partyName' : idx === shipAddressLines.length - 1 && line.startsWith('GSTIN') ? 'partyMetaStrong' : 'partyMeta'
+                                    }))
+                                ]
+                            }
+                        ],
+                        columnGap: 14,
+                        margin: [10, 6, 10, 8] as [number, number, number, number]
+                    }
+                ],
+                [
+                    {
+                        table: {
+                            headerRows: 2,
+                            widths: itemWidths,
+                            body: [...headerRows, ...itemRows]
+                        },
+                        layout: {
+                            hLineWidth: (i: number, node: any) =>
+                                i === 0 || i === node.table.body.length ? 0 : 0.5,
+                            vLineWidth: (i: number, node: any) =>
+                                i === 0 || i === node.table.widths.length ? 0 : 0.5,
+                            hLineColor: () => '#c6ccd4',
+                            vLineColor: () => '#c6ccd4',
+                            fillColor: (rowIndex: number) => {
+                                if (rowIndex === 0) return '#eef2f7';
+                                if (rowIndex === 1) return '#f8fafc';
+                                return null;
+                            },
+                            paddingLeft: () => 4,
+                            paddingRight: () => 4,
+                            paddingTop: () => 4,
+                            paddingBottom: () => 4
+                        },
+                        margin: [0, 0, 0, 0] as [number, number, number, number]
+                    }
+                ],
+                [
+                    {
+                        columns: [
+                            {
+                                width: '58%',
+                                stack: footerLeft
+                            },
+                            {
+                                width: '42%',
+                                stack: summaryAndSign
+                            }
+                        ],
+                        columnGap: 12,
+                        margin: [10, 8, 10, 10] as [number, number, number, number]
+                    }
+                ]
+            ]
+        },
+        layout: {
+            hLineWidth: () => 0.8,
+            vLineWidth: () => 0.8,
+            hLineColor: () => '#98a3b3',
+            vLineColor: () => '#98a3b3',
+            paddingLeft: () => 0,
+            paddingRight: () => 0,
+            paddingTop: () => 0,
+            paddingBottom: () => 0
+        }
+    };
+
+    return {
+        pageSize: 'A4',
+        pageMargins: [18, 16, 18, 16],
+        content: [
+            mainSheet,
+            {
+                text: 'This is a computer-generated invoice and does not require a physical signature.',
+                alignment: 'center',
+                fontSize: 7,
+                color: '#7b8492',
+                margin: [0, 8, 0, 0] as [number, number, number, number]
+            }
+        ],
+        defaultStyle: {
+            font: 'Helvetica',
+            fontSize: 9,
+            color: '#0f172a'
+        },
+        styles: {
+            orgName: {
+                fontSize: 14,
+                bold: true
+            },
+            orgMeta: {
+                fontSize: 8,
+                color: '#1e293b'
+            },
+            orgMetaStrong: {
+                fontSize: 8,
+                bold: true,
+                color: '#0f172a'
+            },
+            invoiceTitle: {
+                fontSize: 22,
+                bold: true,
+                color: '#111827'
+            },
+            paidStamp: {
+                fontSize: 10,
+                bold: true,
+                color: '#166534'
+            },
+            sectionLabel: {
+                fontSize: 8,
+                bold: true,
+                color: '#1e293b'
+            },
+            metaLabel: {
+                fontSize: 8,
+                color: '#1e293b'
+            },
+            metaValue: {
+                fontSize: 8.5,
+                bold: true,
+                color: '#0f172a'
+            },
+            partyName: {
+                fontSize: 9,
+                bold: true,
+                color: '#0f172a'
+            },
+            partyMeta: {
+                fontSize: 8,
+                color: '#1e293b'
+            },
+            partyMetaStrong: {
+                fontSize: 8,
+                bold: true,
+                color: '#0f172a'
+            },
+            itemHead: {
+                fontSize: 8,
+                bold: true,
+                color: '#1e293b'
+            },
+            itemSubHead: {
+                fontSize: 7.5,
+                bold: true,
+                color: '#334155'
+            },
+            itemName: {
+                fontSize: 8.5,
+                bold: true,
+                color: '#0f172a'
+            },
+            itemNote: {
+                fontSize: 7.5,
+                color: '#334155'
+            },
+            cell: {
+                fontSize: 8,
+                color: '#0f172a'
+            },
+            cellMuted: {
+                fontSize: 7.5,
+                color: '#334155'
+            },
+            cellStrong: {
+                fontSize: 8,
+                bold: true,
+                color: '#0f172a'
+            },
+            emptyRow: {
+                fontSize: 8,
+                italics: true,
+                color: '#334155'
+            },
+            wordsValue: {
+                fontSize: 9,
+                bold: true,
+                italics: true,
+                color: '#111827'
+            },
+            detailText: {
+                fontSize: 8,
+                color: '#1e293b',
+                lineHeight: 1.3
+            },
+            summaryLabel: {
+                fontSize: 8.5,
+                color: '#1e293b'
+            },
+            summaryValue: {
+                fontSize: 8.5,
+                color: '#0f172a'
+            },
+            summaryTotalLabel: {
+                fontSize: 9,
+                bold: true,
+                color: '#0f172a'
+            },
+            summaryTotalValue: {
+                fontSize: 9.5,
+                bold: true,
+                color: '#0f172a'
+            },
+            paymentLabel: {
+                fontSize: 8,
+                color: '#166534'
+            },
+            paymentValue: {
+                fontSize: 8,
+                color: '#166534'
+            },
+            balanceLabel: {
+                fontSize: 9,
+                bold: true,
+                color: '#b91c1c'
+            },
+            balanceValue: {
+                fontSize: 9.5,
+                bold: true,
+                color: '#b91c1c'
+            },
+            signName: {
+                fontSize: 8,
+                bold: true,
+                color: '#0f172a'
+            },
+            signLabel: {
+                fontSize: 7.5,
+                color: '#334155'
+            }
+        }
+    };
 }
