@@ -24,6 +24,18 @@
     let { data } = $props();
     const { invoice, lineItems } = data;
 
+    // Split existing descriptions into name + notes on load
+    function splitDescription(desc: string): { name: string; notes: string } {
+        const idx = desc.indexOf("\n");
+        if (idx === -1) return { name: desc, notes: "" };
+        return { name: desc.substring(0, idx), notes: desc.substring(idx + 1) };
+    }
+
+    const parsedItems = lineItems.map((item) => {
+        const { name, notes } = splitDescription(item.description);
+        return { name, notes, item };
+    });
+
     // Pre-populate form from existing invoice data
     let formData = $state({
         customer_id: invoice.customer_id,
@@ -32,8 +44,8 @@
         order_number: invoice.order_number || "",
         notes: invoice.notes || "",
         terms: invoice.terms || "",
-        items: lineItems.map((item) => ({
-            description: item.description,
+        items: parsedItems.map(({ name, item }) => ({
+            description: name,
             hsn_code: item.hsn_code || "",
             quantity: item.quantity,
             unit: item.unit || "nos",
@@ -42,6 +54,10 @@
             item_id: item.item_id || "",
         })) as (LineItem & { item_id?: string })[],
     });
+
+    // Per-item notes (description sub-lines)
+    let lineNotes = $state<string[]>(parsedItems.map((p) => p.notes));
+    let showNotes = $state<boolean[]>(parsedItems.map((p) => p.notes.length > 0));
 
     let pricesIncludeGst = $state(invoice.prices_include_gst ?? false);
     let submitting = $state(false);
@@ -133,12 +149,22 @@
                 item_id: "",
             },
         ];
+        lineNotes = [...lineNotes, ""];
+        showNotes = [...showNotes, false];
     }
 
     function removeItem(index: number) {
         if (formData.items.length > 1) {
             formData.items = formData.items.filter((_, i) => i !== index);
+            lineNotes = lineNotes.filter((_, i) => i !== index);
+            showNotes = showNotes.filter((_, i) => i !== index);
         }
+    }
+
+    function getCombinedDescription(index: number): string {
+        const desc = formData.items[index].description;
+        const notes = lineNotes[index]?.trim();
+        return notes ? `${desc}\n${notes}` : desc;
     }
 
     function getLineAmount(item: LineItem): number {
@@ -160,6 +186,17 @@
         const [reorderedItem] = items.splice(dragItemIndex, 1);
         items.splice(index, 0, reorderedItem);
         formData.items = items;
+
+        const notes = [...lineNotes];
+        const [reorderedNote] = notes.splice(dragItemIndex, 1);
+        notes.splice(index, 0, reorderedNote);
+        lineNotes = notes;
+
+        const show = [...showNotes];
+        const [reorderedShow] = show.splice(dragItemIndex, 1);
+        show.splice(index, 0, reorderedShow);
+        showNotes = show;
+
         dragItemIndex = null;
     }
 
@@ -176,9 +213,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <Button
             variant="ghost"
             href="/invoices/{data.invoice.id}"
@@ -191,14 +226,14 @@
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Edit Invoice
             </h1>
-            <p class="text-sm text-text-subtle font-mono">
+            <p class="text-sm text-slate-500 font-mono">
                 {data.invoice.invoice_number}
             </p>
         </div>
     </header>
 
     {#if error}
-        <div class="mx-auto mt-4 w-full max-w-5xl px-6">
+        <div class="content-width-standard mt-4">
             <div
                 class="bg-destructive/10 text-active p-3 rounded-md text-sm border border-destructive/20 text-destructive flex items-center gap-2"
             >
@@ -209,7 +244,7 @@
     {/if}
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto bg-surface-1">
+    <main class="page-body">
         <form
             id="invoice-form"
             method="POST"
@@ -235,12 +270,11 @@
                 value={pricesIncludeGst ? "true" : "false"}
             />
 
-            <div class="p-6 md:p-8">
-                <div class="max-w-5xl mx-auto space-y-8">
+            <div class="content-width-standard space-y-8">
                     <!-- Section: Customer & Invoice Details -->
                     <section class="space-y-6">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-subtle"
+                            class="text-xs font-bold uppercase tracking-wide text-slate-500"
                         >
                             Customer & Invoice Details
                         </h3>
@@ -255,40 +289,71 @@
                                 </Label>
                                 {#if selectedCustomer}
                                     <!-- Selected customer card -->
-                                    <input type="hidden" name="customer_id" value={formData.customer_id} />
-                                    <div class="flex items-start gap-4 rounded-lg border border-border bg-surface-0 p-3">
+                                    <input
+                                        type="hidden"
+                                        name="customer_id"
+                                        value={formData.customer_id}
+                                    />
+                                    <div
+                                        class="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-3"
+                                    >
                                         <div class="flex-1 min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-sm font-semibold text-text-strong truncate">{selectedCustomer.name}</span>
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <span
+                                                    class="text-sm font-semibold text-[#111] truncate"
+                                                    >{selectedCustomer.name}</span
+                                                >
                                                 {#if selectedCustomer.company_name}
-                                                    <span class="text-xs text-text-muted truncate">{selectedCustomer.company_name}</span>
+                                                    <span
+                                                        class="text-xs text-slate-400 truncate"
+                                                        >{selectedCustomer.company_name}</span
+                                                    >
                                                 {/if}
                                             </div>
-                                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-text-muted">
+                                            <div
+                                                class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-400"
+                                            >
                                                 {#if selectedCustomer.gstin}
-                                                    <span class="font-mono">{selectedCustomer.gstin}</span>
+                                                    <span class="font-mono"
+                                                        >{selectedCustomer.gstin}</span
+                                                    >
                                                 {:else}
                                                     <span>No GSTIN</span>
                                                 {/if}
                                                 {#if selectedCustomerAddress}
-                                                    <span class="truncate max-w-[250px]">{selectedCustomerAddress}</span>
+                                                    <span
+                                                        class="truncate max-w-[250px]"
+                                                        >{selectedCustomerAddress}</span
+                                                    >
                                                 {/if}
                                             </div>
                                             {#if selectedCustomer.gst_treatment || isInterState}
-                                                <div class="flex items-center gap-2 mt-1.5">
+                                                <div
+                                                    class="flex items-center gap-2 mt-1.5"
+                                                >
                                                     {#if selectedCustomer.gst_treatment}
-                                                        <span class="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{selectedCustomer.gst_treatment}</span>
+                                                        <span
+                                                            class="rounded-sm bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
+                                                            >{selectedCustomer.gst_treatment}</span
+                                                        >
                                                     {/if}
                                                     {#if isInterState}
-                                                        <span class="rounded-sm bg-info/10 text-info px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">IGST</span>
+                                                        <span
+                                                            class="rounded-sm bg-info/10 text-info px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                            >IGST</span
+                                                        >
                                                     {/if}
                                                 </div>
                                             {/if}
                                         </div>
                                         <button
                                             type="button"
-                                            class="text-xs text-primary font-medium hover:underline shrink-0"
-                                            onclick={() => { formData.customer_id = ""; }}
+                                            class="text-xs text-[#111] font-medium hover:underline shrink-0"
+                                            onclick={() => {
+                                                formData.customer_id = "";
+                                            }}
                                         >
                                             Change
                                         </button>
@@ -302,26 +367,29 @@
                                     >
                                         <Select.Trigger
                                             id="customer_id"
-                                            class="w-full border-border-strong bg-surface-0 focus:ring-1 focus:ring-primary/20"
+                                            class="w-full border-slate-300 bg-white focus:ring-1 focus:ring-slate-200"
                                         >
-                                            <span class="text-sm text-text-muted">Select a customer</span>
+                                            <span
+                                                class="text-sm text-slate-400"
+                                                >Select a customer</span
+                                            >
                                         </Select.Trigger>
                                         <Select.Content
-                                            class="bg-surface-1 border-border shadow-lg min-w-[22rem]"
+                                            class="bg-[#FAFAFA] border-slate-200 shadow-lg min-w-[22rem]"
                                         >
                                             <div
-                                                class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-surface-1 border-b border-border space-y-2"
+                                                class="sticky top-0 z-10 -mx-1 px-2 pt-2 pb-2 bg-[#FAFAFA] border-b border-slate-200 space-y-2"
                                             >
                                                 <Input
                                                     bind:value={customerSearch}
                                                     placeholder="Search customers"
-                                                    class="h-8 border-border-strong text-sm"
+                                                    class="h-8 border-slate-300 text-sm"
                                                 />
                                                 <div
                                                     class="flex items-center justify-between"
                                                 >
                                                     <span
-                                                        class="text-[10px] uppercase tracking-wide text-text-subtle font-semibold"
+                                                        class="text-[10px] uppercase tracking-wide text-slate-500 font-semibold"
                                                     >
                                                         Customers
                                                     </span>
@@ -337,7 +405,7 @@
 
                                             {#if filteredCustomers.length === 0}
                                                 <div
-                                                    class="px-3 py-4 text-xs text-text-muted"
+                                                    class="px-3 py-4 text-xs text-slate-400"
                                                 >
                                                     No customers match "{customerSearch}"
                                                 </div>
@@ -345,30 +413,30 @@
                                                 {#each filteredCustomers as customer}
                                                     <Select.Item
                                                         value={customer.id}
-                                                        class="hover:bg-surface-2 focus:bg-surface-2 cursor-pointer"
+                                                        class="hover:bg-slate-100 focus:bg-slate-100 cursor-pointer"
                                                     >
                                                         <div
                                                             class="flex flex-col text-left"
                                                         >
                                                             <span
-                                                                class="font-medium text-text-strong"
+                                                                class="font-medium text-[#111]"
                                                                 >{customer.name}</span
                                                             >
                                                             {#if customer.company_name}
                                                                 <span
-                                                                    class="text-[10px] text-text-muted uppercase tracking-wide"
+                                                                    class="text-[10px] text-slate-400 uppercase tracking-wide"
                                                                     >{customer.company_name}</span
                                                                 >
                                                             {/if}
                                                             {#if customer.gstin}
                                                                 <span
-                                                                    class="text-[10px] font-mono text-text-muted"
+                                                                    class="text-[10px] font-mono text-slate-400"
                                                                     >GSTIN {customer.gstin}</span
                                                                 >
                                                             {/if}
                                                             {#if customer.city || customer.state_code}
                                                                 <span
-                                                                    class="text-[10px] text-text-muted"
+                                                                    class="text-[10px] text-slate-400"
                                                                 >
                                                                     {customer.city ||
                                                                         "—"}{customer.state_code
@@ -394,7 +462,7 @@
                                     id="invoice_number"
                                     value={data.invoice.invoice_number}
                                     readonly
-                                    class="bg-surface-2/50 text-text-subtle border-border font-mono text-sm"
+                                    class="bg-slate-100/50 text-slate-500 border-slate-200 font-mono text-sm"
                                 />
                             </div>
 
@@ -408,7 +476,7 @@
                                     name="order_number"
                                     bind:value={formData.order_number}
                                     placeholder="Reference"
-                                    class="border-border-strong text-text-strong bg-surface-0 focus:border-primary"
+                                    class="border-slate-300 text-[#111] bg-white focus:border-slate-400"
                                 />
                             </div>
                         </div>
@@ -417,7 +485,7 @@
                     <!-- Section: Dates -->
                     <section class="space-y-6">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-subtle"
+                            class="text-xs font-bold uppercase tracking-wide text-slate-500"
                         >
                             Dates
                         </h3>
@@ -434,7 +502,7 @@
                                     name="invoice_date"
                                     type="date"
                                     bind:value={formData.invoice_date}
-                                    class="border-border-strong bg-surface-0"
+                                    class="border-slate-300 bg-white"
                                 />
                             </div>
                             <div class="space-y-2">
@@ -444,7 +512,7 @@
                                     bind:value={formData.terms}
                                 >
                                     <Select.Trigger
-                                        class="h-9 border-border-strong text-sm bg-surface-0"
+                                        class="h-9 border-slate-300 text-sm bg-white"
                                     >
                                         {formData.terms || "Due on Receipt"}
                                     </Select.Trigger>
@@ -480,7 +548,7 @@
                                     name="due_date"
                                     type="date"
                                     bind:value={formData.due_date}
-                                    class="border-border-strong bg-surface-0"
+                                    class="border-slate-300 bg-white"
                                 />
                             </div>
                         </div>
@@ -490,7 +558,7 @@
                     <section class="space-y-4">
                         <div class="flex justify-between items-center">
                             <h3
-                                class="text-xs font-bold uppercase tracking-wide text-text-subtle"
+                                class="text-xs font-bold uppercase tracking-wide text-slate-500"
                             >
                                 Line Items
                             </h3>
@@ -498,14 +566,14 @@
                                 class="flex items-center gap-2 cursor-pointer"
                             >
                                 <span
-                                    class="text-xs font-medium text-text-subtle"
+                                    class="text-xs font-medium text-slate-500"
                                 >
                                     Prices include GST
                                 </span>
                                 <Checkbox
                                     bind:checked={pricesIncludeGst}
                                     aria-label="Prices include GST"
-                                    class="border-border-strong data-[state=checked]:border-primary"
+                                    class="border-slate-300 data-[state=checked]:border-slate-400"
                                 />
                             </label>
                         </div>
@@ -514,13 +582,13 @@
                             <div class="space-y-3">
                                 {#each formData.items as item, index}
                                     <article
-                                        class="rounded-lg border border-border bg-surface-0 p-3 space-y-3"
+                                        class="rounded-lg border border-slate-200 bg-white p-3 space-y-3"
                                     >
                                         <div
                                             class="flex items-center justify-between"
                                         >
                                             <span
-                                                class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
+                                                class="text-[10px] font-semibold uppercase tracking-wide text-slate-500"
                                             >
                                                 Item {index + 1}
                                             </span>
@@ -545,16 +613,21 @@
                                             >
                                             <ItemCombobox
                                                 catalogItems={data.catalogItems}
-                                                bind:value={formData.items[
-                                                    index
-                                                ]}
+                                                bind:value={
+                                                    formData.items[index]
+                                                }
                                                 onSelect={(item) =>
                                                     handleItemSelect(
                                                         index,
                                                         item,
                                                     )}
-                                                name="items[{index}].description"
+                                                name=""
                                                 placeholder="Search or enter item..."
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="items[{index}].description"
+                                                value={getCombinedDescription(index)}
                                             />
                                             <input
                                                 type="hidden"
@@ -566,6 +639,22 @@
                                                 name="items[{index}].unit"
                                                 value={item.unit || "nos"}
                                             />
+                                            {#if showNotes[index]}
+                                                <textarea
+                                                    bind:value={lineNotes[index]}
+                                                    placeholder="Add details or description..."
+                                                    rows="2"
+                                                    class="w-full text-xs text-slate-500 bg-[#FAFAFA] border border-slate-200 rounded-md px-2 py-1.5 resize-none focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-200 placeholder:text-slate-400"
+                                                ></textarea>
+                                            {:else}
+                                                <button
+                                                    type="button"
+                                                    class="text-[11px] text-slate-400 hover:text-[#111] hover:underline"
+                                                    onclick={() => (showNotes[index] = true)}
+                                                >
+                                                    + Add description
+                                                </button>
+                                            {/if}
                                         </div>
 
                                         <div class="grid grid-cols-2 gap-3">
@@ -577,12 +666,11 @@
                                                     name="items[{index}].hsn_code"
                                                     bind:value={item.hsn_code}
                                                     placeholder="HSN"
-                                                    class="h-9 border-border-strong text-center bg-surface-1 focus:border-primary font-mono"
+                                                    class="h-9 border-slate-300 text-center bg-[#FAFAFA] focus:border-slate-400 font-mono"
                                                 />
                                             </div>
                                             <div class="space-y-1.5">
-                                                <Label variant="form"
-                                                    >Qty</Label
+                                                <Label variant="form">Qty</Label
                                                 >
                                                 <Input
                                                     name="items[{index}].quantity"
@@ -590,7 +678,7 @@
                                                     bind:value={item.quantity}
                                                     min="0.01"
                                                     step="0.01"
-                                                    class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                    class="h-9 border-slate-300 text-right bg-[#FAFAFA] focus:border-slate-400 font-mono"
                                                 />
                                             </div>
                                         </div>
@@ -606,23 +694,21 @@
                                                     bind:value={item.rate}
                                                     min="0"
                                                     step="0.01"
-                                                    class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                    class="h-9 border-slate-300 text-right bg-[#FAFAFA] focus:border-slate-400 font-mono"
                                                 />
                                             </div>
                                             <div class="space-y-1.5">
-                                                <Label variant="form"
-                                                    >GST</Label
+                                                <Label variant="form">GST</Label
                                                 >
                                                 <Select.Root
                                                     type="single"
                                                     value={`${item.gst_rate}`}
                                                     onValueChange={(value) =>
-                                                        (item.gst_rate = Number(
-                                                            value,
-                                                        ))}
+                                                        (item.gst_rate =
+                                                            Number(value))}
                                                 >
                                                     <Select.Trigger
-                                                        class="h-9 w-full border-border-strong bg-surface-1 text-right text-xs font-mono"
+                                                        class="h-9 w-full border-slate-300 bg-[#FAFAFA] text-right text-xs font-mono"
                                                     >
                                                         {item.gst_rate}%
                                                     </Select.Trigger>
@@ -646,15 +732,15 @@
                                         </div>
 
                                         <div
-                                            class="flex items-center justify-between rounded-md border border-border-subtle bg-surface-2 px-3 py-2"
+                                            class="flex items-center justify-between rounded-md border border-slate-100 bg-slate-100 px-3 py-2"
                                         >
                                             <span
-                                                class="text-[10px] font-semibold uppercase tracking-wide text-text-subtle"
+                                                class="text-[10px] font-semibold uppercase tracking-wide text-slate-500"
                                             >
                                                 Amount
                                             </span>
                                             <span
-                                                class="font-mono font-semibold text-text-strong"
+                                                class="font-mono font-semibold text-[#111]"
                                             >
                                                 {formatINR(getLineAmount(item))}
                                             </span>
@@ -674,13 +760,13 @@
                             </div>
                         {:else}
                             <div
-                                class="rounded-lg border border-border overflow-hidden bg-surface-0"
+                                class="rounded-lg border border-slate-200 overflow-hidden bg-white"
                             >
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-sm">
                                         <thead>
                                             <tr
-                                                class="border-b border-border text-[10px] uppercase tracking-wide font-semibold text-text-subtle bg-surface-2/50"
+                                                class="border-b border-slate-200 text-[10px] uppercase tracking-wide font-semibold text-slate-500 bg-slate-100/50"
                                             >
                                                 <th
                                                     class="px-2 py-3 w-8 text-center"
@@ -716,9 +802,9 @@
                                         >
                                             {#each formData.items as item, index}
                                                 <tr
-                                                    class="group hover:bg-surface-2/30 transition-colors {dragItemIndex ===
+                                                    class="group hover:bg-slate-100/30 transition-colors {dragItemIndex ===
                                                     index
-                                                        ? 'opacity-50 border-2 border-dashed border-primary/50'
+                                                        ? 'opacity-50 border-2 border-dashed border-slate-400'
                                                         : ''}"
                                                     draggable={true}
                                                     ondragstart={() =>
@@ -731,7 +817,7 @@
                                                         class="px-2 py-3 align-top"
                                                     >
                                                         <div
-                                                            class="h-9 flex items-center justify-center cursor-move text-text-muted/50 hover:text-text-strong touch-none"
+                                                            class="h-9 flex items-center justify-center cursor-move text-slate-400/50 hover:text-[#111] touch-none"
                                                         >
                                                             <GripVertical
                                                                 class="size-4"
@@ -741,35 +827,62 @@
                                                     <td
                                                         class="px-2 py-2 align-top"
                                                     >
-                                                        <div
-                                                            class="relative flex items-center gap-1 w-full"
-                                                        >
-                                                            <ItemCombobox
-                                                                catalogItems={data.catalogItems}
-                                                                bind:value={formData
-                                                                    .items[
-                                                                    index
-                                                                ]}
-                                                                onSelect={(item) =>
-                                                                    handleItemSelect(
-                                                                        index,
+                                                        <div class="w-full space-y-1">
+                                                            <div
+                                                                class="relative flex items-center gap-1 w-full"
+                                                            >
+                                                                <ItemCombobox
+                                                                    catalogItems={data.catalogItems}
+                                                                    bind:value={
+                                                                        formData
+                                                                            .items[
+                                                                            index
+                                                                        ]
+                                                                    }
+                                                                    onSelect={(
                                                                         item,
-                                                                    )}
-                                                                name="items[{index}].description"
-                                                                placeholder="Search or enter item..."
-                                                            />
-                                                            <input
-                                                                type="hidden"
-                                                                name="items[{index}].item_id"
-                                                                value={item.item_id ||
-                                                                    ""}
-                                                            />
-                                                            <input
-                                                                type="hidden"
-                                                                name="items[{index}].unit"
-                                                                value={item.unit ||
-                                                                    "nos"}
-                                                            />
+                                                                    ) =>
+                                                                        handleItemSelect(
+                                                                            index,
+                                                                            item,
+                                                                        )}
+                                                                    name=""
+                                                                    placeholder="Search or enter item..."
+                                                                />
+                                                                <input
+                                                                    type="hidden"
+                                                                    name="items[{index}].description"
+                                                                    value={getCombinedDescription(index)}
+                                                                />
+                                                                <input
+                                                                    type="hidden"
+                                                                    name="items[{index}].item_id"
+                                                                    value={item.item_id ||
+                                                                        ""}
+                                                                />
+                                                                <input
+                                                                    type="hidden"
+                                                                    name="items[{index}].unit"
+                                                                    value={item.unit ||
+                                                                        "nos"}
+                                                                />
+                                                            </div>
+                                                            {#if showNotes[index]}
+                                                                <textarea
+                                                                    bind:value={lineNotes[index]}
+                                                                    placeholder="Add details or description..."
+                                                                    rows="2"
+                                                                    class="w-full text-xs text-slate-500 bg-[#FAFAFA] border border-slate-200 rounded-md px-2 py-1.5 resize-none focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-200 placeholder:text-slate-400"
+                                                                ></textarea>
+                                                            {:else}
+                                                                <button
+                                                                    type="button"
+                                                                    class="text-[11px] text-slate-400 hover:text-[#111] hover:underline"
+                                                                    onclick={() => (showNotes[index] = true)}
+                                                                >
+                                                                    + Add description
+                                                                </button>
+                                                            {/if}
                                                         </div>
                                                     </td>
                                                     <td
@@ -777,10 +890,11 @@
                                                     >
                                                         <Input
                                                             name="items[{index}].hsn_code"
-                                                            bind:value={item
-                                                                .hsn_code}
+                                                            bind:value={
+                                                                item.hsn_code
+                                                            }
                                                             placeholder="HSN"
-                                                            class="h-9 border-border-strong text-center bg-surface-1 focus:border-primary font-mono"
+                                                            class="h-9 border-slate-300 text-center bg-[#FAFAFA] focus:border-slate-400 font-mono"
                                                         />
                                                     </td>
                                                     <td
@@ -789,11 +903,12 @@
                                                         <Input
                                                             name="items[{index}].quantity"
                                                             type="number"
-                                                            bind:value={item
-                                                                .quantity}
+                                                            bind:value={
+                                                                item.quantity
+                                                            }
                                                             min="0.01"
                                                             step="0.01"
-                                                            class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                            class="h-9 border-slate-300 text-right bg-[#FAFAFA] focus:border-slate-400 font-mono"
                                                         />
                                                     </td>
                                                     <td
@@ -802,10 +917,12 @@
                                                         <Input
                                                             name="items[{index}].rate"
                                                             type="number"
-                                                            bind:value={item.rate}
+                                                            bind:value={
+                                                                item.rate
+                                                            }
                                                             min="0"
                                                             step="0.01"
-                                                            class="h-9 border-border-strong text-right bg-surface-1 focus:border-primary font-mono"
+                                                            class="h-9 border-slate-300 text-right bg-[#FAFAFA] focus:border-slate-400 font-mono"
                                                         />
                                                     </td>
                                                     <td
@@ -814,13 +931,16 @@
                                                         <Select.Root
                                                             type="single"
                                                             value={`${item.gst_rate}`}
-                                                            onValueChange={(value) =>
-                                                                (item.gst_rate = Number(
-                                                                    value,
-                                                                ))}
+                                                            onValueChange={(
+                                                                value,
+                                                            ) =>
+                                                                (item.gst_rate =
+                                                                    Number(
+                                                                        value,
+                                                                    ))}
                                                         >
                                                             <Select.Trigger
-                                                                class="h-9 w-full border-border-strong bg-surface-1 text-right text-xs font-mono"
+                                                                class="h-9 w-full border-slate-300 bg-[#FAFAFA] text-right text-xs font-mono"
                                                             >
                                                                 {item.gst_rate}%
                                                             </Select.Trigger>
@@ -845,7 +965,7 @@
                                                         class="px-2 py-2 align-top"
                                                     >
                                                         <div
-                                                            class="h-9 flex items-center justify-end font-mono font-medium text-text-strong"
+                                                            class="h-9 flex items-center justify-end font-mono font-medium text-[#111]"
                                                         >
                                                             {formatINR(
                                                                 getLineAmount(
@@ -862,14 +982,15 @@
                                                         >
                                                             <button
                                                                 type="button"
-                                                                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+                                                                class="inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                                                                 onclick={() =>
                                                                     removeItem(
                                                                         index,
                                                                     )}
                                                                 disabled={formData
                                                                     .items
-                                                                    .length === 1}
+                                                                    .length ===
+                                                                    1}
                                                             >
                                                                 <Trash2
                                                                     class="size-4"
@@ -883,7 +1004,7 @@
                                     </table>
                                 </div>
 
-                                <div class="border-t border-border p-3">
+                                <div class="border-t border-slate-200 p-3">
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -901,7 +1022,7 @@
                     <!-- Section: Notes -->
                     <section class="space-y-4">
                         <h3
-                            class="text-xs font-bold uppercase tracking-wide text-text-subtle"
+                            class="text-xs font-bold uppercase tracking-wide text-slate-500"
                         >
                             Notes
                         </h3>
@@ -914,40 +1035,72 @@
                             class="resize-none"
                         />
                     </section>
-                </div>
             </div>
         </form>
     </main>
 
     <!-- Bottom Action Bar -->
     <div class="action-bar">
-        <div class="flex items-center gap-4 text-sm mr-4 pr-4 border-r border-border">
+        <div
+            class="flex items-center gap-4 text-sm mr-4 pr-4 border-r border-slate-200"
+        >
             <Tooltip.Root delayDuration={100}>
                 <Tooltip.Trigger>
-                    <span class="inline-flex items-center gap-1.5 text-text-muted cursor-help">
+                    <span
+                        class="inline-flex items-center gap-1.5 text-slate-400 cursor-help"
+                    >
                         <span>GST</span>
-                        <span class="font-mono font-medium text-text-strong border-b border-dashed border-text-muted/50">{formatINR(isInterState ? totals.igst : totals.cgst + totals.sgst)}</span>
+                        <span
+                            class="font-mono font-medium text-[#111] border-b border-dashed border-text-muted/50"
+                            >{formatINR(
+                                isInterState
+                                    ? totals.igst
+                                    : totals.cgst + totals.sgst,
+                            )}</span
+                        >
                     </span>
                 </Tooltip.Trigger>
                 <Tooltip.Content side="top" sideOffset={8}>
                     <div class="space-y-1 text-xs">
                         {#if pricesIncludeGst}
-                            <div class="flex justify-between gap-4"><span>Taxable</span><span class="font-mono">{formatINR(totals.taxableAmount)}</span></div>
+                            <div class="flex justify-between gap-4">
+                                <span>Taxable</span><span class="font-mono"
+                                    >{formatINR(totals.taxableAmount)}</span
+                                >
+                            </div>
                         {:else}
-                            <div class="flex justify-between gap-4"><span>Subtotal</span><span class="font-mono">{formatINR(totals.subtotal)}</span></div>
+                            <div class="flex justify-between gap-4">
+                                <span>Subtotal</span><span class="font-mono"
+                                    >{formatINR(totals.subtotal)}</span
+                                >
+                            </div>
                         {/if}
                         {#if isInterState}
-                            <div class="flex justify-between gap-4"><span>IGST</span><span class="font-mono">{formatINR(totals.igst)}</span></div>
+                            <div class="flex justify-between gap-4">
+                                <span>IGST</span><span class="font-mono"
+                                    >{formatINR(totals.igst)}</span
+                                >
+                            </div>
                         {:else}
-                            <div class="flex justify-between gap-4"><span>CGST</span><span class="font-mono">{formatINR(totals.cgst)}</span></div>
-                            <div class="flex justify-between gap-4"><span>SGST</span><span class="font-mono">{formatINR(totals.sgst)}</span></div>
+                            <div class="flex justify-between gap-4">
+                                <span>CGST</span><span class="font-mono"
+                                    >{formatINR(totals.cgst)}</span
+                                >
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span>SGST</span><span class="font-mono"
+                                    >{formatINR(totals.sgst)}</span
+                                >
+                            </div>
                         {/if}
                     </div>
                 </Tooltip.Content>
             </Tooltip.Root>
-            <div class="flex items-center gap-1.5 border-l border-border pl-4">
-                <span class="font-semibold text-text-strong">Total</span>
-                <span class="font-mono text-lg font-bold text-primary">{formatINR(totals.total)}</span>
+            <div class="flex items-center gap-1.5 border-l border-slate-200 pl-4">
+                <span class="font-semibold text-[#111]">Total</span>
+                <span class="font-mono text-lg font-bold text-[#111]"
+                    >{formatINR(totals.total)}</span
+                >
             </div>
         </div>
         <div class="action-bar-group">

@@ -66,9 +66,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <div class="flex items-center gap-4">
             <Button
                 variant="ghost"
@@ -108,8 +106,8 @@
     </header>
 
     <!-- Main Content -->
-    <div class="flex-1 overflow-y-auto bg-surface-1">
-        <div class="p-6 space-y-6">
+    <main class="page-body">
+        <div class="content-width-standard space-y-6">
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-surface-0 rounded-lg border border-border p-4">
@@ -512,7 +510,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <!-- Edit Supplier Modal -->

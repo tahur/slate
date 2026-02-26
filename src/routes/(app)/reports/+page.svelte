@@ -41,7 +41,7 @@
                         "See if you are making money or losing it",
                     href: "/reports/pnl",
                     icon: TrendingUp,
-                    iconClass: "bg-blue-50 text-blue-700",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
                 {
                     title: "GST Summary",
@@ -50,7 +50,7 @@
                         "Tax collected (Output) vs matched credits (Input)",
                     href: "/reports/gst",
                     icon: FileText,
-                    iconClass: "bg-green-50 text-green-700",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
                 {
                     title: "Customer Pending",
@@ -58,7 +58,7 @@
                     description: "Pending customer payments by bill age",
                     href: "/reports/aging",
                     icon: BarChart3,
-                    iconClass: "bg-amber-50 text-amber-700",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
                 {
                     title: "Party Ledger",
@@ -66,7 +66,7 @@
                     description: "Customer and supplier statement with reasons",
                     href: "/reports/ledger",
                     icon: Users,
-                    iconClass: "bg-surface-2 text-text-subtle",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
                 {
                     title: "Cashbook (Cash & Bank)",
@@ -76,7 +76,7 @@
                         "Daily cash and bank movement in one place",
                     href: "/reports/cashbook",
                     icon: Landmark,
-                    iconClass: "bg-red-50 text-red-700",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
             ],
         },
@@ -90,7 +90,7 @@
                         "Outward supplies data (B2B, B2C, credit notes, HSN)",
                     href: "/reports/gstr1",
                     icon: FileSpreadsheet,
-                    iconClass: "bg-blue-50 text-blue-700",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
                 {
                     title: "GSTR-3B Purchase Data",
@@ -99,7 +99,7 @@
                         "Input tax credit data from purchases by supplier",
                     href: "/reports/gstr3b",
                     icon: Receipt,
-                    iconClass: "bg-green-50 text-green-700",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
             ],
         },
@@ -112,14 +112,14 @@
                         "Advanced setup: ledgers, groups, and default accounts",
                     href: "/accounts",
                     icon: BookOpen,
-                    iconClass: "bg-surface-2 text-text-subtle",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
                 {
                     title: "Journal Entries",
                     description: "Manual adjustment entries (advanced)",
                     href: "/journals",
                     icon: Briefcase,
-                    iconClass: "bg-surface-2 text-text-subtle",
+                    iconClass: "bg-slate-100 text-slate-500",
                 },
             ],
         },
@@ -127,19 +127,19 @@
 </script>
 
 <div class="page-full-bleed">
-    <header class="px-6 py-4 border-b border-border bg-surface-0 z-20">
+    <header class="page-header">
         <h1 class="text-xl font-bold tracking-tight text-text-strong">Reports</h1>
-        <p class="text-sm text-text-muted mt-1">
+        <p class="text-sm text-slate-500 mt-1">
             Simple business reports, GST filing data, and advanced tools
         </p>
     </header>
 
-    <div class="flex-1 overflow-auto bg-surface-1 p-6">
-        <div class="max-w-7xl mx-auto space-y-6">
+    <div class="page-body">
+        <div class="content-width-standard space-y-6">
             {#each reportSections as section}
                 <div class="space-y-3">
                     <h2
-                        class="text-xs font-semibold uppercase tracking-wider text-text-muted"
+                        class="text-xs font-semibold uppercase tracking-wider text-slate-400"
                     >
                         {section.title}
                     </h2>
@@ -148,7 +148,7 @@
                         {#each section.items as item}
                             <a
                                 href={item.href}
-                                class="group relative rounded-xl border border-border bg-surface-0 p-5 transition-all hover:shadow-sm hover:border-border-strong"
+                                class="group relative rounded-xl border border-slate-200 bg-white p-5 transition-all hover:shadow-sm hover:border-slate-300"
                             >
                                 <div class="flex items-start gap-4">
                                     <div class="rounded-lg p-2.5 shrink-0 {item.iconClass}">
@@ -160,12 +160,12 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <h3
-                                                class="text-sm font-bold text-text-strong group-hover:text-primary transition-colors"
+                                                class="text-sm font-bold text-text-strong transition-colors"
                                             >
                                                 {item.title}
                                             </h3>
                                             {#if item.accountingTerm}
-                                                <span class="text-xs text-text-muted">
+                                                <span class="text-xs text-slate-500">
                                                     ({item.accountingTerm})
                                                 </span>
                                             {/if}
@@ -173,7 +173,7 @@
                                                 <Tooltip.Root>
                                                     <Tooltip.Trigger>
                                                         <Info
-                                                            class="size-3.5 text-text-muted cursor-help"
+                                                            class="size-3.5 text-slate-500 cursor-help"
                                                         />
                                                     </Tooltip.Trigger>
                                                     <Tooltip.Content>
@@ -187,7 +187,7 @@
                                             {/if}
                                         </div>
                                         <p
-                                            class="text-xs text-text-muted mt-1 leading-relaxed"
+                                            class="text-xs text-slate-500 mt-1 leading-relaxed"
                                         >
                                             {item.description}
                                         </p>
@@ -196,7 +196,7 @@
                                 <div
                                     class="absolute top-5 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    <ArrowRight class="size-4 text-primary" />
+                                    <ArrowRight class="size-4 text-text-strong" />
                                 </div>
                             </a>
                         {/each}

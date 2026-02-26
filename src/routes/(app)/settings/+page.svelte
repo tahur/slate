@@ -274,40 +274,42 @@
     }
 </script>
 
-<div class="flex flex-col gap-6 overflow-x-hidden">
-    <!-- Header -->
-    <div>
-        <h1 class="text-xl font-bold tracking-tight text-text-strong">
-            Settings
-        </h1>
-        <p class="text-sm text-text-muted">
-            Configure your business and invoice preferences.
-        </p>
-    </div>
-
-    <!-- Tab Navigation -->
-    <Tabs
-        value={activeTab}
-        onValueChange={(value) => (activeTab = value)}
-        class="w-full"
-    >
-        <TabsList
-            class="w-full gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-            {#each tabs as tab}
-                <TabsTrigger
-                    value={tab.id}
-                    class="whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm"
+<div class="page-full-bleed">
+    <header class="page-header">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-text-strong">
+                Settings
+            </h1>
+            <p class="text-sm text-text-muted">
+                Configure your business and invoice preferences.
+            </p>
+        </div>
+    </header>
+    <main class="page-body">
+        <div class="content-width-standard flex flex-col gap-6 overflow-x-hidden">
+            <!-- Tab Navigation -->
+            <Tabs
+                value={activeTab}
+                onValueChange={(value) => (activeTab = value)}
+                class="w-full"
+            >
+                <TabsList
+                    class="w-full gap-1 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                    <tab.icon class="size-3.5" />
-                    {tab.label}
-                </TabsTrigger>
-            {/each}
-        </TabsList>
-    </Tabs>
+                    {#each tabs as tab}
+                        <TabsTrigger
+                            value={tab.id}
+                            class="whitespace-nowrap flex items-center gap-2 px-4 py-3 text-sm"
+                        >
+                            <tab.icon class="size-3.5" />
+                            {tab.label}
+                        </TabsTrigger>
+                    {/each}
+                </TabsList>
+            </Tabs>
 
-    <!-- Content -->
-    <div class="max-w-3xl min-w-0">
+            <!-- Content -->
+            <div class="max-w-3xl min-w-0">
         <!-- Business Info Tab -->
         {#if activeTab === "business"}
             <form
@@ -2019,5 +2021,7 @@
                 </div>
             </form>
         {/if}
-    </div>
+            </div>
+        </div>
+    </main>
 </div>

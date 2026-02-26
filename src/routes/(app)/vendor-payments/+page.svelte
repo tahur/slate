@@ -17,9 +17,7 @@
 </script>
 
 <div class="page-full-bleed">
-    <header
-        class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header">
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Supplier Payments
@@ -34,8 +32,8 @@
         </Button>
     </header>
 
-    <div class="flex-1 overflow-y-auto bg-surface-1 p-6">
-        <div class="max-w-6xl mx-auto">
+    <div class="page-body">
+        <div class="content-width-standard">
             <Card class="p-4">
                 {#if data.payments.length === 0}
                     <div class="text-center py-10">
@@ -92,4 +90,3 @@
         </div>
     </div>
 </div>
-

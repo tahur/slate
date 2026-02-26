@@ -32,9 +32,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <div
-        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
-    >
+    <header class="page-header items-center">
         <div class="flex items-center gap-4">
             <Button variant="ghost" href="/reports" size="icon" class="h-8 w-8">
                 <ArrowLeft class="size-4" />
@@ -43,10 +41,11 @@
                 Chart of Accounts
             </h1>
         </div>
-    </div>
+    </header>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto bg-surface-1 p-6">
+    <main class="page-body">
+        <div class="content-width-standard">
         {#if data.accounts.length === 0}
             <div
                 class="flex flex-col items-center justify-center py-20 border border-dashed border-border-strong rounded-lg bg-surface-0"
@@ -124,5 +123,6 @@
                 {/each}
             </div>
         {/if}
-    </div>
+        </div>
+    </main>
 </div>

@@ -8,9 +8,7 @@
 </script>
 
 <div class="page-full-bleed">
-    <header
-        class="print-hide flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="print-hide page-header items-center">
         <div class="flex items-center gap-4">
             <Button variant="ghost" href="/vendor-payments" size="icon" class="h-8 w-8">
                 <ArrowLeft class="size-4" />
@@ -30,7 +28,8 @@
         </Button>
     </header>
 
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
+    <div class="page-body pb-32 print-bg-white">
+        <div class="content-width-standard">
         <div class="mx-auto max-w-4xl">
             <div class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet">
                 <div class="flex justify-between items-start">
@@ -149,6 +148,6 @@
                 {/if}
             </div>
         </div>
+        </div>
     </div>
 </div>
-

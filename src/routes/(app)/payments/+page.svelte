@@ -33,14 +33,12 @@
 
 <div class="page-full-bleed">
     <!-- Header / Filter Bar -->
-    <div
-        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
-    >
+    <div class="page-header items-center">
         <div>
             <div class="flex items-center gap-2">
                 <Tooltip.Root>
                     <Tooltip.Trigger
-                        class="text-xl font-bold tracking-tight text-text-strong underline decoration-dotted decoration-text-muted/50 cursor-help underline-offset-4"
+                        class="cursor-help text-xl font-semibold tracking-tight text-text-strong"
                     >
                         Receipts
                     </Tooltip.Trigger>
@@ -63,144 +61,146 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto bg-surface-1 p-4 sm:p-6">
-        <!-- Payment Table or Empty State -->
-        {#if data.payments.length === 0}
-            <div
-                class="flex flex-col items-center justify-center py-20 border border-dashed border-border-strong rounded-lg bg-surface-0"
-            >
-                <FileText class="size-12 text-text-muted/30 mb-4" />
-                <h3 class="text-lg font-bold text-text-strong">
-                    No receipts yet
-                </h3>
-                <p class="text-sm text-text-muted mb-6">
-                    Save your first customer receipt to get started
-                </p>
-                <Button href="/payments/new">
-                    <Plus class="mr-2 size-4" />
-                    Receive Payment
-                </Button>
-            </div>
-        {:else}
-            <div class="space-y-3 sm:hidden">
-                {#each data.payments as payment}
-                    <a
-                        href="/payments/{payment.id}"
-                        class="block rounded-lg border border-border bg-surface-0 p-4 shadow-sm transition-colors active:bg-surface-2"
-                    >
-                        <div class="flex items-center justify-between gap-3">
-                            <span
-                                class="font-mono text-sm font-semibold text-primary truncate"
-                            >
-                                {payment.payment_number}
-                            </span>
-                            <span class="font-mono text-sm font-semibold text-text-strong">
-                                {formatINR(payment.amount)}
-                            </span>
-                        </div>
-                        <p class="mt-1 text-sm font-medium text-text-strong truncate">
-                            {payment.customer_name ||
-                                payment.customer_company ||
-                                "—"}
-                        </p>
-                        <div class="mt-2 flex items-center justify-between gap-2">
-                            <p class="text-xs text-text-muted">
-                                {formatDate(payment.payment_date)}
+    <div class="page-body">
+        <div class="content-width-standard">
+            <!-- Payment Table or Empty State -->
+            {#if data.payments.length === 0}
+                <div
+                    class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-strong bg-surface-0 py-20"
+                >
+                    <FileText class="size-12 text-text-muted/30 mb-4" />
+                    <h3 class="text-lg font-bold text-text-strong">
+                        No receipts yet
+                    </h3>
+                    <p class="text-sm text-text-muted mb-6">
+                        Save your first customer receipt to get started
+                    </p>
+                    <Button href="/payments/new">
+                        <Plus class="mr-2 size-4" />
+                        Receive Payment
+                    </Button>
+                </div>
+            {:else}
+                <div class="space-y-3 sm:hidden">
+                    {#each data.payments as payment}
+                        <a
+                            href="/payments/{payment.id}"
+                            class="block rounded-xl border border-border bg-surface-0 p-4 shadow-sm transition-colors active:bg-surface-2"
+                        >
+                            <div class="flex items-center justify-between gap-3">
+                                <span
+                                    class="font-mono text-sm font-semibold text-text-strong truncate"
+                                >
+                                    {payment.payment_number}
+                                </span>
+                                <span class="font-mono text-sm font-semibold text-text-strong">
+                                    {formatINR(payment.amount)}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-sm font-medium text-text-strong truncate">
+                                {payment.customer_name ||
+                                    payment.customer_company ||
+                                    "—"}
                             </p>
-                            <Badge
-                                variant="outline"
-                                class="capitalize bg-surface-1"
-                            >
-                                {getModeLabel(payment.payment_mode)}
-                            </Badge>
-                        </div>
-                    </a>
-                {/each}
-            </div>
+                            <div class="mt-2 flex items-center justify-between gap-2">
+                                <p class="text-xs text-text-muted">
+                                    {formatDate(payment.payment_date)}
+                                </p>
+                                <Badge
+                                    variant="outline"
+                                    class="capitalize bg-surface-1"
+                                >
+                                    {getModeLabel(payment.payment_mode)}
+                                </Badge>
+                            </div>
+                        </a>
+                    {/each}
+                </div>
 
-            <div
-                class="hidden sm:block border border-border rounded-lg overflow-hidden shadow-sm bg-surface-0"
-            >
-                <TableContainer>
-                    <Table class="min-w-[44rem]">
-                        <TableHeader>
-                            <TableRow class="hover:bg-transparent">
-                                <TableHead class="w-28">Date</TableHead>
-                                <TableHead>Receipt #</TableHead>
-                                <TableHead>Customer Name</TableHead>
-                                <TableHead class="w-32">Method</TableHead>
-                                <TableHead class="text-right w-32">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {#each data.payments as payment}
-                                <TableRow class="group cursor-pointer">
-                                    <TableCell class="text-text-muted font-medium">
-                                        <a
-                                            href="/payments/{payment.id}"
-                                            class="flex items-center w-full h-full text-inherit no-underline"
-                                        >
-                                            {formatDate(payment.payment_date)}
-                                        </a>
-                                    </TableCell>
-                                    <TableCell>
-                                        <a
-                                            href="/payments/{payment.id}"
-                                            class="flex items-center w-full h-full text-inherit no-underline font-mono text-sm font-medium text-primary whitespace-nowrap"
-                                        >
-                                            {payment.payment_number}
-                                        </a>
-                                    </TableCell>
-                                    <TableCell>
-                                        <a
-                                            href="/payments/{payment.id}"
-                                            class="flex items-center w-full h-full text-inherit no-underline"
-                                        >
-                                            <div class="flex flex-col">
-                                                <span
-                                                    class="font-medium text-text-strong text-sm"
-                                                >
-                                                    {payment.customer_name ||
-                                                        payment.customer_company ||
-                                                        "—"}
-                                                </span>
-                                                {#if payment.reference}
-                                                    <span
-                                                        class="text-[10px] text-text-muted truncate max-w-[12rem]"
-                                                    >
-                                                        Ref: {payment.reference}
-                                                    </span>
-                                                {/if}
-                                            </div>
-                                        </a>
-                                    </TableCell>
-                                    <TableCell>
-                                        <a
-                                            href="/payments/{payment.id}"
-                                            class="flex items-center w-full h-full text-inherit no-underline"
-                                        >
-                                            <Badge
-                                                variant="outline"
-                                                class="capitalize bg-surface-1"
-                                            >
-                                                {getModeLabel(payment.payment_mode)}
-                                            </Badge>
-                                        </a>
-                                    </TableCell>
-                                    <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
-                                        <a
-                                            href="/payments/{payment.id}"
-                                            class="flex items-center justify-end w-full h-full text-inherit no-underline"
-                                        >
-                                            {formatINR(payment.amount)}
-                                        </a>
-                                    </TableCell>
+                <div
+                    class="hidden sm:block border border-border rounded-xl overflow-hidden shadow-sm bg-surface-0"
+                >
+                    <TableContainer>
+                        <Table class="min-w-[44rem]">
+                            <TableHeader>
+                                <TableRow class="hover:bg-transparent">
+                                    <TableHead class="w-28">Date</TableHead>
+                                    <TableHead>Receipt #</TableHead>
+                                    <TableHead>Customer Name</TableHead>
+                                    <TableHead class="w-32">Method</TableHead>
+                                    <TableHead class="text-right w-32">Amount</TableHead>
                                 </TableRow>
-                            {/each}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </div>
-        {/if}
+                            </TableHeader>
+                            <TableBody>
+                                {#each data.payments as payment}
+                                    <TableRow class="group cursor-pointer">
+                                        <TableCell class="text-text-muted font-medium">
+                                            <a
+                                                href="/payments/{payment.id}"
+                                                class="flex items-center w-full h-full text-inherit no-underline"
+                                            >
+                                                {formatDate(payment.payment_date)}
+                                            </a>
+                                        </TableCell>
+                                        <TableCell>
+                                            <a
+                                                href="/payments/{payment.id}"
+                                                class="flex items-center w-full h-full text-inherit no-underline font-mono text-sm font-medium text-text-strong whitespace-nowrap"
+                                            >
+                                                {payment.payment_number}
+                                            </a>
+                                        </TableCell>
+                                        <TableCell>
+                                            <a
+                                                href="/payments/{payment.id}"
+                                                class="flex items-center w-full h-full text-inherit no-underline"
+                                            >
+                                                <div class="flex flex-col">
+                                                    <span
+                                                        class="font-medium text-text-strong text-sm"
+                                                    >
+                                                        {payment.customer_name ||
+                                                            payment.customer_company ||
+                                                            "—"}
+                                                    </span>
+                                                    {#if payment.reference}
+                                                        <span
+                                                            class="text-[10px] text-text-muted truncate max-w-[12rem]"
+                                                        >
+                                                            Ref: {payment.reference}
+                                                        </span>
+                                                    {/if}
+                                                </div>
+                                            </a>
+                                        </TableCell>
+                                        <TableCell>
+                                            <a
+                                                href="/payments/{payment.id}"
+                                                class="flex items-center w-full h-full text-inherit no-underline"
+                                            >
+                                                <Badge
+                                                    variant="outline"
+                                                    class="capitalize bg-surface-1"
+                                                >
+                                                    {getModeLabel(payment.payment_mode)}
+                                                </Badge>
+                                            </a>
+                                        </TableCell>
+                                        <TableCell class="text-right font-mono tabular-nums text-[0.8125rem] text-text-strong">
+                                            <a
+                                                href="/payments/{payment.id}"
+                                                class="flex items-center justify-end w-full h-full text-inherit no-underline"
+                                            >
+                                                {formatINR(payment.amount)}
+                                            </a>
+                                        </TableCell>
+                                    </TableRow>
+                                {/each}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </div>
+            {/if}
+        </div>
     </div>
 </div>

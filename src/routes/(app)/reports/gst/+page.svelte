@@ -19,19 +19,23 @@
     }
 </script>
 
-<div class="space-y-4">
-    <div class="flex items-center gap-4">
-        <Button variant="ghost" href="/reports" class="p-2">
-            <ArrowLeft class="size-4" />
-        </Button>
-        <div>
-            <h1 class="text-xl font-semibold">GST Summary</h1>
-            <p class="text-sm text-muted-foreground">
-                GST collected and input credits for the period
-            </p>
+<div class="page-full-bleed">
+    <header class="page-header items-center">
+        <div class="flex items-center gap-4">
+            <Button variant="ghost" href="/reports" class="p-2">
+                <ArrowLeft class="size-4" />
+            </Button>
+            <div>
+                <h1 class="text-xl font-semibold">GST Summary</h1>
+                <p class="text-sm text-muted-foreground">
+                    GST collected and input credits for the period
+                </p>
+            </div>
         </div>
-    </div>
+    </header>
 
+    <main class="page-body">
+        <div class="content-width-standard space-y-4">
     <!-- Date Filter -->
     <Card class="p-4">
         <div class="flex items-end gap-4 flex-wrap">
@@ -160,4 +164,6 @@
             </div>
         </div>
     </Card>
+        </div>
+    </main>
 </div>

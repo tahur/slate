@@ -32,9 +32,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header flex-col md:flex-row md:items-center">
         <div>
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Products & Services
@@ -49,9 +47,10 @@
         </Button>
     </header>
 
-    <!-- Summary Cards -->
-    <div class="px-6 py-4 bg-surface-1 border-b border-border">
-        <div class="grid grid-cols-3 gap-4 max-w-3xl">
+    <main class="page-body">
+        <div class="content-width-standard space-y-4">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 max-w-3xl">
             <div class="bg-surface-0 rounded-lg border border-border p-4">
                 <div class="flex items-center gap-2 text-text-muted mb-1">
                     <Layers class="size-4" />
@@ -86,47 +85,45 @@
                 </p>
             </div>
         </div>
-    </div>
 
-    <!-- Filter Tabs + Search -->
-    <div
-        class="px-6 py-3 bg-surface-0 border-b border-border flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"
-    >
-        <div class="flex gap-1">
-            {#each [{ key: "all", label: "All" }, { key: "product", label: "Products" }, { key: "service", label: "Services" }] as tab}
-                <button
-                    class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors {activeFilter ===
-                    tab.key
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-text-muted hover:bg-surface-2 hover:text-text-strong'}"
-                    onclick={() =>
-                        (activeFilter = tab.key as
-                            | "all"
-                            | "product"
-                            | "service")}
-                >
-                    {tab.label}
-                </button>
-            {/each}
+        <!-- Filter Tabs + Search -->
+        <div
+            class="bg-surface-0 border border-border rounded-lg p-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"
+        >
+            <div class="flex gap-1">
+                {#each [{ key: "all", label: "All" }, { key: "product", label: "Products" }, { key: "service", label: "Services" }] as tab}
+                    <button
+                        class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors {activeFilter ===
+                        tab.key
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-text-muted hover:bg-surface-2 hover:text-text-strong'}"
+                        onclick={() =>
+                            (activeFilter = tab.key as
+                                | "all"
+                                | "product"
+                                | "service")}
+                    >
+                        {tab.label}
+                    </button>
+                {/each}
+            </div>
+            <div class="relative max-w-md w-full sm:w-auto">
+                <Search
+                    class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted"
+                />
+                <Input
+                    type="search"
+                    placeholder="Search items..."
+                    bind:value={searchQuery}
+                    class="pl-10"
+                />
+            </div>
         </div>
-        <div class="relative max-w-md w-full sm:w-auto">
-            <Search
-                class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-text-muted"
-            />
-            <Input
-                type="search"
-                placeholder="Search items..."
-                bind:value={searchQuery}
-                class="pl-10"
-            />
-        </div>
-    </div>
 
-    <!-- Item List -->
-    <div class="flex-1 overflow-y-auto bg-surface-1">
+        <!-- Item List -->
         {#if filteredItems.length === 0}
             <div
-                class="flex flex-col items-center justify-center h-full text-center p-8"
+                class="flex flex-col items-center justify-center h-full text-center p-8 rounded-lg border border-dashed border-border-strong bg-surface-0"
             >
                 <Package class="size-16 text-text-muted/30 mb-4" />
                 {#if searchQuery || activeFilter !== "all"}
@@ -150,7 +147,7 @@
                 {/if}
             </div>
         {:else}
-            <div class="divide-y divide-border">
+            <div class="divide-y divide-border rounded-lg border border-border overflow-hidden">
                 {#each filteredItems as item}
                     <a
                         href="/items/{item.id}"
@@ -236,5 +233,6 @@
                 {/each}
             </div>
         {/if}
-    </div>
+        </div>
+    </main>
 </div>

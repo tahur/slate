@@ -140,9 +140,7 @@
 </script>
 
 <div class="page-full-bleed">
-    <header
-        class="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <div class="flex items-center gap-4">
             <Button variant="ghost" href="/vendor-payments" size="icon" class="h-8 w-8">
                 <ArrowLeft class="size-4" />
@@ -183,11 +181,12 @@
         />
 
         <main class="flex-1 overflow-hidden">
+            <div class="content-width-standard h-full">
             <div class="h-full flex flex-col md:flex-row">
                 <div
                     class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
                 >
-                    <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-6">
+                    <div class="max-w-2xl mx-auto space-y-6">
                         <div class="space-y-2">
                             <Label for="vendor_id" variant="form">
                                 Supplier <span class="text-destructive">*</span>
@@ -409,6 +408,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </main>
 

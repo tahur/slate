@@ -46,7 +46,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header class="print-hide border-b border-border bg-surface-0 z-20">
+    <header class="print-hide page-header p-0">
         <!-- Header row: back + quotation info + actions -->
         <div
             class="flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 px-4 md:px-6 py-3"
@@ -156,26 +156,29 @@
 
     <!-- Alerts -->
     {#if form?.error}
-        <div
-            class="mx-6 mt-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20 flex items-center gap-2"
-        >
-            <XCircle class="size-4 flex-shrink-0" />
-            {form.error}
+        <div class="content-width-standard mt-4">
+            <div
+                class="p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20 flex items-center gap-2"
+            >
+                <XCircle class="size-4 flex-shrink-0" />
+                {form.error}
+            </div>
         </div>
     {/if}
 
     {#if form?.success}
-        <div
-            class="mx-6 mt-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm border border-green-200"
-        >
-            Action completed successfully
+        <div class="content-width-standard mt-4">
+            <div
+                class="p-3 rounded-lg bg-green-50 text-green-700 text-sm border border-green-200"
+            >
+                Action completed successfully
+            </div>
         </div>
     {/if}
 
     <!-- Content: Paper View (PDF-like) -->
-    <main
-        class="flex-1 overflow-y-auto px-4 md:px-6 py-5 md:py-6 bg-surface-1 print-bg-white"
-    >
+    <main class="page-body print-bg-white">
+        <div class="content-width-standard">
         <div class="mx-auto max-w-4xl">
             <!-- Main Paper Sheet -->
             <div
@@ -712,6 +715,7 @@
                 This is a computer-generated quotation and does not require a
                 physical signature.
             </p>
+        </div>
         </div>
     </main>
 </div>

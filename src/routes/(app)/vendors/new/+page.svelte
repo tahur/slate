@@ -56,9 +56,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <Button variant="ghost" href="/vendors" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
         </Button>
@@ -73,7 +71,8 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto bg-surface-1">
+    <main class="page-body">
+        <div class="content-width-standard">
         <form
             id="vendor-form"
             method="POST"
@@ -462,6 +461,7 @@
                 </div>
             </div>
         </form>
+        </div>
     </main>
 
     <!-- Bottom Action Bar -->

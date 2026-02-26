@@ -176,9 +176,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <Button variant="ghost" href="/quotations" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
         </Button>
@@ -193,7 +191,7 @@
     </header>
 
     {#if error}
-        <div class="mx-auto mt-4 w-full max-w-5xl px-6">
+        <div class="content-width-standard mt-4">
             <div
                 class="bg-destructive/10 text-active p-3 rounded-md text-sm border border-destructive/20 text-destructive flex items-center gap-2"
             >
@@ -204,7 +202,7 @@
     {/if}
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto bg-surface-1">
+    <main class="page-body">
         <form
             id="quotation-form"
             method="POST"
@@ -229,8 +227,7 @@
                 value={pricesIncludeGst ? "true" : "false"}
             />
 
-            <div class="p-6 md:p-8">
-                <div class="max-w-5xl mx-auto space-y-8">
+            <div class="content-width-standard space-y-8">
                     <!-- Section: Customer & Quotation Details -->
                     <section class="space-y-6">
                         <h3
@@ -928,7 +925,6 @@
                             class="resize-none"
                         />
                     </section>
-                </div>
             </div>
         </form>
     </main>

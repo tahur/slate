@@ -36,9 +36,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <Button
             variant="ghost"
             href="/credit-notes"
@@ -56,7 +54,8 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-hidden">
+    <main class="page-body p-0">
+        <div class="content-width-standard h-full">
         <form
             id="credit-note-form"
             method="POST"
@@ -237,6 +236,7 @@
                 </div>
             </div>
         </form>
+        </div>
     </main>
 
     <!-- Bottom Action Bar -->

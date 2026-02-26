@@ -38,15 +38,13 @@
     const displayedInvoices = $derived(data.dueInvoices.slice(0, 5));
 </script>
 
-<div class="flex flex-col gap-4 md:gap-6">
-    <div class="flex items-center justify-between">
+<div class="page-full-bleed">
+    <header class="page-header items-center">
         <div>
-            <h1
-                class="text-lg md:text-xl font-bold tracking-tight text-text-strong"
-            >
+            <h1 class="text-lg font-semibold tracking-tight text-text-strong md:text-xl">
                 Dashboard
             </h1>
-            <p class="text-xs md:text-sm text-text-muted">
+            <p class="text-sm text-slate-500">
                 Sales, cash flow, dues, and activity.
             </p>
         </div>
@@ -55,8 +53,9 @@
             <span class="hidden sm:inline">New Invoice</span>
             <span class="sm:hidden">New</span>
         </Button>
-    </div>
-
+    </header>
+    <main class="page-body">
+        <div class="content-width-standard flex flex-col gap-4 md:gap-6">
     <div class="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
         <Card>
             <CardContent class="p-4">
@@ -73,7 +72,7 @@
                             {formatINR(data.monthly.sales)}
                         </p>
                     </div>
-                    <span class="rounded-md bg-primary/10 p-2 text-primary">
+                    <span class="rounded-md bg-slate-100 p-2 text-slate-500">
                         <IndianRupee class="size-4" />
                     </span>
                 </div>
@@ -95,7 +94,7 @@
                             {formatINR(data.money.cash)}
                         </p>
                     </div>
-                    <span class="rounded-md bg-green-50 p-2 text-green-700">
+                    <span class="rounded-md bg-slate-100 p-2 text-slate-500">
                         <Banknote class="size-4" />
                     </span>
                 </div>
@@ -117,7 +116,7 @@
                             {formatINR(data.money.bank || 0)}
                         </p>
                     </div>
-                    <span class="rounded-md bg-blue-50 p-2 text-blue-700">
+                    <span class="rounded-md bg-slate-100 p-2 text-slate-500">
                         <Landmark class="size-4" />
                     </span>
                 </div>
@@ -134,12 +133,12 @@
                             To Collect
                         </p>
                         <p
-                            class="mt-2 truncate text-2xl font-bold tracking-tight text-amber-700"
+                            class="mt-2 truncate text-2xl font-bold tracking-tight text-text-strong"
                         >
                             {formatINR(data.money.toCollect)}
                         </p>
                     </div>
-                    <span class="rounded-md bg-amber-50 p-2 text-amber-700">
+                    <span class="rounded-md bg-slate-100 p-2 text-slate-500">
                         <FileText class="size-4" />
                     </span>
                 </div>
@@ -152,7 +151,7 @@
             <CardTitle
                 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-muted"
             >
-                <Receipt class="size-4 text-primary" />
+                <Receipt class="size-4 text-slate-400" />
                 GST Position
             </CardTitle>
         </CardHeader>
@@ -242,7 +241,7 @@
                     </CardTitle>
                     <a
                         href="/invoices?status=unpaid"
-                        class="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                        class="text-xs font-medium text-text-strong hover:underline flex items-center gap-1"
                     >
                         View All <ArrowRight class="size-3" />
                     </a>
@@ -301,7 +300,7 @@
                                     </div>
                                     <a
                                         href="/invoices/{invoice.id}"
-                                        class="text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100"
+                                        class="text-xs font-medium text-text-strong opacity-0 transition-opacity group-hover:opacity-100"
                                     >
                                         View
                                     </a>
@@ -324,7 +323,7 @@
                     </CardTitle>
                     <a
                         href="/activity-log"
-                        class="text-xs font-medium text-primary hover:underline flex items-center gap-1"
+                        class="text-xs font-medium text-text-strong hover:underline flex items-center gap-1"
                     >
                         View All <ArrowRight class="size-3" />
                     </a>
@@ -382,4 +381,6 @@
             </CardContent>
         </Card>
     </div>
+        </div>
+    </main>
 </div>

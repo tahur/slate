@@ -6,77 +6,72 @@
 
 @theme {
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
   --font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
-  --font-display: "Space Grotesk", var(--font-sans);
+  --font-display: var(--font-sans);
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-md: 0.375rem;
+  --radius-sm: 0.25rem;
 
-  --radius: 0.475rem;
+  --color-brand: #111111;
+  --color-brand-hover: #272A2C;
 
-  --color-brand: #fb631b;
-  --color-brand-hover: #e04f0d;
+  --color-background: #F8F8F8;
+  --color-surface-0: #ffffff;
+  --color-surface-1: #FAFAFA;
+  --color-surface-2: #F5F5F5;
+  --color-surface-3: #F0F0F0;
 
-  /* Surfaces (Friendly Grays from Style Guide) */
-  --color-surface-0: hsl(0 0% 100%);
-  --color-surface-1: hsl(210 20% 98%);
-  --color-surface-2: hsl(210 20% 96%);
-  --color-surface-3: hsl(210 20% 92%);
+  --color-text-strong: #111111;
+  --color-text-subtle: #475569;
+  --color-text-muted: #64748b;
+  --color-text-placeholder: #94a3b8;
 
-  /* Text (Legible & Easy) */
-  --color-text-strong: hsl(220 20% 15%);
-  --color-text-subtle: hsl(220 10% 45%);
-  --color-text-muted: hsl(220 10% 55%);
-  --color-text-placeholder: hsl(220 10% 62%);
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-border-subtle: #f1f5f9;
+  --color-border-dashed: #cbd5e1;
 
-  /* Borders */
-  --color-border-strong: hsl(220 15% 82%);
-  --color-border-subtle: hsl(220 15% 88%);
-  --color-border-dashed: hsl(220 15% 84%);
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-fg: #64748b;
+  --color-sidebar-primary: #111111;
+  --color-sidebar-accent: #F5F5F5;
+  --color-sidebar-accent-fg: #111111;
+  --color-sidebar-border: #f1f5f9;
 
-  /* Sidebar (Light) */
-  --color-sidebar-bg: hsl(0 0% 100%);
-  --color-sidebar-fg: hsl(220 15% 40%);
-  --color-sidebar-primary: #fb631b;
-  --color-sidebar-accent: hsl(24 90% 97%);
-  --color-sidebar-accent-fg: hsl(24 80% 40%);
-  --color-sidebar-border: hsl(220 15% 93%);
+  --color-positive: #16a34a;
+  --color-negative: #dc2626;
+  --color-warning: #d97706;
+  --color-warning-foreground: #92400e;
+  --color-info: #2563eb;
 
-  /* Semantic status colors (used by Badge component) */
-  --color-positive: hsl(150 60% 38%);
-  --color-negative: hsl(0 72% 51%);
-  --color-warning: hsl(38 92% 50%);
-  --color-warning-foreground: hsl(30 80% 28%);
-  --color-info: hsl(210 70% 48%);
+  --color-foreground: #111111;
+  --color-primary: #111111;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #F5F5F5;
+  --color-secondary-foreground: #111111;
+  --color-muted: #FAFAFA;
+  --color-muted-foreground: #475569;
+  --color-accent: #16a34a;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #111111;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111111;
+  --color-input: #cbd5e1;
+  --color-ring: #111111;
 
-  /* Shadcn-compatible tokens */
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(220 15% 25%);
-  --color-primary: #fb631b;
-  --color-primary-foreground: hsl(0 0% 100%);
-  --color-secondary: hsl(210 20% 96%);
-  --color-secondary-foreground: hsl(220 20% 15%);
-  --color-muted: hsl(210 20% 96%);
-  --color-muted-foreground: hsl(220 10% 45%);
-  --color-accent: hsl(150 60% 45%);
-  --color-accent-foreground: hsl(0 0% 100%);
-  --color-destructive: hsl(0 84% 60%);
-  --color-destructive-foreground: hsl(0 0% 100%);
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(220 15% 25%);
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(220 15% 25%);
-
-  --color-border: hsl(220 15% 88%);
-  --color-input: hsl(220 15% 86%);
-  --color-ring: #fb631b;
-
-  --shadow-hairline: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-hairline: 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-soft: 0 8px 30px rgb(0 0 0 / 0.08);
+  --shadow-focus: 0 0 0 2px rgb(226 232 240);
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -115,25 +110,30 @@
   body {
     font-family: var(--font-sans);
     color: var(--color-text-strong);
-    background-color: var(--color-surface-1);
+    background: var(--color-background);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: contain;
   }
 
-  /* Keep scrollbars subtle/light across sidebar and form panes */
+  ::selection {
+    background-color: rgb(17 17 17 / 0.12);
+    color: var(--color-text-strong);
+  }
+
   * {
-    scrollbar-color: var(--color-border-strong) var(--color-surface-1);
+    box-sizing: border-box;
+    scrollbar-color: var(--color-border-strong) transparent;
     scrollbar-width: thin;
   }
 
   *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   *::-webkit-scrollbar-track {
-    background: var(--color-surface-1);
+    background: transparent;
   }
 
   *::-webkit-scrollbar-thumb {
@@ -152,70 +152,17 @@
   .font-display {
     font-family: var(--font-display);
   }
-
-  .bg-bg-light {
-    background-color: #f8fafc;
-  }
-
-  .bg-bg-dark {
-    background-color: #0f172a;
-  }
-
-  .bg-surf-light {
-    background-color: #ffffff;
-  }
-
-  .bg-surf-dark {
-    background-color: #1e293b;
-  }
-
-  .text-txt-light {
-    color: #0f172a;
-  }
-
-  .text-txt-dark {
-    color: #f8fafc;
-  }
-
-  .border-bord-light {
-    border-color: #e2e8f0;
-  }
-
-  .border-bord-dark {
-    border-color: #334155;
-  }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand to-orange-400;
-  }
-
-  .bg-grid {
-    background-size: 40px 40px;
-    background-image:
-      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  }
-
-  .dark .bg-grid {
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  }
-
-  .shadow-glow {
-    box-shadow: 0 0 20px -5px var(--color-brand);
-  }
 }
 
-/* ── Action Bar (sticky bottom bar for forms) ───────── */
 .action-bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--color-border-subtle);
-  background-color: var(--color-surface-0);
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 0.96);
+  backdrop-filter: blur(8px);
   z-index: 20;
   flex-shrink: 0;
   flex-wrap: wrap;
@@ -235,19 +182,26 @@
   gap: 0.5rem;
 }
 
-/* ── App Surface ────────────────────────────────────── */
-.app-surface {
-  background-color: var(--color-surface-1);
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
 }
 
-/* ── Full-bleed page (cancels layout padding) ───────── */
-/* Used by pages that need edge-to-edge layout (invoice forms, detail views) */
-/* The layout's <main> is: flex-1 overflow-auto p-4 md:p-5 */
-/* This class cancels the padding and fills the full area */
+@media (min-width: 768px) {
+  .app-main {
+    padding: 1.25rem;
+  }
+}
+
+.app-surface {
+  background: var(--color-surface-1);
+}
+
 .page-full-bleed {
   display: flex;
   flex-direction: column;
-  /* Height = parent content area + padding it cancels via negative margin */
   height: calc(100% + 2rem);
   margin: -1rem;
 }
@@ -259,7 +213,44 @@
   }
 }
 
-/* ── Print Styles ──────────────────────────────────── */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-0);
+  padding: 0.875rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .page-header {
+    padding: 1rem 1.5rem;
+  }
+}
+
+.page-body {
+  flex: 1;
+  overflow: auto;
+  background: var(--color-surface-1);
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .page-body {
+    padding: 1.5rem;
+  }
+}
+
+.content-width-standard {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+}
+
 @media print {
   @page {
     size: A4;
@@ -273,13 +264,11 @@
     --color-border-dashed: hsl(220 10% 46%);
   }
 
-  /* Colors print accurately */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Unlock the viewport: the app shell uses h-screen + overflow-hidden */
   html,
   body {
     height: auto !important;
@@ -287,27 +276,22 @@
     background: white !important;
   }
 
-  /* 1. Hide sidebar (the <aside> in layout) */
   aside {
     display: none !important;
   }
 
-  /* 2. Hide the layout header (breadcrumbs bar) */
-  .app-surface>header {
+  .app-surface > header {
     display: none !important;
   }
 
-  /* 3. Hide any element explicitly marked print-hide (page-level toolbars) */
   .print-hide {
     display: none !important;
   }
 
-  /* 4. Hide action bars and bottom bars */
   .action-bar {
     display: none !important;
   }
 
-  /* 5. App shell — unwrap flex/overflow so content can flow to printer */
   .flex.h-screen {
     display: block !important;
     height: auto !important;
@@ -320,15 +304,20 @@
     height: auto !important;
   }
 
-  /* 6. Layout <main> — remove padding that page-full-bleed normally cancels */
-  .app-surface>main {
+  .app-surface > main {
     display: block !important;
     overflow: visible !important;
     height: auto !important;
     padding: 0 !important;
   }
 
-  /* 7. page-full-bleed — neutralise its negative margin + fixed height */
+  .app-main {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
   .page-full-bleed {
     display: block !important;
     height: auto !important;
@@ -336,7 +325,6 @@
     margin: 0 !important;
   }
 
-  /* 8. The scrollable content area inside page-full-bleed */
   .print-bg-white {
     background: white !important;
     padding: 0 !important;
@@ -344,7 +332,6 @@
     height: auto !important;
   }
 
-  /* 9. The paper sheet — strip screen chrome, let it fill the page */
   .print-sheet {
     border: none !important;
     border-width: 0 !important;
@@ -366,7 +353,6 @@
     border-color: var(--color-border-strong) !important;
   }
 
-  /* Quotation print layout: keep meta block compact and side-by-side */
   .quotation-meta-block {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
@@ -376,7 +362,6 @@
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) !important;
   }
 
-  /* 10. Images (logos) must be visible */
   .print-sheet img {
     display: inline-block !important;
     visibility: visible !important;
@@ -385,13 +370,11 @@
     break-inside: avoid;
   }
 
-  /* 11. Links look like plain text when printed */
   .print-no-link {
     color: inherit !important;
     text-decoration: none !important;
   }
 
-  /* 12. Tables and rows don't break across pages */
   table,
   tr {
     page-break-inside: avoid;

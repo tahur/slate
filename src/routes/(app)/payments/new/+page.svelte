@@ -138,9 +138,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <div class="flex items-center gap-4">
             <Button
                 variant="ghost"
@@ -160,6 +158,7 @@
 
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden">
+        <div class="content-width-standard h-full">
         <form
             id="payment-form"
             method="POST"
@@ -186,7 +185,7 @@
             <div
                 class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
-                <div class="max-w-2xl ml-auto mr-0 md:mr-8 space-y-6">
+                <div class="max-w-2xl mx-auto space-y-6">
                     <!-- Customer Selection -->
                     <div class="space-y-2">
                         <Label for="customer_id" variant="form"
@@ -410,6 +409,7 @@
                 </div>
             </div>
         </form>
+        </div>
     </main>
 
     <!-- Bottom Action Bar -->

@@ -11,9 +11,7 @@
 
 <div class="page-full-bleed">
     <!-- Header / Filter Bar -->
-    <div
-        class="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-0"
-    >
+    <header class="page-header items-center">
         <div class="flex items-center gap-4">
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
                 Credit Notes
@@ -23,10 +21,11 @@
             <Plus class="mr-2 size-4" />
             New Credit Note
         </Button>
-    </div>
+    </header>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto bg-surface-1 p-6">
+    <main class="page-body">
+        <div class="content-width-standard">
         {#if data.creditNotes.length === 0}
             <div
                 class="flex flex-col items-center justify-center py-20 border border-dashed border-border-strong rounded-lg bg-surface-0"
@@ -105,5 +104,6 @@
                 </Table>
             </div>
         {/if}
-    </div>
+        </div>
+    </main>
 </div>

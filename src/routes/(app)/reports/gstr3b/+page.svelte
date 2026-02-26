@@ -40,8 +40,8 @@
     }
 </script>
 
-<div class="space-y-4">
-    <div class="flex items-center justify-between">
+<div class="page-full-bleed">
+    <header class="page-header flex-col lg:flex-row lg:items-center">
         <div class="flex items-center gap-4">
             <Button variant="ghost" href="/reports" class="p-2">
                 <ArrowLeft class="size-4" />
@@ -68,7 +68,10 @@
                 JSON
             </Button>
         </div>
-    </div>
+    </header>
+
+    <main class="page-body">
+        <div class="content-width-standard space-y-4">
 
     <!-- Date Filter -->
     <Card class="p-4">
@@ -235,4 +238,6 @@
             </div>
         </div>
     </Card>
+        </div>
+    </main>
 </div>

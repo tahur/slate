@@ -24,9 +24,7 @@
 
 <div class="page-full-bleed">
     <!-- Header (hidden in print) -->
-    <header
-        class="print-hide flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="print-hide page-header items-center">
         <div class="flex items-center gap-4">
             <Button
                 variant="ghost"
@@ -66,7 +64,8 @@
     </header>
 
     <!-- Content: Paper View -->
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
+    <main class="page-body pb-32 print-bg-white">
+        <div class="content-width-standard">
         <div class="mx-auto max-w-4xl">
             <div
                 class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 min-h-[600px] print-sheet"
@@ -233,5 +232,6 @@
                 </div>
             </div>
         </div>
-    </div>
+        </div>
+    </main>
 </div>

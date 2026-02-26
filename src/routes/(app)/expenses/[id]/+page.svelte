@@ -48,9 +48,7 @@
 
 <div class="page-full-bleed">
     <!-- Header (hidden in print) -->
-    <header
-        class="print-hide flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="print-hide page-header items-center">
         <div class="flex items-center gap-4">
             <Button
                 variant="ghost"
@@ -95,15 +93,17 @@
     </header>
 
     {#if $page.url.searchParams.get("settle") === "recorded"}
-        <div
-            class="mx-6 mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700"
-        >
-            Settlement recorded successfully.
+        <div class="content-width-standard mt-4">
+            <div
+                class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700"
+            >
+                Settlement recorded successfully.
+            </div>
         </div>
     {/if}
 
     <!-- Content: Paper View -->
-    <div class="flex-1 overflow-y-auto px-6 py-8 pb-32 bg-surface-1 print-bg-white">
+    <div class="page-body pb-32 print-bg-white">
         <div class="mx-auto max-w-4xl">
             <div
                 class="bg-surface-0 border border-border rounded-xl shadow-sm p-8 space-y-8 print-sheet"

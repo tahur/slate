@@ -6,11 +6,11 @@
     let { children, data }: { children: Snippet; data: any } = $props();
 </script>
 
-<div class="flex h-screen w-full flex-col md:flex-row bg-background">
+<div class="flex h-screen w-full flex-col bg-background text-foreground md:flex-row">
     <Sidebar />
-    <div class="flex flex-1 flex-col overflow-hidden app-surface">
+    <div class="app-surface flex flex-1 flex-col overflow-hidden">
         <Header {data} />
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-5 space-y-5">
+        <main class="app-main space-y-5">
             {@render children()}
         </main>
     </div>

@@ -133,9 +133,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <header
-        class="flex items-center gap-4 px-4 sm:px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <Button variant="ghost" href="/expenses" size="icon" class="h-8 w-8">
             <ArrowLeft class="size-4" />
         </Button>
@@ -149,6 +147,7 @@
 
     <!-- Main Content -->
     <main class="flex-1 overflow-hidden">
+        <div class="content-width-standard h-full">
         <form
             id="expense-form"
             method="POST"
@@ -197,7 +196,7 @@
             <div
                 class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 border-b md:border-b-0 md:border-r border-border bg-surface-1"
             >
-                <div class="max-w-xl ml-auto mr-0 md:mr-8 space-y-6">
+                <div class="max-w-xl mx-auto space-y-6">
                     <!-- Date & Category Row -->
                     <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
                         <div class="space-y-2">
@@ -528,6 +527,7 @@
                 </div>
             </div>
         </form>
+        </div>
     </main>
 
     <!-- Bottom Action Bar -->

@@ -13,19 +13,23 @@
     }
 </script>
 
-<div class="space-y-4">
-    <div class="flex items-center gap-4">
-        <Button variant="ghost" href="/reports" class="p-2">
-            <ArrowLeft class="size-4" />
-        </Button>
-        <div>
-            <h1 class="text-xl font-semibold">Customer Pending Report (Ageing)</h1>
-            <p class="text-sm text-muted-foreground">
-                Pending bill amount by delay bucket (A/R Ageing)
-            </p>
+<div class="page-full-bleed">
+    <header class="page-header items-center">
+        <div class="flex items-center gap-4">
+            <Button variant="ghost" href="/reports" class="p-2">
+                <ArrowLeft class="size-4" />
+            </Button>
+            <div>
+                <h1 class="text-xl font-semibold">Customer Pending Report (Ageing)</h1>
+                <p class="text-sm text-muted-foreground">
+                    Pending bill amount by delay bucket (A/R Ageing)
+                </p>
+            </div>
         </div>
-    </div>
+    </header>
 
+    <main class="page-body">
+        <div class="content-width-standard space-y-4">
     <Card class="overflow-hidden">
         {#if data.customerAging.length === 0}
             <div class="p-12 text-center">
@@ -180,4 +184,6 @@
             </div>
         {/if}
     </Card>
+        </div>
+    </main>
 </div>

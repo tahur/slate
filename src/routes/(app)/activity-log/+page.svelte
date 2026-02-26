@@ -109,7 +109,7 @@
 
 <div class="page-full-bleed">
     <!-- Header -->
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between px-4 sm:px-6 py-4 border-b border-border bg-surface-0">
+    <header class="page-header flex-col lg:flex-row lg:items-center">
         <div class="flex items-center gap-3">
             <History class="size-5 text-text-muted" />
             <h1 class="text-xl font-bold tracking-tight text-text-strong">
@@ -159,10 +159,11 @@
                 Apply
             </Button>
         </div>
-    </div>
+    </header>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto bg-surface-1 p-6">
+    <main class="page-body">
+        <div class="content-width-standard">
         {#if data.logs.length === 0}
             <div class="flex flex-col items-center justify-center py-20 border border-dashed border-border-strong rounded-lg bg-surface-0">
                 <History class="size-12 text-text-muted/30 mb-4" />
@@ -239,5 +240,6 @@
                 {/each}
             </div>
         {/if}
-    </div>
+        </div>
+    </main>
 </div>

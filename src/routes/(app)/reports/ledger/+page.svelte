@@ -162,9 +162,7 @@
 </script>
 
 <div class="page-full-bleed">
-    <header
-        class="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-surface-0 z-20"
-    >
+    <header class="page-header items-center">
         <div class="flex items-center gap-4">
             <Button variant="ghost" href="/reports" size="icon" class="h-8 w-8">
                 <ArrowLeft class="size-4" />
@@ -178,8 +176,8 @@
         </div>
     </header>
 
-    <div class="flex-1 overflow-auto bg-surface-1 p-6">
-        <div class="max-w-7xl mx-auto space-y-4">
+    <main class="page-body">
+        <div class="content-width-standard space-y-4">
             <Card class="p-4">
                 <div class="flex flex-wrap items-end gap-4">
                     <div class="space-y-2 min-w-40">
@@ -534,5 +532,5 @@
                 </Card>
             {/if}
         </div>
-    </div>
+    </main>
 </div>
