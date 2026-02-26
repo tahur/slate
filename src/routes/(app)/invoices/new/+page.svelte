@@ -203,14 +203,14 @@
 <div class="page-full-bleed">
     <!-- Header -->
     <header class="page-header items-center">
-        <Button variant="ghost" href="/invoices" size="icon" class="h-8 w-8">
-            <ArrowLeft class="size-4" />
-        </Button>
-        <div>
-            <h1 class="text-xl font-bold tracking-tight text-text-strong">
-                New Invoice
-            </h1>
-            <p class="text-sm text-slate-500">Create a new sales invoice</p>
+        <div class="flex items-center gap-4">
+            <Button variant="ghost" href="/invoices" size="icon" class="h-8 w-8">
+                <ArrowLeft class="size-4" />
+            </Button>
+            <div>
+                <h1 class="type-page-title text-text-strong">New Invoice</h1>
+                <p class="type-meta">Create a new sales invoice</p>
+            </div>
         </div>
     </header>
 

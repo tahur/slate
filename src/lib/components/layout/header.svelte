@@ -23,7 +23,7 @@
 </script>
 
 <header
-    class="header-atmosphere sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border px-4 sm:px-5"
+    class="header-atmosphere sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border px-4 sm:px-5 md:hidden"
 >
     <!-- Mobile Menu -->
     <div class="md:hidden">
