@@ -3,14 +3,21 @@ import { accounts, invoices, expenses, audit_log, customers, payments, vendors }
 import { eq, and, ne, sql, gte, lte, desc, gt, inArray } from 'drizzle-orm';
 import { localDateStr } from '$lib/utils/date';
 
+export interface GstBreakdown {
+    cgst: number;
+    sgst: number;
+    igst: number;
+    total: number;
+}
+
 export interface MoneyPosition {
     cash: number;
     bank: number;
     toCollect: number;
     payables: number;
     gstDue: number;
-    gstOutput: number;
-    gstInput: number;
+    gstOutput: GstBreakdown;
+    gstInput: GstBreakdown;
 }
 
 export interface MonthlyStats {
@@ -66,8 +73,12 @@ interface AccountMetrics {
     cash: number;
     bank: number;
     payables: number;
-    gstOutputRaw: number;
-    gstInput: number;
+    outputCgst: number;
+    outputSgst: number;
+    outputIgst: number;
+    inputCgst: number;
+    inputSgst: number;
+    inputIgst: number;
 }
 
 interface InvoiceMetrics {
@@ -124,15 +135,26 @@ export async function getDashboardData(orgId: string): Promise<DashboardData> {
         getDueInvoices(orgId)
     ]);
 
-    const outputGst = Math.abs(accountMetrics.gstOutputRaw);
+    const gstOutput: GstBreakdown = {
+        cgst: Math.abs(accountMetrics.outputCgst),
+        sgst: Math.abs(accountMetrics.outputSgst),
+        igst: Math.abs(accountMetrics.outputIgst),
+        total: Math.abs(accountMetrics.outputCgst) + Math.abs(accountMetrics.outputSgst) + Math.abs(accountMetrics.outputIgst)
+    };
+    const gstInput: GstBreakdown = {
+        cgst: accountMetrics.inputCgst,
+        sgst: accountMetrics.inputSgst,
+        igst: accountMetrics.inputIgst,
+        total: accountMetrics.inputCgst + accountMetrics.inputSgst + accountMetrics.inputIgst
+    };
     const money: MoneyPosition = {
         cash: accountMetrics.cash,
         bank: accountMetrics.bank,
         toCollect: invoiceMetrics.toCollect,
         payables: accountMetrics.payables,
-        gstOutput: outputGst,
-        gstInput: accountMetrics.gstInput,
-        gstDue: outputGst - accountMetrics.gstInput
+        gstOutput,
+        gstInput,
+        gstDue: gstOutput.total - gstInput.total
     };
 
     const monthly: MonthlyStats = {
@@ -183,29 +205,23 @@ async function getAccountMetrics(orgId: string): Promise<AccountMetrics> {
                         0
                     )
                 `,
-                gstOutputRaw: sql<number>`
-                    COALESCE(
-                        SUM(
-                            CASE
-                                WHEN ${accounts.account_code} IN ('2100', '2101', '2102')
-                                THEN ${accounts.balance}
-                                ELSE 0
-                            END
-                        ),
-                        0
-                    )
+                outputCgst: sql<number>`
+                    COALESCE(SUM(CASE WHEN ${accounts.account_code} = '2100' THEN ${accounts.balance} ELSE 0 END), 0)
                 `,
-                gstInput: sql<number>`
-                    COALESCE(
-                        SUM(
-                            CASE
-                                WHEN ${accounts.account_code} IN ('1300', '1301', '1302')
-                                THEN ${accounts.balance}
-                                ELSE 0
-                            END
-                        ),
-                        0
-                    )
+                outputSgst: sql<number>`
+                    COALESCE(SUM(CASE WHEN ${accounts.account_code} = '2101' THEN ${accounts.balance} ELSE 0 END), 0)
+                `,
+                outputIgst: sql<number>`
+                    COALESCE(SUM(CASE WHEN ${accounts.account_code} = '2102' THEN ${accounts.balance} ELSE 0 END), 0)
+                `,
+                inputCgst: sql<number>`
+                    COALESCE(SUM(CASE WHEN ${accounts.account_code} = '1300' THEN ${accounts.balance} ELSE 0 END), 0)
+                `,
+                inputSgst: sql<number>`
+                    COALESCE(SUM(CASE WHEN ${accounts.account_code} = '1301' THEN ${accounts.balance} ELSE 0 END), 0)
+                `,
+                inputIgst: sql<number>`
+                    COALESCE(SUM(CASE WHEN ${accounts.account_code} = '1302' THEN ${accounts.balance} ELSE 0 END), 0)
                 `
             })
             .from(accounts)
@@ -224,8 +240,12 @@ async function getAccountMetrics(orgId: string): Promise<AccountMetrics> {
         cash: Number(accountRow?.cash) || 0,
         bank: Number(accountRow?.bank) || 0,
         payables: Number(payablesResult[0]?.total) || 0,
-        gstOutputRaw: Number(accountRow?.gstOutputRaw) || 0,
-        gstInput: Number(accountRow?.gstInput) || 0
+        outputCgst: Number(accountRow?.outputCgst) || 0,
+        outputSgst: Number(accountRow?.outputSgst) || 0,
+        outputIgst: Number(accountRow?.outputIgst) || 0,
+        inputCgst: Number(accountRow?.inputCgst) || 0,
+        inputSgst: Number(accountRow?.inputSgst) || 0,
+        inputIgst: Number(accountRow?.inputIgst) || 0
     };
 }
 
@@ -242,7 +262,7 @@ async function getInvoiceMetrics(
                 COALESCE(
                     SUM(
                         CASE
-                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid', 'adjusted')
                             THEN ${invoices.balance_due}
                             ELSE 0
                         END
@@ -268,7 +288,7 @@ async function getInvoiceMetrics(
                 COALESCE(
                     SUM(
                         CASE
-                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid', 'adjusted')
                                 AND ${invoices.due_date} < ${todayStr}
                                 AND ${invoices.balance_due} > 0
                             THEN 1
@@ -282,7 +302,7 @@ async function getInvoiceMetrics(
                 COALESCE(
                     SUM(
                         CASE
-                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid', 'adjusted')
                                 AND ${invoices.due_date} < ${todayStr}
                                 AND ${invoices.balance_due} > 0
                             THEN ${invoices.balance_due}
@@ -296,7 +316,7 @@ async function getInvoiceMetrics(
                 COALESCE(
                     SUM(
                         CASE
-                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid', 'adjusted')
                                 AND ${invoices.due_date} >= ${todayStr}
                                 AND ${invoices.due_date} <= ${nextWeekStr}
                                 AND ${invoices.balance_due} > 0
@@ -311,7 +331,7 @@ async function getInvoiceMetrics(
                 COALESCE(
                     SUM(
                         CASE
-                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid')
+                            WHEN ${invoices.status} NOT IN ('draft', 'cancelled', 'paid', 'adjusted')
                                 AND ${invoices.due_date} >= ${todayStr}
                                 AND ${invoices.due_date} <= ${nextWeekStr}
                                 AND ${invoices.balance_due} > 0
@@ -464,6 +484,8 @@ function formatActionVerb(action: string): string {
             return 'Paid';
         case 'partially_paid':
             return 'Partially paid';
+        case 'adjusted':
+            return 'Adjusted';
         default:
             return action.charAt(0).toUpperCase() + action.slice(1);
     }
@@ -487,7 +509,8 @@ async function getDueInvoices(orgId: string): Promise<DueInvoice[]> {
                 eq(invoices.org_id, orgId),
                 ne(invoices.status, 'draft'),
                 ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'paid')
+                ne(invoices.status, 'paid'),
+                ne(invoices.status, 'adjusted')
             )
         )
         .orderBy(invoices.due_date)

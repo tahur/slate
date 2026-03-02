@@ -32,6 +32,12 @@
         return state ? `${state.name} (${code})` : code;
     }
 
+    function formatDiscountPercent(value: number | null | undefined): string {
+        const amount = Number(value || 0);
+        if (!Number.isFinite(amount) || amount <= 0) return "0";
+        return amount.toFixed(4).replace(/\.?0+$/, "");
+    }
+
     let { data, form } = $props();
 
     // Generate WhatsApp share URL
@@ -62,6 +68,19 @@
     let netPayable = $derived(
         Math.max(0, data.invoice.balance_due - selectedCreditsTotal),
     );
+
+    let invoiceDiscountLabel = $derived.by(() => {
+        if (
+            data.invoice.discount_type === "percent" &&
+            Number(data.invoice.discount_value || 0) > 0
+        ) {
+            return `Discount (${formatDiscountPercent(
+                data.invoice.discount_value,
+            )}%)`;
+        }
+
+        return "Discount";
+    });
 
     // Payment Form State
     let paymentAmount = $state(0);
@@ -303,542 +322,648 @@
     {/if}
 
     <!-- Content: Paper View (Tally-style) -->
-    <main
-        class="page-body print-bg-white"
-    >
+    <main class="page-body print-bg-white">
         <div class="content-width-standard">
-        <div class="mx-auto w-full max-w-[210mm]">
-            <!-- Main Paper Sheet -->
-            <div
-                class="invoice-a4-sheet bg-white border border-slate-300 shadow-sm print-sheet"
-            >
-                <!-- ═══ Compact Header: Company + Customer + Invoice Meta ═══ -->
+            <div class="mx-auto w-full max-w-[210mm]">
+                <!-- Main Paper Sheet -->
                 <div
-                    class="quotation-meta-block px-4 pt-3 pb-2 md:px-6 md:pt-4 md:pb-3 break-inside-avoid"
+                    class="invoice-a4-sheet bg-white border border-slate-300 shadow-sm print-sheet"
                 >
-                    <div class="flex justify-between items-start gap-3 print:gap-2">
-                        <div class="space-y-1 min-w-0">
-                            {#if data.org?.logo_url}
-                                <img
-                                    src={data.org.logo_url}
-                                    alt={data.org.name}
-                                    class="h-9 md:h-11 w-auto object-contain print:h-8"
-                                />
-                            {/if}
-                            <h2
-                                class="text-sm md:text-base print:text-[13px] font-bold text-[#111] uppercase tracking-wide"
-                            >
-                                {data.org?.name || "COMPANY NAME"}
-                            </h2>
-                            <p class="text-[11px] print:text-[10px] text-slate-700 leading-tight">
-                                {[
-                                    data.org?.address,
-                                    data.org?.city,
-                                    data.org?.pincode,
-                                ]
-                                    .filter(Boolean)
-                                    .join(", ") || "Address not set in Settings"}
-                            </p>
-                            <div
-                                class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] print:text-[10px] text-slate-700"
-                            >
-                                <span
-                                    >State: {data.org?.state_code
-                                        ? stateName(data.org.state_code)
-                                        : "-"}</span
-                                >
-                                <span class="font-mono text-[#111]"
-                                    >GSTIN: {data.org?.gstin || "UNREGISTERED"}</span
-                                >
-                                {#if data.org?.phone}
-                                    <span>Phone: {data.org.phone}</span>
-                                {/if}
-                                {#if data.org?.email}
-                                    <span>{data.org.email}</span>
-                                {/if}
-                            </div>
-                        </div>
-
-                        <div class="text-right space-y-1 shrink-0">
-                            <p
-                                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-700"
-                            >
-                                Document Type
-                            </p>
-                            <h1
-                                class="text-xl md:text-2xl font-bold text-[#111] tracking-tight"
-                            >
-                                TAX INVOICE
-                            </h1>
-                            {#if data.invoice.balance_due <= 0.01 && data.invoice.amount_paid && data.invoice.amount_paid > 0}
-                                <span
-                                    class="inline-block text-sm font-bold text-green-600 border border-green-300 bg-green-50 px-3 py-0.5 rounded"
-                                    >PAID</span
-                                >
-                            {/if}
-                            {#if data.invoice.prices_include_gst}
-                                <span
-                                    class="inline-block text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded"
-                                >
-                                    Prices include GST
-                                </span>
-                            {/if}
-                        </div>
-                    </div>
-
+                    <!-- ═══ Compact Header: Company + Customer + Invoice Meta ═══ -->
                     <div
-                        class="quotation-meta-grid mt-2 grid grid-cols-1 md:grid-cols-[1.35fr_1fr] print:grid-cols-[1.35fr_1fr] gap-2 print:gap-1.5"
+                        class="quotation-meta-block px-4 pt-3 pb-2 md:px-6 md:pt-4 md:pb-3 break-inside-avoid"
                     >
-                        <div class="border border-slate-200 p-2 print:p-1.5">
-                            <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-0.5"
-                            >
-                                Customer Details
-                            </p>
-                            <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5 text-[10px]">
-                                <span class="text-slate-700">Name</span>
-                                <span class="text-[#111] font-medium truncate">
-                                    {data.customer?.name || "UNKNOWN"}{#if data
-                                        .customer
-                                        ?.company_name}
-                                        · {data.customer.company_name}{/if}
-                                </span>
-
-                                <span class="text-slate-700">Address</span>
-                                <span class="text-slate-800 truncate">
+                        <div
+                            class="flex justify-between items-start gap-3 print:gap-2"
+                        >
+                            <div class="space-y-1 min-w-0">
+                                {#if data.org?.logo_url}
+                                    <img
+                                        src={data.org.logo_url}
+                                        alt={data.org.name}
+                                        class="h-9 md:h-11 w-auto object-contain print:h-8"
+                                    />
+                                {/if}
+                                <h2
+                                    class="text-sm md:text-base print:text-[13px] font-bold text-[#111] uppercase tracking-wide"
+                                >
+                                    {data.org?.name || "COMPANY NAME"}
+                                </h2>
+                                <p
+                                    class="text-[11px] print:text-[10px] text-slate-700 leading-tight"
+                                >
                                     {[
-                                        data.customer?.billing_address,
-                                        data.customer?.city,
-                                        data.customer?.pincode,
+                                        data.org?.address,
+                                        data.org?.city,
+                                        data.org?.pincode,
                                     ]
                                         .filter(Boolean)
-                                        .join(", ") || "-"}
-                                </span>
+                                        .join(", ") ||
+                                        "Address not set in Settings"}
+                                </p>
+                                <div
+                                    class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] print:text-[10px] text-slate-700"
+                                >
+                                    <span
+                                        >State: {data.org?.state_code
+                                            ? stateName(data.org.state_code)
+                                            : "-"}</span
+                                    >
+                                    <span class="font-mono text-[#111]"
+                                        >GSTIN: {data.org?.gstin ||
+                                            "UNREGISTERED"}</span
+                                    >
+                                    {#if data.org?.phone}
+                                        <span>Phone: {data.org.phone}</span>
+                                    {/if}
+                                    {#if data.org?.email}
+                                        <span>{data.org.email}</span>
+                                    {/if}
+                                </div>
+                            </div>
 
-                                {#if data.customer?.state_code}
-                                    <span class="text-slate-700">State</span>
-                                    <span class="text-slate-800 truncate">
-                                        {stateName(data.customer.state_code)}
-                                    </span>
+                            <div class="text-right space-y-1 shrink-0">
+                                <p
+                                    class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-700"
+                                >
+                                    Document Type
+                                </p>
+                                <h1
+                                    class="text-xl md:text-2xl font-bold text-[#111] tracking-tight"
+                                >
+                                    TAX INVOICE
+                                </h1>
+                                {#if data.invoice.balance_due <= 0.01 && data.invoice.amount_paid && data.invoice.amount_paid > 0}
+                                    <span
+                                        class="inline-block text-sm font-bold text-green-600 border border-green-300 bg-green-50 px-3 py-0.5 rounded"
+                                        >PAID</span
+                                    >
                                 {/if}
-
-                                {#if data.customer?.gstin}
-                                    <span class="text-slate-700">GSTIN</span>
-                                    <span class="font-mono text-[#111] truncate">
-                                        {data.customer.gstin}
+                                {#if data.invoice.prices_include_gst}
+                                    <span
+                                        class="inline-block text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded"
+                                    >
+                                        Prices include GST
                                     </span>
                                 {/if}
                             </div>
                         </div>
 
-                        <div class="border border-slate-200 p-2 print:p-1.5">
-                            <p
-                                class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-0.5"
+                        <div
+                            class="quotation-meta-grid mt-2 grid grid-cols-1 md:grid-cols-[1.35fr_1fr] print:grid-cols-[1.35fr_1fr] gap-2 print:gap-1.5"
+                        >
+                            <div
+                                class="border border-slate-200 p-2 print:p-1.5"
                             >
-                                Invoice Details
-                            </p>
-                            <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5 text-[10px]">
-                                <span class="text-slate-700">Invoice No</span>
-                                <span
-                                    class="text-right font-mono font-semibold text-[#111]"
-                                    >{data.invoice.invoice_number}</span
+                                <p
+                                    class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-0.5"
                                 >
-
-                                <span class="text-slate-700">Date</span>
-                                <span class="text-right text-[#111]"
-                                    >{formatDate(data.invoice.invoice_date)}</span
+                                    Customer Details
+                                </p>
+                                <div
+                                    class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5 text-[10px]"
                                 >
-
-                                <span class="text-slate-700">Due Date</span>
-                                <span class="text-right font-semibold text-[#111]"
-                                    >{formatDate(data.invoice.due_date)}</span
-                                >
-
-                                {#if data.customer?.state_code}
-                                    <span class="text-slate-700"
-                                        >Place of Supply</span
+                                    <span class="text-slate-700">Name</span>
+                                    <span
+                                        class="text-[#111] font-medium truncate"
                                     >
+                                        {data.customer?.name ||
+                                            "UNKNOWN"}{#if data.customer?.company_name}
+                                            · {data.customer.company_name}{/if}
+                                    </span>
+
+                                    <span class="text-slate-700">Address</span>
+                                    <span class="text-slate-800 truncate">
+                                        {[
+                                            data.customer?.billing_address,
+                                            data.customer?.city,
+                                            data.customer?.pincode,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(", ") || "-"}
+                                    </span>
+
+                                    {#if data.customer?.state_code}
+                                        <span class="text-slate-700">State</span
+                                        >
+                                        <span class="text-slate-800 truncate">
+                                            {stateName(
+                                                data.customer.state_code,
+                                            )}
+                                        </span>
+                                    {/if}
+
+                                    {#if data.customer?.gstin}
+                                        <span class="text-slate-700">GSTIN</span
+                                        >
+                                        <span
+                                            class="font-mono text-[#111] truncate"
+                                        >
+                                            {data.customer.gstin}
+                                        </span>
+                                    {/if}
+                                </div>
+                            </div>
+
+                            <div
+                                class="border border-slate-200 p-2 print:p-1.5"
+                            >
+                                <p
+                                    class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-0.5"
+                                >
+                                    Invoice Details
+                                </p>
+                                <div
+                                    class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-0.5 text-[10px]"
+                                >
+                                    <span class="text-slate-700"
+                                        >Invoice No</span
+                                    >
+                                    <span
+                                        class="text-right font-mono font-semibold text-[#111]"
+                                        >{data.invoice.invoice_number}</span
+                                    >
+
+                                    <span class="text-slate-700">Date</span>
                                     <span class="text-right text-[#111]"
-                                        >{stateName(
-                                            data.customer.state_code,
+                                        >{formatDate(
+                                            data.invoice.invoice_date,
                                         )}</span
                                     >
-                                {/if}
 
-                                {#if data.invoice.order_number}
-                                    <span class="text-slate-700">Order No</span>
+                                    <span class="text-slate-700">Due Date</span>
                                     <span
-                                        class="text-right font-mono text-[#111]"
-                                        >{data.invoice.order_number}</span
+                                        class="text-right font-semibold text-[#111]"
+                                        >{formatDate(
+                                            data.invoice.due_date,
+                                        )}</span
                                     >
-                                {/if}
 
-                                <span class="text-slate-700">Supply Type</span>
-                                <span class="text-right text-[#111]">
-                                    {data.invoice.is_inter_state
-                                        ? "Inter-State (IGST)"
-                                        : "Intra-State (CGST+SGST)"}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ═══ Separator ═══ -->
-                <div class="mx-6 border-t border-slate-200"></div>
-
-                <!-- ═══ Items Table ═══ -->
-                <div class="px-4 py-3 md:px-6 md:py-4">
-                    <div class="border border-slate-300 overflow-hidden">
-                        <table class="w-full table-fixed border-collapse text-[11px]">
-                            <thead>
-                                <tr
-                                    class="bg-slate-100/60 text-[10px] uppercase tracking-wider font-bold text-slate-700"
-                                >
-                                    <th
-                                        class="border border-slate-200 px-2 py-1.5 text-center w-8"
-                                        >#</th
-                                    >
-                                    <th class="border border-slate-200 px-2 py-1.5 text-left"
-                                        >Description</th
-                                    >
-                                    <th class="border border-slate-200 px-2 py-1.5 text-center w-20"
-                                        >HSN/SAC</th
-                                    >
-                                    <th class="border border-slate-200 px-2 py-1.5 text-center w-14">Qty</th>
-                                    <th class="border border-slate-200 px-2 py-1.5 text-right w-24">Rate</th>
-                                    {#if data.invoice.is_inter_state}
-                                        <th class="border border-slate-200 px-2 py-1.5 text-right w-24"
-                                            >IGST</th
+                                    {#if data.customer?.state_code}
+                                        <span class="text-slate-700"
+                                            >Place of Supply</span
                                         >
-                                    {:else}
-                                        <th class="border border-slate-200 px-2 py-1.5 text-right w-24"
-                                            >CGST</th
-                                        >
-                                        <th class="border border-slate-200 px-2 py-1.5 text-right w-24"
-                                            >SGST</th
+                                        <span class="text-right text-[#111]"
+                                            >{stateName(
+                                                data.customer.state_code,
+                                            )}</span
                                         >
                                     {/if}
-                                    <th class="border border-slate-200 px-2 py-1.5 text-right w-24"
-                                        >Amount</th
+
+                                    {#if data.invoice.order_number}
+                                        <span class="text-slate-700"
+                                            >Order No</span
+                                        >
+                                        <span
+                                            class="text-right font-mono text-[#111]"
+                                            >{data.invoice.order_number}</span
+                                        >
+                                    {/if}
+
+                                    <span class="text-slate-700"
+                                        >Supply Type</span
                                     >
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {#each data.items as item, i}
-                                    {@const halfRate = (item.gst_rate || 0) / 2}
-                                    {@const lineCgst = item.cgst || 0}
-                                    {@const lineSgst = item.sgst || 0}
-                                    {@const lineIgst = item.igst || 0}
-                                    {@const descLines = item.description.split("\n")}
-                                    <tr>
-                                        <td
-                                            class="border border-slate-200 px-2 py-1.5 text-center text-[11px] text-slate-700 align-top"
-                                            >{i + 1}</td
+                                    <span class="text-right text-[#111]">
+                                        {data.invoice.is_inter_state
+                                            ? "Inter-State (IGST)"
+                                            : "Intra-State (CGST+SGST)"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══ Separator ═══ -->
+                    <div class="mx-6 border-t border-slate-200"></div>
+
+                    <!-- ═══ Items Table ═══ -->
+                    <div class="px-4 py-3 md:px-6 md:py-4">
+                        <div class="border border-slate-300 overflow-hidden">
+                            <table
+                                class="w-full table-fixed border-collapse text-[11px]"
+                            >
+                                <thead>
+                                    <tr
+                                        class="bg-slate-100/60 text-[10px] uppercase tracking-wider font-bold text-slate-700"
+                                    >
+                                        <th
+                                            class="border border-slate-200 px-2 py-1.5 text-center w-8"
+                                            >#</th
                                         >
-                                        <td class="border border-slate-200 px-2 py-1.5 align-top">
-                                            <div
-                                                class="font-medium text-[#111] text-[11px] leading-tight"
-                                            >
-                                                {descLines[0]}
-                                            </div>
-                                            {#if descLines.length > 1}
-                                                <div class="text-[10px] text-slate-700 mt-0.5 whitespace-pre-wrap">
-                                                    {descLines.slice(1).join("\n")}
-                                                </div>
-                                            {/if}
-                                            {#if item.unit && item.unit !== "nos"}
-                                                <div
-                                                    class="text-[10px] text-slate-700 mt-0.5"
-                                                >
-                                                    Unit: {item.unit}
-                                                </div>
-                                            {/if}
-                                        </td>
-                                        <td
-                                            class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-700 align-top"
-                                            >{item.hsn_code || "—"}</td
+                                        <th
+                                            class="border border-slate-200 px-2 py-1.5 text-left"
+                                            >Description</th
                                         >
-                                        <td
-                                            class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-700 align-top"
-                                            >{item.quantity}</td
+                                        <th
+                                            class="border border-slate-200 px-2 py-1.5 text-center w-20"
+                                            >HSN/SAC</th
                                         >
-                                        <td
-                                            class="border border-slate-200 px-2 py-1.5 text-right font-mono text-[11px] text-slate-700 align-top"
-                                            >{formatINR(item.rate)}</td
+                                        <th
+                                            class="border border-slate-200 px-2 py-1.5 text-center w-14"
+                                            >Qty</th
+                                        >
+                                        <th
+                                            class="border border-slate-200 px-2 py-1.5 text-right w-24"
+                                            >Rate</th
                                         >
                                         {#if data.invoice.is_inter_state}
-                                            <td class="border border-slate-200 px-2 py-1.5 text-right align-top">
-                                                <div class="font-mono text-[11px]">
-                                                    <span class="text-slate-700"
-                                                        >{item.gst_rate}% · </span
-                                                    >
-                                                    {formatINR(lineIgst)}
-                                                </div>
-                                            </td>
+                                            <th
+                                                class="border border-slate-200 px-2 py-1.5 text-right w-24"
+                                                >IGST</th
+                                            >
                                         {:else}
-                                            <td class="border border-slate-200 px-2 py-1.5 text-right align-top">
-                                                <div class="font-mono text-[11px]">
-                                                    <span class="text-slate-700"
-                                                        >{halfRate}% · </span
-                                                    >
-                                                    {formatINR(lineCgst)}
-                                                </div>
-                                            </td>
-                                            <td class="border border-slate-200 px-2 py-1.5 text-right align-top">
-                                                <div class="font-mono text-[11px]">
-                                                    <span class="text-slate-700"
-                                                        >{halfRate}% · </span
-                                                    >
-                                                    {formatINR(lineSgst)}
-                                                </div>
-                                            </td>
+                                            <th
+                                                class="border border-slate-200 px-2 py-1.5 text-right w-24"
+                                                >CGST</th
+                                            >
+                                            <th
+                                                class="border border-slate-200 px-2 py-1.5 text-right w-24"
+                                                >SGST</th
+                                            >
                                         {/if}
-                                        <td
-                                            class="border border-slate-200 px-2 py-1.5 text-right font-mono text-[11px] font-bold text-[#111] align-top"
-                                            >{formatINR(item.amount)}</td
+                                        <th
+                                            class="border border-slate-200 px-2 py-1.5 text-right w-24"
+                                            >Amount</th
                                         >
                                     </tr>
-                                {/each}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- ═══ Footer: Words + Bank + Notes | Summary + Signature ═══ -->
-                <div class="px-6 pb-6">
-                    <div class="flex flex-col md:flex-row gap-6">
-                        <!-- Left column: Total in words, Bank, Notes, Terms -->
-                        <div class="flex-1 space-y-4">
-                            <div>
-                                <p
-                                    class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
-                                >
-                                    Total In Words
-                                </p>
-                                <p
-                                    class="text-xs font-semibold italic text-[#111]"
-                                >
-                                    {numberToWords(data.invoice.total || 0)}
-                                </p>
-                            </div>
-
-                            {#if data.org?.bank_name || data.org?.account_number}
-                                <div>
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
-                                    >
-                                        Bank Details
-                                    </p>
-                                    <div
-                                        class="text-xs text-slate-800 space-y-0.5 leading-relaxed"
-                                    >
-                                        {#if data.org?.bank_name}<p>
-                                                Bank: {data.org.bank_name}
-                                            </p>{/if}
-                                        {#if data.org?.account_number}<p>
-                                                A/c No: <span class="font-mono"
-                                                    >{data.org
-                                                        .account_number}</span
-                                                >
-                                            </p>{/if}
-                                        {#if data.org?.ifsc}<p>
-                                                IFSC: <span class="font-mono"
-                                                    >{data.org.ifsc}</span
-                                                >
-                                            </p>{/if}
-                                        {#if data.org?.branch}<p>
-                                                Branch: {data.org.branch}
-                                            </p>{/if}
-                                    </div>
-                                </div>
-                            {/if}
-
-                            {#if data.invoice.notes}
-                                <div>
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
-                                    >
-                                        Notes
-                                    </p>
-                                    <p
-                                        class="text-xs text-slate-800 whitespace-pre-wrap"
-                                    >
-                                        {data.invoice.notes}
-                                    </p>
-                                </div>
-                            {/if}
-
-                            {#if data.invoice.terms}
-                                <div>
-                                    <p
-                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
-                                    >
-                                        Terms & Conditions
-                                    </p>
-                                    <p
-                                        class="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed"
-                                    >
-                                        {data.invoice.terms}
-                                    </p>
-                                </div>
-                            {/if}
-                        </div>
-
-                        <!-- Right column: Tax summary + Signature -->
-                        <div class="w-full md:w-72 space-y-4">
-                            <div class="space-y-2 text-sm">
-                                <div
-                                    class="flex justify-between text-slate-700"
-                                >
-                                    <span class="text-xs">Sub Total</span>
-                                    <span
-                                        class="font-mono text-xs text-[#111]"
-                                        >{formatINR(
-                                            data.invoice.subtotal,
-                                        )}</span
-                                    >
-                                </div>
-
-                                {#if data.invoice.is_inter_state}
-                                    <div
-                                        class="flex justify-between text-slate-700"
-                                    >
-                                        <span class="text-xs">IGST</span>
-                                        <span
-                                            class="font-mono text-xs text-[#111]"
-                                            >{formatINR(
-                                                data.invoice.igst,
-                                            )}</span
-                                        >
-                                    </div>
-                                {:else}
-                                    <div
-                                        class="flex justify-between text-slate-700"
-                                    >
-                                        <span class="text-xs">CGST</span>
-                                        <span
-                                            class="font-mono text-xs text-[#111]"
-                                            >{formatINR(
-                                                data.invoice.cgst,
-                                            )}</span
-                                        >
-                                    </div>
-                                    <div
-                                        class="flex justify-between text-slate-700"
-                                    >
-                                        <span class="text-xs">SGST</span>
-                                        <span
-                                            class="font-mono text-xs text-[#111]"
-                                            >{formatINR(
-                                                data.invoice.sgst,
-                                            )}</span
-                                        >
-                                    </div>
-                                {/if}
-
-                                <div
-                                    class="border-t border-slate-300 pt-2 flex justify-between items-center bg-slate-100/50 -mx-2 px-2 py-1.5"
-                                >
-                                    <span
-                                        class="font-bold text-sm text-[#111]"
-                                        >GRAND TOTAL</span
-                                    >
-                                    <span
-                                        class="font-mono text-base font-bold text-[#111]"
-                                        >{formatINR(data.invoice.total)}</span
-                                    >
-                                </div>
-
-                                {#if data.paymentHistory && data.paymentHistory.length > 0}
-                                    <div
-                                        class="space-y-1.5 border-t border-dashed border-slate-200 pt-2"
-                                    >
-                                        {#each data.paymentHistory as txn}
-                                            <div
-                                                class="flex justify-between text-xs"
+                                </thead>
+                                <tbody>
+                                    {#each data.items as item, i}
+                                        {@const halfRate =
+                                            (item.gst_rate || 0) / 2}
+                                        {@const lineCgst = item.cgst || 0}
+                                        {@const lineSgst = item.sgst || 0}
+                                        {@const lineIgst = item.igst || 0}
+                                        {@const descLines =
+                                            item.description.split("\n")}
+                                        <tr>
+                                            <td
+                                                class="border border-slate-200 px-2 py-1.5 text-center text-[11px] text-slate-700 align-top"
+                                                >{i + 1}</td
                                             >
-                                                <span class="text-slate-700">
-                                                    {#if txn.type === "credit_note"}
-                                                        <span
-                                                            class="text-blue-600"
-                                                            >Adjusted</span
-                                                        >
-                                                        <span
-                                                            class="font-mono text-[10px]"
-                                                            >({txn.reference})</span
-                                                        >
-                                                    {:else if txn.type === "advance"}
-                                                        <span
-                                                            class="text-purple-600"
-                                                            >Advance</span
-                                                        >
-                                                        <span
-                                                            class="font-mono text-[10px]"
-                                                            >({txn.reference})</span
-                                                        >
-                                                    {:else}
-                                                        <span
-                                                            class="text-green-600"
-                                                            >Payment</span
-                                                        >
-                                                        <span
-                                                            class="font-mono text-[10px]"
-                                                            >({txn.reference})</span
-                                                        >
-                                                    {/if}
-                                                </span>
-                                                <span
-                                                    class="font-mono text-green-600"
-                                                    >(-) {formatINR(
-                                                        txn.amount,
-                                                    )}</span
+                                            <td
+                                                class="border border-slate-200 px-2 py-1.5 align-top"
+                                            >
+                                                <div
+                                                    class="font-medium text-[#111] text-[11px] leading-tight"
                                                 >
-                                            </div>
-                                        {/each}
+                                                    {descLines[0]}
+                                                </div>
+                                                {#if descLines.length > 1}
+                                                    <div
+                                                        class="text-[10px] text-slate-700 mt-0.5 whitespace-pre-wrap"
+                                                    >
+                                                        {descLines
+                                                            .slice(1)
+                                                            .join("\n")}
+                                                    </div>
+                                                {/if}
+                                                {#if item.unit && item.unit !== "nos"}
+                                                    <div
+                                                        class="text-[10px] text-slate-700 mt-0.5"
+                                                    >
+                                                        Unit: {item.unit}
+                                                    </div>
+                                                {/if}
+                                            </td>
+                                            <td
+                                                class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-700 align-top"
+                                                >{item.hsn_code || "—"}</td
+                                            >
+                                            <td
+                                                class="border border-slate-200 px-2 py-1.5 text-center font-mono text-[11px] text-slate-700 align-top"
+                                                >{item.quantity}</td
+                                            >
+                                            <td
+                                                class="border border-slate-200 px-2 py-1.5 text-right font-mono text-[11px] text-slate-700 align-top"
+                                                >{formatINR(item.rate)}</td
+                                            >
+                                            {#if data.invoice.is_inter_state}
+                                                <td
+                                                    class="border border-slate-200 px-2 py-1.5 text-right align-top"
+                                                >
+                                                    <div
+                                                        class="font-mono text-[11px]"
+                                                    >
+                                                        <span
+                                                            class="text-slate-700"
+                                                            >{item.gst_rate}% ·
+                                                        </span>
+                                                        {formatINR(lineIgst)}
+                                                    </div>
+                                                </td>
+                                            {:else}
+                                                <td
+                                                    class="border border-slate-200 px-2 py-1.5 text-right align-top"
+                                                >
+                                                    <div
+                                                        class="font-mono text-[11px]"
+                                                    >
+                                                        <span
+                                                            class="text-slate-700"
+                                                            >{halfRate}% ·
+                                                        </span>
+                                                        {formatINR(lineCgst)}
+                                                    </div>
+                                                </td>
+                                                <td
+                                                    class="border border-slate-200 px-2 py-1.5 text-right align-top"
+                                                >
+                                                    <div
+                                                        class="font-mono text-[11px]"
+                                                    >
+                                                        <span
+                                                            class="text-slate-700"
+                                                            >{halfRate}% ·
+                                                        </span>
+                                                        {formatINR(lineSgst)}
+                                                    </div>
+                                                </td>
+                                            {/if}
+                                            <td
+                                                class="border border-slate-200 px-2 py-1.5 text-right font-mono text-[11px] font-bold text-[#111] align-top"
+                                                >{formatINR(item.amount)}</td
+                                            >
+                                        </tr>
+                                    {/each}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ═══ Footer: Words + Bank + Notes | Summary + Signature ═══ -->
+                    <div class="px-6 pb-6">
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <!-- Left column: Total in words, Bank, Notes, Terms -->
+                            <div class="flex-1 space-y-4">
+                                <div>
+                                    <p
+                                        class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
+                                    >
+                                        Total In Words
+                                    </p>
+                                    <p
+                                        class="text-xs font-semibold italic text-[#111]"
+                                    >
+                                        {numberToWords(data.invoice.total || 0)}
+                                    </p>
+                                </div>
+
+                                {#if data.org?.bank_name || data.org?.account_number}
+                                    <div>
+                                        <p
+                                            class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
+                                        >
+                                            Bank Details
+                                        </p>
+                                        <div
+                                            class="text-xs text-slate-800 space-y-0.5 leading-relaxed"
+                                        >
+                                            {#if data.org?.bank_name}<p>
+                                                    Bank: {data.org.bank_name}
+                                                </p>{/if}
+                                            {#if data.org?.account_number}<p>
+                                                    A/c No: <span
+                                                        class="font-mono"
+                                                        >{data.org
+                                                            .account_number}</span
+                                                    >
+                                                </p>{/if}
+                                            {#if data.org?.ifsc}<p>
+                                                    IFSC: <span
+                                                        class="font-mono"
+                                                        >{data.org.ifsc}</span
+                                                    >
+                                                </p>{/if}
+                                            {#if data.org?.branch}<p>
+                                                    Branch: {data.org.branch}
+                                                </p>{/if}
+                                        </div>
                                     </div>
                                 {/if}
 
-                                {#if data.invoice.balance_due > 0.01}
-                                    <div
-                                        class="flex justify-between font-bold text-sm pt-2 border-t border-slate-300"
-                                    >
-                                        <span class="text-red-600"
-                                            >BALANCE DUE</span
+                                {#if data.invoice.notes}
+                                    <div>
+                                        <p
+                                            class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
                                         >
-                                        <span class="font-mono text-red-600"
-                                            >{formatINR(
-                                                data.invoice.balance_due,
-                                            )}</span
+                                            Notes
+                                        </p>
+                                        <p
+                                            class="text-xs text-slate-800 whitespace-pre-wrap"
                                         >
+                                            {data.invoice.notes}
+                                        </p>
+                                    </div>
+                                {/if}
+
+                                {#if data.invoice.terms}
+                                    <div>
+                                        <p
+                                            class="text-[10px] font-bold uppercase tracking-wider text-slate-700 mb-1"
+                                        >
+                                            Terms & Conditions
+                                        </p>
+                                        <p
+                                            class="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed"
+                                        >
+                                            {data.invoice.terms}
+                                        </p>
                                     </div>
                                 {/if}
                             </div>
 
-                            <!-- Signature Block -->
-                            <div class="pt-8 text-center">
-                                <div
-                                    class="border-t border-slate-300 w-40 mx-auto"
-                                ></div>
-                                <p
-                                    class="text-xs font-bold text-[#111] mt-2 uppercase"
-                                >
-                                    For {data.org?.name || "Company"}
-                                </p>
-                                <p class="text-[10px] text-slate-400 mt-0.5">
-                                    Authorized Signatory
-                                </p>
+                            <!-- Right column: Tax summary + Signature -->
+                            <div class="w-full md:w-72 space-y-4">
+                                <div class="space-y-2 text-sm">
+                                    <div
+                                        class="flex justify-between text-slate-700"
+                                    >
+                                        <span class="text-xs">Sub Total</span>
+                                        <span
+                                            class="font-mono text-xs text-[#111]"
+                                            >{formatINR(
+                                                data.invoice.subtotal,
+                                            )}</span
+                                        >
+                                    </div>
+
+                                    {#if (data.invoice.discount_amount || 0) > 0}
+                                        <div
+                                            class="flex justify-between text-slate-700"
+                                        >
+                                            <span class="text-xs"
+                                                >{invoiceDiscountLabel}</span
+                                            >
+                                            <span
+                                                class="font-mono text-xs text-[#111]"
+                                                >(-) {formatINR(
+                                                    data.invoice
+                                                        .discount_amount,
+                                                )}</span
+                                            >
+                                        </div>
+                                    {/if}
+
+                                    <div
+                                        class="flex justify-between text-slate-700"
+                                    >
+                                        <span class="text-xs"
+                                            >Taxable Value</span
+                                        >
+                                        <span
+                                            class="font-mono text-xs text-[#111]"
+                                            >{formatINR(
+                                                data.invoice.taxable_amount,
+                                            )}</span
+                                        >
+                                    </div>
+
+                                    {#if data.invoice.is_inter_state}
+                                        <div
+                                            class="flex justify-between text-slate-700"
+                                        >
+                                            <span class="text-xs">IGST</span>
+                                            <span
+                                                class="font-mono text-xs text-[#111]"
+                                                >{formatINR(
+                                                    data.invoice.igst,
+                                                )}</span
+                                            >
+                                        </div>
+                                    {:else}
+                                        <div
+                                            class="flex justify-between text-slate-700"
+                                        >
+                                            <span class="text-xs">CGST</span>
+                                            <span
+                                                class="font-mono text-xs text-[#111]"
+                                                >{formatINR(
+                                                    data.invoice.cgst,
+                                                )}</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="flex justify-between text-slate-700"
+                                        >
+                                            <span class="text-xs">SGST</span>
+                                            <span
+                                                class="font-mono text-xs text-[#111]"
+                                                >{formatINR(
+                                                    data.invoice.sgst,
+                                                )}</span
+                                            >
+                                        </div>
+                                    {/if}
+
+                                    <div
+                                        class="border-t border-slate-300 pt-2 flex justify-between items-center bg-slate-100/50 -mx-2 px-2 py-1.5"
+                                    >
+                                        <span
+                                            class="font-bold text-sm text-[#111]"
+                                            >GRAND TOTAL</span
+                                        >
+                                        <span
+                                            class="font-mono text-base font-bold text-[#111]"
+                                            >{formatINR(
+                                                data.invoice.total,
+                                            )}</span
+                                        >
+                                    </div>
+
+                                    {#if data.paymentHistory && data.paymentHistory.length > 0}
+                                        <div
+                                            class="space-y-1.5 border-t border-dashed border-slate-200 pt-2"
+                                        >
+                                            {#each data.paymentHistory as txn}
+                                                <div
+                                                    class="flex justify-between text-xs"
+                                                >
+                                                    <span
+                                                        class="text-slate-700"
+                                                    >
+                                                        {#if txn.type === "credit_note"}
+                                                            <span
+                                                                class="text-blue-600"
+                                                                >Adjusted</span
+                                                            >
+                                                            <span
+                                                                class="font-mono text-[10px]"
+                                                                >({txn.reference})</span
+                                                            >
+                                                        {:else if txn.type === "advance"}
+                                                            <span
+                                                                class="text-purple-600"
+                                                                >Advance</span
+                                                            >
+                                                            <span
+                                                                class="font-mono text-[10px]"
+                                                                >({txn.reference})</span
+                                                            >
+                                                        {:else}
+                                                            <span
+                                                                class="text-green-600"
+                                                                >Payment</span
+                                                            >
+                                                            <span
+                                                                class="font-mono text-[10px]"
+                                                                >({txn.reference})</span
+                                                            >
+                                                        {/if}
+                                                    </span>
+                                                    <span
+                                                        class="font-mono text-green-600"
+                                                        >(-) {formatINR(
+                                                            txn.amount,
+                                                        )}</span
+                                                    >
+                                                </div>
+                                            {/each}
+                                        </div>
+                                    {/if}
+
+                                    {#if data.invoice.balance_due > 0.01}
+                                        <div
+                                            class="flex justify-between font-bold text-sm pt-2 border-t border-slate-300"
+                                        >
+                                            <span class="text-red-600"
+                                                >BALANCE DUE</span
+                                            >
+                                            <span class="font-mono text-red-600"
+                                                >{formatINR(
+                                                    data.invoice.balance_due,
+                                                )}</span
+                                            >
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                <!-- Signature Block -->
+                                <div class="pt-8 text-center">
+                                    <div
+                                        class="border-t border-slate-300 w-40 mx-auto"
+                                    ></div>
+                                    <p
+                                        class="text-xs font-bold text-[#111] mt-2 uppercase"
+                                    >
+                                        For {data.org?.name || "Company"}
+                                    </p>
+                                    <p
+                                        class="text-[10px] text-slate-400 mt-0.5"
+                                    >
+                                        Authorized Signatory
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <p class="text-center text-[10px] text-slate-400 mt-3">
-                This is a computer-generated invoice and does not require a
-                physical signature.
-            </p>
-        </div>
+                <p class="text-center text-[10px] text-slate-400 mt-3">
+                    This is a computer-generated invoice and does not require a
+                    physical signature.
+                </p>
+            </div>
         </div>
     </main>
 
@@ -859,8 +984,7 @@
                             class="text-[10px] uppercase tracking-wide text-slate-400 font-semibold"
                             >Pending</span
                         >
-                        <span
-                            class="font-mono text-lg font-bold text-[#111]"
+                        <span class="font-mono text-lg font-bold text-[#111]"
                             >{formatINR(data.invoice.balance_due)}</span
                         >
                     </div>
@@ -931,8 +1055,7 @@
                         <span class="text-sm text-slate-400"
                             >Pending amount</span
                         >
-                        <span
-                            class="text-xl font-bold font-mono text-[#111]"
+                        <span class="text-xl font-bold font-mono text-[#111]"
                             >{formatINR(data.invoice.balance_due)}</span
                         >
                     </div>

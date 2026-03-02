@@ -1,6 +1,6 @@
 import { db, type Tx } from './db';
 import { accounts, payment_accounts, payment_method_account_map, payment_methods } from './db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export const INDIAN_COA_TEMPLATE = [
     // Assets
@@ -27,13 +27,23 @@ export const INDIAN_COA_TEMPLATE = [
 
     // Expenses
     { code: '5000', name: 'Cost of Goods Sold', type: 'expense', is_system: true },
+    { code: '5100', name: 'Raw Materials', type: 'expense', is_system: true },
+    { code: '5200', name: 'Freight & Shipping', type: 'expense', is_system: true },
     { code: '6000', name: 'Operating Expenses', type: 'expense', is_system: true },
     { code: '6100', name: 'Rent', type: 'expense', is_system: true },
+    { code: '6150', name: 'Repairs & Maintenance', type: 'expense', is_system: true },
     { code: '6200', name: 'Utilities', type: 'expense', is_system: true },
+    { code: '6250', name: 'Telephone & Internet', type: 'expense', is_system: true },
     { code: '6300', name: 'Salaries', type: 'expense', is_system: true },
+    { code: '6350', name: 'Staff Welfare', type: 'expense', is_system: true },
     { code: '6400', name: 'Office Supplies', type: 'expense', is_system: true },
+    { code: '6450', name: 'Printing & Stationery', type: 'expense', is_system: true },
     { code: '6500', name: 'Transportation', type: 'expense', is_system: true },
+    { code: '6550', name: 'Travel & Conveyance', type: 'expense', is_system: true },
     { code: '6600', name: 'Professional Fees', type: 'expense', is_system: true },
+    { code: '6650', name: 'Bank Charges', type: 'expense', is_system: true },
+    { code: '6700', name: 'Insurance', type: 'expense', is_system: true },
+    { code: '6750', name: 'Advertising & Marketing', type: 'expense', is_system: true },
     { code: '6900', name: 'Miscellaneous', type: 'expense', is_system: true }
 ];
 
@@ -146,5 +156,40 @@ export async function hasPaymentConfiguration(orgId: string): Promise<boolean> {
         return true;
     }
     return false;
+}
+
+/** In-memory set of orgs known to have the full expanded expense accounts */
+const orgsWithFullExpenseAccounts = new Set<string>();
+
+const EXPENSE_ACCOUNTS = INDIAN_COA_TEMPLATE.filter((a) => a.type === 'expense');
+
+/** Ensures all standard expense accounts exist for the org (backfills missing ones). */
+export async function ensureExpenseAccounts(orgId: string): Promise<void> {
+    if (orgsWithFullExpenseAccounts.has(orgId)) return;
+
+    const existing = await db
+        .select({ code: accounts.account_code })
+        .from(accounts)
+        .where(and(eq(accounts.org_id, orgId), eq(accounts.account_type, 'expense')));
+
+    const existingCodes = new Set(existing.map((row) => row.code));
+    const missing = EXPENSE_ACCOUNTS.filter((a) => !existingCodes.has(a.code));
+
+    if (missing.length > 0) {
+        await db.insert(accounts).values(
+            missing.map((acc) => ({
+                id: crypto.randomUUID(),
+                org_id: orgId,
+                account_code: acc.code,
+                account_name: acc.name,
+                account_type: acc.type,
+                is_system: acc.is_system,
+                is_active: true,
+                balance: 0
+            }))
+        );
+    }
+
+    orgsWithFullExpenseAccounts.add(orgId);
 }
 

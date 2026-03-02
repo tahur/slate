@@ -81,6 +81,7 @@
             case 'created': return 'text-green-600 bg-green-50';
             case 'issued': return 'text-blue-600 bg-blue-50';
             case 'paid':
+            case 'adjusted':
             case 'partially_paid': return 'text-emerald-600 bg-emerald-50';
             case 'cancelled':
             case 'voided':

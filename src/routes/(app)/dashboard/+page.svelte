@@ -1,291 +1,281 @@
 <script lang="ts">
-	import {
-		Card,
-		CardContent,
-		CardHeader,
-		CardTitle,
-	} from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
 	import {
 		Plus,
-		Clock,
-		Receipt,
 		ArrowRight,
+		AlertTriangle,
+		CalendarClock,
+		Wallet,
+		Receipt,
 		Activity,
-		IndianRupee,
-		FileText,
-		AlertCircle,
+		TrendingUp,
+		TrendingDown,
 	} from "lucide-svelte";
 	import type { PageData } from "./$types";
 	import { formatINR } from "$lib/utils/currency";
 
 	let { data }: { data: PageData } = $props();
 
-	function getDaysOverdueColor(days: number) {
-		if (days > 30) return "border border-red-200 bg-red-50 text-red-700";
-		if (days > 7)
-			return "border border-amber-200 bg-amber-50 text-amber-700";
-		return "border border-yellow-200 bg-yellow-50 text-yellow-700";
+	const overdueCount = $derived(data.alerts.overdue.count);
+	const overdueAmount = $derived(data.alerts.overdue.amount);
+	const dueSoonCount = $derived(data.alerts.dueSoon.count);
+	const dueSoonAmount = $derived(data.alerts.dueSoon.amount);
+	const toCollect = $derived(data.money.toCollect);
+	const availableFunds = $derived(data.money.cash + data.money.bank);
+	const monthlyProfit = $derived(data.monthly.profit);
+	const gstPayable = $derived(data.money.gstDue > 0);
+	const duePreview = $derived(data.dueInvoices.slice(0, 6));
+	const activityPreview = $derived(data.recentActivity.slice(0, 6));
+
+	function dueBadgeClass(daysOverdue: number): string {
+		if (daysOverdue >= 30) return "bg-red-50 text-red-700";
+		if (daysOverdue > 0) return "bg-amber-50 text-amber-700";
+		return "bg-surface-2 text-text-muted";
 	}
 
-	const overdueCount = $derived(data.dueInvoices.length);
-	const overdueTotal = $derived(
-		data.dueInvoices.reduce((sum, inv) => sum + inv.amount, 0),
-	);
-	const displayedInvoices = $derived(data.dueInvoices.slice(0, 5));
+	function dueBadgeLabel(daysOverdue: number): string {
+		if (daysOverdue >= 30) return `${daysOverdue}d critical`;
+		if (daysOverdue > 0) return `${daysOverdue}d overdue`;
+		return "Due soon";
+	}
+
+	function shortDate(dateIso: string): string {
+		return new Date(dateIso).toLocaleDateString("en-IN", {
+			day: "2-digit",
+			month: "short",
+		});
+	}
+
+	function activityDate(dateIso: string): string {
+		return new Date(dateIso).toLocaleDateString("en-IN", {
+			day: "2-digit",
+			month: "short",
+			hour: "numeric",
+			minute: "2-digit",
+		});
+	}
 </script>
 
 <div class="page-full-bleed">
 	<header class="page-header items-center">
-		<h1 class="text-lg font-semibold tracking-tight text-[#111] md:text-xl">
-			Dashboard
-		</h1>
+		<div>
+			<h1 class="text-xl font-bold tracking-tight text-text-strong">Dashboard</h1>
+			<p class="text-sm text-text-muted">Overview of your business</p>
+		</div>
 		<Button href="/invoices/new" size="sm" class="gap-2">
 			<Plus class="size-4" />
 			<span class="hidden sm:inline">New Invoice</span>
 			<span class="sm:hidden">New</span>
 		</Button>
 	</header>
-	<main class="page-body">
-		<div class="content-width-standard flex flex-col gap-5">
-			<!-- Row 1: Three stat cards -->
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-				<!-- Sales This Month -->
-				<Card>
-					<CardContent class="pt-3 px-4 pb-4">
-						<div class="flex items-start justify-between gap-3">
-							<div class="min-w-0">
-								<p class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-									Sales This Month
-								</p>
-								<p class="mt-2 truncate text-2xl font-bold tracking-tight text-[#111]">
-									{formatINR(data.monthly.sales)}
-								</p>
-							</div>
-							<span class="rounded-md bg-blue-50 p-2 text-blue-600">
-								<IndianRupee class="size-4" />
-							</span>
-						</div>
-					</CardContent>
-				</Card>
 
+	<div class="page-body">
+		<div class="content-width-standard space-y-4">
+			<!-- Row 1: Stat Cards -->
+			<div class="grid gap-3 sm:grid-cols-3">
 				<!-- To Collect -->
-				<Card>
-					<CardContent class="pt-3 px-4 pb-4">
-						<div class="flex items-start justify-between gap-3">
-							<div class="min-w-0">
-								<p class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-									To Collect
-								</p>
-								<p class="mt-2 truncate text-2xl font-bold tracking-tight text-[#111]">
-									{formatINR(data.money.toCollect)}
-								</p>
-							</div>
-							<span class="rounded-md bg-blue-50 p-2 text-blue-600">
-								<FileText class="size-4" />
-							</span>
-						</div>
-					</CardContent>
-				</Card>
+				<div class="rounded-xl border border-border bg-surface-0 p-4">
+					<div class="flex items-center gap-2 text-text-muted mb-1">
+						<AlertTriangle class="size-4" />
+						<span class="text-xs font-medium uppercase tracking-wide">To Collect</span>
+					</div>
+					<p class="text-2xl font-bold font-mono text-text-strong">
+						{formatINR(toCollect)}
+					</p>
+					<p class="mt-1 text-xs text-text-muted">
+						{overdueCount} overdue · {dueSoonCount} due soon
+					</p>
+				</div>
 
-				<!-- Overdue -->
-				<Card class={overdueCount > 0 ? "border-red-200 bg-red-50/30" : ""}>
-					<CardContent class="pt-3 px-4 pb-4">
-						<div class="flex items-start justify-between gap-3">
-							<div class="min-w-0">
-								<p class="text-xs font-semibold uppercase tracking-wider {overdueCount > 0 ? 'text-red-500' : 'text-slate-400'}">
-									Overdue
-								</p>
-								{#if overdueCount > 0}
-									<p class="mt-2 truncate text-2xl font-bold tracking-tight text-red-700">
-										{formatINR(overdueTotal)}
-									</p>
-									<p class="mt-1 text-xs text-red-600/70">
-										{overdueCount} invoice{overdueCount > 1 ? "s" : ""}
-									</p>
-								{:else}
-									<p class="mt-2 text-2xl font-bold tracking-tight text-[#111]">
-										None
-									</p>
-									<p class="mt-1 text-xs text-slate-400">All caught up</p>
-								{/if}
-							</div>
-							<span class="rounded-md {overdueCount > 0 ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'} p-2">
-								<AlertCircle class="size-4" />
-							</span>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
+				<!-- Cash & Bank -->
+				<div class="rounded-xl border border-border bg-surface-0 p-4">
+					<div class="flex items-center gap-2 text-text-muted mb-1">
+						<Wallet class="size-4" />
+						<span class="text-xs font-medium uppercase tracking-wide">Cash & Bank</span>
+					</div>
+					<p class="text-2xl font-bold font-mono text-text-strong">
+						{formatINR(availableFunds)}
+					</p>
+					<p class="mt-1 text-xs text-text-muted">
+						Cash {formatINR(data.money.cash)} · Bank {formatINR(data.money.bank)}
+					</p>
+				</div>
 
-			<!-- Row 2: Due Invoices + GST Position side-by-side -->
-			<div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-				<!-- Due Invoices (takes 3/5) -->
-				<Card class="lg:col-span-3">
-					<CardHeader class="border-b border-slate-200 py-4">
-						<div class="flex items-center justify-between">
-							<CardTitle
-								class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2"
-							>
-								<Clock class="size-4" />
-								Due Invoices
-							</CardTitle>
-							<a
-								href="/invoices?status=unpaid"
-								class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
-							>
-								View All <ArrowRight class="size-3" />
-							</a>
-						</div>
-					</CardHeader>
-					<CardContent class="p-0">
-						{#if data.dueInvoices.length === 0}
-							<div
-								class="flex h-[220px] flex-col items-center justify-center text-center p-6"
-							>
-								<div class="p-3 bg-slate-100 rounded-full mb-3">
-									<Receipt class="size-6 text-blue-300" />
-								</div>
-								<p class="text-sm font-medium text-[#111]">
-									All caught up!
-								</p>
-								<p class="text-xs text-slate-400">
-									No invoices due for payment.
-								</p>
-							</div>
+				<!-- This Month -->
+				<div class="rounded-xl border border-border bg-surface-0 p-4">
+					<div class="flex items-center gap-2 text-text-muted mb-1">
+						{#if monthlyProfit >= 0}
+							<TrendingUp class="size-4" />
 						{:else}
-							<div class="divide-y divide-slate-100">
-								{#each displayedInvoices as invoice}
-									<a
-										href="/invoices/{invoice.id}"
-										class="group flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-blue-50/50"
-									>
-										<div class="min-w-0 flex-1">
-											<div class="flex items-center gap-2">
-												<span class="font-medium text-sm text-[#111] truncate">
-													{invoice.customerName}
-												</span>
-												{#if invoice.daysOverdue > 0}
-													<span
-														class={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${getDaysOverdueColor(invoice.daysOverdue)}`}
-													>
-														{invoice.daysOverdue}d late
-													</span>
-												{/if}
-											</div>
-											<p class="text-xs text-slate-400 mt-0.5">
-												Due {new Date(
-													invoice.dueDate,
-												).toLocaleDateString("en-IN", {
-													day: "numeric",
-													month: "short",
-												})} · #{invoice.invoiceNumber}
-											</p>
-										</div>
-										<span class="font-mono text-sm font-semibold text-[#111] shrink-0">
-											{formatINR(invoice.amount)}
-										</span>
-									</a>
-								{/each}
-							</div>
+							<TrendingDown class="size-4" />
 						{/if}
-					</CardContent>
-				</Card>
-
-				<!-- GST Position (takes 2/5) -->
-				<Card class="lg:col-span-2">
-					<CardHeader class="border-b border-slate-200 py-4">
-						<CardTitle
-							class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
-						>
-							<Receipt class="size-4" />
-							GST Position
-						</CardTitle>
-					</CardHeader>
-					<CardContent class="p-5">
-						<div class="space-y-4">
-							<div class="flex items-center justify-between">
-								<p class="text-sm text-slate-500">Output GST</p>
-								<p class="font-mono text-sm font-semibold text-[#111]">
-									{formatINR(data.money.gstOutput)}
-								</p>
-							</div>
-							<div class="flex items-center justify-between">
-								<p class="text-sm text-slate-500">Input GST (ITC)</p>
-								<p class="font-mono text-sm font-semibold text-[#111]">
-									{formatINR(data.money.gstInput)}
-								</p>
-							</div>
-							<hr class="border-slate-100" />
-							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium {data.money.gstDue > 0 ? 'text-amber-700' : 'text-green-700'}">
-									{data.money.gstDue > 0 ? "Net Payable" : "ITC Carry Forward"}
-								</p>
-								<p class="font-mono text-lg font-bold {data.money.gstDue > 0 ? 'text-amber-700' : 'text-green-700'}">
-									{formatINR(Math.abs(data.money.gstDue))}
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+						<span class="text-xs font-medium uppercase tracking-wide">This Month</span>
+					</div>
+					<p class="text-2xl font-bold font-mono {monthlyProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
+						{formatINR(monthlyProfit)}
+					</p>
+					<p class="mt-1 text-xs text-text-muted">
+						Sales {formatINR(data.monthly.sales)} · Expenses {formatINR(data.monthly.expenses)}
+					</p>
+				</div>
 			</div>
 
-			<!-- Row 3: Recent Activity (full-width) -->
-			<Card>
-				<CardHeader class="border-b border-slate-200 py-4">
-					<div class="flex items-center justify-between">
-						<CardTitle
-							class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2"
-						>
-							<Activity class="size-4" />
-							Recent Activity
-						</CardTitle>
+			<!-- Row 2: GST Breakdown -->
+			<div class="rounded-xl border border-border bg-surface-0 overflow-hidden">
+				<div class="flex items-center justify-between px-5 py-3.5">
+					<h2 class="text-sm font-semibold text-text-strong inline-flex items-center gap-2">
+						<Receipt class="size-4 text-text-muted" />
+						GST Summary
+					</h2>
+					<div class="flex items-center gap-2">
+						<span class="text-xs text-text-muted">{gstPayable ? "Net Payable" : "ITC Credit"}:</span>
+						<span class="font-mono text-sm font-bold {gstPayable ? 'text-amber-600' : 'text-green-600'}">
+							{formatINR(Math.abs(data.money.gstDue))}
+						</span>
+					</div>
+				</div>
+				<div class="border-t border-border">
+					<table class="w-full text-sm">
+						<thead>
+							<tr class="border-b border-border text-xs text-text-muted">
+								<th class="px-5 py-2 text-left font-medium">Component</th>
+								<th class="px-5 py-2 text-right font-medium">Output (Collected)</th>
+								<th class="px-5 py-2 text-right font-medium">Input (Paid)</th>
+								<th class="px-5 py-2 text-right font-medium">Net</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-border">
+							<tr class="hover:bg-surface-2/60">
+								<td class="px-5 py-2.5 font-medium text-text-strong">CGST</td>
+								<td class="px-5 py-2.5 text-right font-mono text-text-strong">{formatINR(data.money.gstOutput.cgst)}</td>
+								<td class="px-5 py-2.5 text-right font-mono text-text-strong">{formatINR(data.money.gstInput.cgst)}</td>
+								<td class="px-5 py-2.5 text-right font-mono font-semibold {data.money.gstOutput.cgst - data.money.gstInput.cgst > 0 ? 'text-amber-600' : 'text-green-600'}">
+									{formatINR(Math.abs(data.money.gstOutput.cgst - data.money.gstInput.cgst))}
+								</td>
+							</tr>
+							<tr class="hover:bg-surface-2/60">
+								<td class="px-5 py-2.5 font-medium text-text-strong">SGST</td>
+								<td class="px-5 py-2.5 text-right font-mono text-text-strong">{formatINR(data.money.gstOutput.sgst)}</td>
+								<td class="px-5 py-2.5 text-right font-mono text-text-strong">{formatINR(data.money.gstInput.sgst)}</td>
+								<td class="px-5 py-2.5 text-right font-mono font-semibold {data.money.gstOutput.sgst - data.money.gstInput.sgst > 0 ? 'text-amber-600' : 'text-green-600'}">
+									{formatINR(Math.abs(data.money.gstOutput.sgst - data.money.gstInput.sgst))}
+								</td>
+							</tr>
+							<tr class="hover:bg-surface-2/60">
+								<td class="px-5 py-2.5 font-medium text-text-strong">IGST</td>
+								<td class="px-5 py-2.5 text-right font-mono text-text-strong">{formatINR(data.money.gstOutput.igst)}</td>
+								<td class="px-5 py-2.5 text-right font-mono text-text-strong">{formatINR(data.money.gstInput.igst)}</td>
+								<td class="px-5 py-2.5 text-right font-mono font-semibold {data.money.gstOutput.igst - data.money.gstInput.igst > 0 ? 'text-amber-600' : 'text-green-600'}">
+									{formatINR(Math.abs(data.money.gstOutput.igst - data.money.gstInput.igst))}
+								</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr class="border-t border-border bg-surface-2/40">
+								<td class="px-5 py-2.5 font-semibold text-text-strong">Total</td>
+								<td class="px-5 py-2.5 text-right font-mono font-semibold text-text-strong">{formatINR(data.money.gstOutput.total)}</td>
+								<td class="px-5 py-2.5 text-right font-mono font-semibold text-text-strong">{formatINR(data.money.gstInput.total)}</td>
+								<td class="px-5 py-2.5 text-right font-mono font-bold {gstPayable ? 'text-amber-600' : 'text-green-600'}">
+									{formatINR(Math.abs(data.money.gstDue))}
+								</td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			</div>
+
+			<!-- Row 2: Lists -->
+			<div class="grid gap-3 lg:grid-cols-5">
+				<!-- Unpaid Invoices -->
+				<div class="lg:col-span-3 rounded-xl border border-border bg-surface-0 overflow-hidden">
+					<div class="flex items-center justify-between px-5 py-3.5">
+						<h2 class="text-sm font-semibold text-text-strong">Unpaid Invoices</h2>
 						<a
-							href="/activity-log"
-							class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+							href="/invoices?status=unpaid"
+							class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text-strong"
 						>
-							View All <ArrowRight class="size-3" />
+							View all <ArrowRight class="size-3" />
 						</a>
 					</div>
-				</CardHeader>
-				<CardContent class="p-0">
-					{#if data.recentActivity.length === 0}
-						<div
-							class="flex h-[140px] flex-col items-center justify-center text-center p-6"
-						>
-							<div class="p-3 bg-slate-100 rounded-full mb-3">
-								<Activity class="size-6 text-blue-300" />
+
+					{#if duePreview.length === 0}
+						<div class="flex min-h-[220px] flex-col items-center justify-center gap-2 px-6 text-center border-t border-border">
+							<div class="rounded-lg bg-surface-2 p-2.5 text-text-muted">
+								<CalendarClock class="size-5" />
 							</div>
-							<p class="text-sm font-medium text-[#111]">
-								No activity yet
+							<p class="text-sm font-semibold text-text-strong">No pending invoices</p>
+							<p class="text-xs text-text-muted">
+								All invoices are settled or not yet due.
 							</p>
-							<p class="text-xs text-slate-400">
+						</div>
+					{:else}
+						<div class="divide-y divide-border">
+							{#each duePreview as invoice}
+								<a
+									href="/invoices/{invoice.id}"
+									class="flex items-center justify-between gap-4 px-5 py-3 hover:bg-surface-2/60"
+								>
+									<div class="min-w-0 flex-1">
+										<p class="truncate text-sm font-semibold text-text-strong">
+											{invoice.customerName}
+										</p>
+										<p class="mt-0.5 truncate text-xs text-text-muted">
+											#{invoice.invoiceNumber} · Due {shortDate(invoice.dueDate)}
+										</p>
+									</div>
+									<div class="shrink-0 text-right">
+										<p class="font-mono text-sm font-semibold text-text-strong">
+											{formatINR(invoice.amount)}
+										</p>
+										<span
+											class="mt-1 inline-flex items-center rounded px-2 py-0.5 text-xs font-medium {dueBadgeClass(invoice.daysOverdue)}"
+										>
+											{dueBadgeLabel(invoice.daysOverdue)}
+										</span>
+									</div>
+								</a>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Recent Activity -->
+				<div class="lg:col-span-2 rounded-xl border border-border bg-surface-0 overflow-hidden">
+					<div class="flex items-center justify-between px-5 py-3.5">
+						<h2 class="text-sm font-semibold text-text-strong inline-flex items-center gap-2">
+							<Activity class="size-4 text-text-muted" />
+							Recent Activity
+						</h2>
+						<a
+							href="/activity-log"
+							class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text-strong"
+						>
+							View all <ArrowRight class="size-3" />
+						</a>
+					</div>
+
+					{#if activityPreview.length === 0}
+						<div class="flex min-h-[220px] flex-col items-center justify-center gap-2 px-6 text-center border-t border-border">
+							<div class="rounded-lg bg-surface-2 p-2.5 text-text-muted">
+								<Activity class="size-5" />
+							</div>
+							<p class="text-sm font-semibold text-text-strong">No activity yet</p>
+							<p class="text-xs text-text-muted">
 								Actions will appear here as you work.
 							</p>
 						</div>
 					{:else}
-						<div class="divide-y divide-slate-100">
-							{#each data.recentActivity as item}
-								<div
-									class="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-blue-50/50"
-								>
+						<div class="divide-y divide-border">
+							{#each activityPreview as item}
+								<div class="flex items-center justify-between gap-4 px-5 py-3 hover:bg-surface-2/60">
 									<div class="min-w-0 flex-1">
-										<p class="text-sm text-[#111] truncate">
-											{item.description}
-										</p>
-										<p class="mt-0.5 text-xs text-slate-400">
-											{new Date(
-												item.createdAt,
-											).toLocaleDateString("en-IN", {
-												day: "numeric",
-												month: "short",
-												hour: "numeric",
-												minute: "2-digit",
-											})}
+										<p class="truncate text-sm text-text-strong">{item.description}</p>
+										<p class="mt-0.5 text-xs text-text-muted">
+											{activityDate(item.createdAt)}
 										</p>
 									</div>
 									{#if item.amount}
-										<span class="font-mono text-sm font-semibold text-[#111]">
+										<span class="shrink-0 font-mono text-sm font-semibold text-text-strong">
 											{formatINR(item.amount)}
 										</span>
 									{/if}
@@ -293,8 +283,8 @@
 							{/each}
 						</div>
 					{/if}
-				</CardContent>
-			</Card>
+				</div>
+			</div>
 		</div>
-	</main>
+	</div>
 </div>

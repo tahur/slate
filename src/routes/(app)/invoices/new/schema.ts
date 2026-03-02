@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { calculateInvoiceTaxTotals, calculateLineTax } from '$lib/tax/gst';
+import { calculateLineTax } from '$lib/tax/gst';
+import { calculateInvoicePricing, type InvoiceDiscountInput } from '$lib/tax/invoice-pricing';
 
 export const GST_RATES = [0, 5, 12, 18, 28] as const;
 
@@ -22,11 +23,14 @@ export const invoiceSchema = z.object({
     notes: z.string().optional().default(''),
     terms: z.string().optional().default(''),
     prices_include_gst: z.boolean().default(false),
+    discount_type: z.enum(['percent', 'amount']).nullable().optional().default(null),
+    discount_value: z.coerce.number().min(0, 'Discount must be zero or positive').default(0),
     items: z.array(lineItemSchema).min(1, 'At least one item is required'),
 });
 
 export type InvoiceSchema = typeof invoiceSchema;
 export type LineItem = z.infer<typeof lineItemSchema>;
+export type DiscountInput = InvoiceDiscountInput;
 
 // Calculate line item totals
 export function calculateLineItem(item: LineItem, isInterState: boolean, pricesIncludeGst = false) {
@@ -44,18 +48,27 @@ export function calculateLineItem(item: LineItem, isInterState: boolean, pricesI
 }
 
 // Calculate invoice totals
-export function calculateInvoiceTotals(items: LineItem[], isInterState: boolean, pricesIncludeGst = false) {
-    const totals = calculateInvoiceTaxTotals(
+export function calculateInvoiceTotals(
+    items: LineItem[],
+    isInterState: boolean,
+    pricesIncludeGst = false,
+    discount?: DiscountInput | null
+) {
+    const totals = calculateInvoicePricing(
         items.map((item) => ({
             quantity: item.quantity,
             rate: item.rate,
             gstRate: item.gst_rate
         })),
-        { isInterState, pricesIncludeGst }
+        { isInterState, pricesIncludeGst },
+        discount
     );
 
     return {
         subtotal: totals.subtotal,
+        discountType: totals.discountType,
+        discountValue: totals.discountValue,
+        discountAmount: totals.discountAmount,
         taxableAmount: totals.taxableAmount,
         cgst: totals.cgst,
         sgst: totals.sgst,

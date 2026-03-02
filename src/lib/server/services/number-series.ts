@@ -2,7 +2,16 @@ import { db, type Tx } from '../db';
 import { number_series } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export type NumberSeriesModule = 'invoice' | 'payment' | 'supplier_payment' | 'expense' | 'journal' | 'credit_note' | 'quotation';
+export type NumberSeriesModule =
+    | 'invoice'
+    | 'payment'
+    | 'supplier_payment'
+    | 'expense'
+    | 'journal'
+    | 'credit_note'
+    | 'debit_note'
+    | 'quotation'
+    | 'refund';
 
 // Keep legacy alias for backwards compat within this file
 type DbTransaction = Tx;
@@ -14,7 +23,9 @@ const MODULE_PREFIXES: Record<NumberSeriesModule, string> = {
     expense: 'EXP',
     journal: 'JE',
     credit_note: 'CN',
-    quotation: 'QTN'
+    debit_note: 'DN',
+    quotation: 'QTN',
+    refund: 'RFD'
 };
 
 export function getDefaultPrefix(module: NumberSeriesModule): string {

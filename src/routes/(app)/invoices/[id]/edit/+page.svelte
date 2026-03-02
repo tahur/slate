@@ -11,6 +11,7 @@
     import {
         GST_RATES,
         calculateInvoiceTotals,
+        type DiscountInput,
         type LineItem,
     } from "../../new/schema";
     import { toast } from "svelte-sonner";
@@ -60,6 +61,13 @@
     let showNotes = $state<boolean[]>(parsedItems.map((p) => p.notes.length > 0));
 
     let pricesIncludeGst = $state(invoice.prices_include_gst ?? false);
+    let discountEnabled = $state(
+        Boolean(invoice.discount_type && Number(invoice.discount_value || 0) > 0),
+    );
+    let discountType = $state<NonNullable<DiscountInput["type"]>>(
+        invoice.discount_type === "amount" ? "amount" : "percent",
+    );
+    let discountValue = $state(Number(invoice.discount_value || 0));
     let submitting = $state(false);
     let error = $state<string | null>(null);
 
@@ -131,10 +139,36 @@
             data.orgStateCode !== "",
     );
 
+    let discount = $derived.by(
+        (): DiscountInput => ({
+            type: discountEnabled ? discountType : null,
+            value: discountEnabled ? discountValue : 0,
+        }),
+    );
+
     // Calculate totals reactively
     let totals = $derived(
-        calculateInvoiceTotals(formData.items, isInterState, pricesIncludeGst),
+        calculateInvoiceTotals(
+            formData.items,
+            isInterState,
+            pricesIncludeGst,
+            discount,
+        ),
     );
+
+    let discountLabel = $derived.by(() => {
+        if (discountType === "percent" && discountValue > 0) {
+            return `Discount (${discountValue}%)`;
+        }
+
+        return "Discount";
+    });
+
+    function setDiscountMode(mode: NonNullable<DiscountInput["type"]>) {
+        if (discountType === mode) return;
+        discountType = mode;
+        discountValue = 0;
+    }
 
     function addItem() {
         formData.items = [
@@ -268,6 +302,16 @@
                 type="hidden"
                 name="prices_include_gst"
                 value={pricesIncludeGst ? "true" : "false"}
+            />
+            <input
+                type="hidden"
+                name="discount_type"
+                value={discountEnabled ? discountType : ""}
+            />
+            <input
+                type="hidden"
+                name="discount_value"
+                value={discountEnabled ? discountValue : 0}
             />
 
             <div class="content-width-standard space-y-8">
@@ -1019,6 +1063,140 @@
                         {/if}
                     </section>
 
+                    <section class="space-y-4">
+                        <div
+                            class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 md:flex-row md:items-start md:justify-between"
+                        >
+                            <div class="space-y-1">
+                                <h3
+                                    class="text-xs font-bold uppercase tracking-wide text-slate-500"
+                                >
+                                    Invoice Discount
+                                </h3>
+                                <p class="text-sm text-slate-500">
+                                    Apply one invoice-level discount before GST totals are finalized.
+                                </p>
+                            </div>
+                            <label
+                                class="flex items-center gap-2 cursor-pointer md:pt-0.5"
+                            >
+                                <span
+                                    class="text-xs font-medium uppercase tracking-wide text-slate-500"
+                                >
+                                    Add discount
+                                </span>
+                                <Checkbox
+                                    bind:checked={discountEnabled}
+                                    aria-label="Add invoice discount"
+                                    class="border-slate-300 data-[state=checked]:border-slate-400"
+                                />
+                            </label>
+                        </div>
+
+                        <div
+                            class="grid gap-4 rounded-lg border border-slate-200 bg-[#fcfcfb] p-4 md:grid-cols-[auto_minmax(0,16rem)_minmax(0,1fr)]"
+                        >
+                            <div class="space-y-2">
+                                <Label variant="form">Mode</Label>
+                                <div class="inline-flex rounded-md border border-slate-300 bg-white p-1">
+                                    <button
+                                        type="button"
+                                        class={`rounded-[6px] px-3 py-1.5 text-sm font-medium transition-colors ${
+                                            discountType === "percent"
+                                                ? "bg-[#111] text-white"
+                                                : "text-slate-600 hover:text-[#111]"
+                                        }`}
+                                        onclick={() => setDiscountMode("percent")}
+                                        disabled={!discountEnabled}
+                                    >
+                                        %
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class={`rounded-[6px] px-3 py-1.5 text-sm font-medium transition-colors ${
+                                            discountType === "amount"
+                                                ? "bg-[#111] text-white"
+                                                : "text-slate-600 hover:text-[#111]"
+                                        }`}
+                                        onclick={() => setDiscountMode("amount")}
+                                        disabled={!discountEnabled}
+                                    >
+                                        Amount
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="discount_value" variant="form">
+                                    {discountType === "percent"
+                                        ? "Discount %"
+                                        : "Discount Amount"}
+                                </Label>
+                                <Input
+                                    id="discount_value"
+                                    type="number"
+                                    bind:value={discountValue}
+                                    min="0"
+                                    max={discountType === "percent" ? "100" : undefined}
+                                    step={discountType === "percent"
+                                        ? "0.0001"
+                                        : "0.01"}
+                                    placeholder={discountType === "percent"
+                                        ? "10"
+                                        : "250.00"}
+                                    disabled={!discountEnabled}
+                                    class="border-slate-300 bg-white font-mono"
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <p
+                                    class="text-xs font-bold uppercase tracking-wide text-slate-500"
+                                >
+                                    Live Totals
+                                </p>
+                                <div
+                                    class="rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm"
+                                >
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-600">Subtotal</span>
+                                        <span class="font-mono text-[#111]"
+                                            >{formatINR(totals.subtotal)}</span
+                                        >
+                                    </div>
+                                    {#if totals.discountAmount > 0}
+                                        <div class="mt-1 flex items-center justify-between">
+                                            <span class="text-slate-600"
+                                                >{discountLabel}</span
+                                            >
+                                            <span class="font-mono text-[#111]"
+                                                >(-) {formatINR(
+                                                    totals.discountAmount,
+                                                )}</span
+                                            >
+                                        </div>
+                                    {/if}
+                                    <div class="mt-1 flex items-center justify-between">
+                                        <span class="text-slate-600"
+                                            >Taxable Value</span
+                                        >
+                                        <span class="font-mono text-[#111]"
+                                            >{formatINR(
+                                                totals.taxableAmount,
+                                            )}</span
+                                        >
+                                    </div>
+                                    <div class="mt-2 border-t border-slate-200 pt-2 flex items-center justify-between">
+                                        <span class="font-medium text-[#111]">Total</span>
+                                        <span class="font-mono font-semibold text-[#111]"
+                                            >{formatINR(totals.total)}</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- Section: Notes -->
                     <section class="space-y-4">
                         <h3
@@ -1062,19 +1240,25 @@
                 </Tooltip.Trigger>
                 <Tooltip.Content side="top" sideOffset={8}>
                     <div class="space-y-1 text-xs">
-                        {#if pricesIncludeGst}
+                        <div class="flex justify-between gap-4">
+                            <span>Subtotal</span><span class="font-mono"
+                                >{formatINR(totals.subtotal)}</span
+                            >
+                        </div>
+                        {#if totals.discountAmount > 0}
                             <div class="flex justify-between gap-4">
-                                <span>Taxable</span><span class="font-mono"
-                                    >{formatINR(totals.taxableAmount)}</span
-                                >
-                            </div>
-                        {:else}
-                            <div class="flex justify-between gap-4">
-                                <span>Subtotal</span><span class="font-mono"
-                                    >{formatINR(totals.subtotal)}</span
+                                <span>{discountLabel}</span><span class="font-mono"
+                                    >(-) {formatINR(
+                                        totals.discountAmount,
+                                    )}</span
                                 >
                             </div>
                         {/if}
+                        <div class="flex justify-between gap-4">
+                            <span>Taxable</span><span class="font-mono"
+                                >{formatINR(totals.taxableAmount)}</span
+                            >
+                        </div>
                         {#if isInterState}
                             <div class="flex justify-between gap-4">
                                 <span>IGST</span><span class="font-mono"

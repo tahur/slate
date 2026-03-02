@@ -11,6 +11,7 @@
         Receipt,
         Info,
         Landmark,
+        Wallet,
     } from "lucide-svelte";
     import * as Tooltip from "$lib/components/ui/tooltip";
 
@@ -76,6 +77,16 @@
                         "Daily cash and bank movement in one place",
                     href: "/reports/cashbook",
                     icon: Landmark,
+                    iconClass: "bg-slate-100 text-slate-500",
+                },
+                {
+                    title: "Expense Ledger",
+                    accountingTerm: "Expense Register",
+                    description: "Category-wise expense detail with running totals",
+                    simpleDescription:
+                        "See all spending in any category with dates and amounts",
+                    href: "/reports/expense-ledger",
+                    icon: Wallet,
                     iconClass: "bg-slate-100 text-slate-500",
                 },
             ],

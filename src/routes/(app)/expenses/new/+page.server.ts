@@ -21,7 +21,7 @@ import { round2 } from '$lib/utils/currency';
 import { localDateStr } from '$lib/utils/date';
 import { listPaymentOptionsForForm } from '$lib/server/modules/receivables/infra/queries';
 import { buildSupplierExpenseReason } from '$lib/server/services/statement-reasons';
-import { hasPaymentConfiguration, seedPaymentConfiguration } from '$lib/server/seed';
+import { ensureExpenseAccounts, hasPaymentConfiguration, seedPaymentConfiguration } from '$lib/server/seed';
 import { listOpenSupplierExpenses } from '$lib/server/modules/payables/infra/queries';
 
 type ExpenseRecord = typeof expenses.$inferSelect;
@@ -36,6 +36,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     if (!(await hasPaymentConfiguration(orgId))) {
         await seedPaymentConfiguration(orgId);
     }
+
+    await ensureExpenseAccounts(orgId);
 
     // Fetch all data in parallel
     const [expenseAccounts, paymentOptions, vendorList] = await Promise.all([

@@ -21,6 +21,8 @@ export type PostingType =
     | 'EXPENSE_RECORDED'
     | 'EXPENSE_REVERSED'
     | 'CREDIT_NOTE_ISSUED'
+    | 'DEBIT_NOTE_ISSUED'
+    | 'REFUND_POSTED'
     | 'MANUAL_ENTRY';
 
 interface JournalLineInput {
@@ -697,6 +699,133 @@ export async function postCreditNote(
         date: input.date,
         referenceId: input.creditNoteId,
         narration: `Credit Note issued: ${input.creditNoteNumber}`,
+        lines,
+        userId: input.userId
+    }, tx);
+}
+
+interface RefundPostingInput {
+    refundId: string;
+    refundNumber: string;
+    date: string;
+    customerId: string;
+    amount: number;
+    sourceAccountCode: string;
+    userId?: string;
+}
+
+/**
+ * Post a customer refund.
+ *
+ * Debit: Accounts Receivable (1200) - Refund amount
+ * Credit: Cash/Bank source account - Refund amount
+ */
+export async function postRefund(
+    orgId: string,
+    input: RefundPostingInput,
+    tx?: Tx
+): Promise<PostingResult> {
+    const lines: JournalLineInput[] = [
+        {
+            accountCode: '1200',
+            debit: input.amount,
+            partyType: 'customer',
+            partyId: input.customerId,
+            narration: `Refund ${input.refundNumber}`
+        },
+        {
+            accountCode: input.sourceAccountCode,
+            credit: input.amount,
+            narration: `Refund ${input.refundNumber}`
+        }
+    ];
+
+    return post(orgId, {
+        type: 'REFUND_POSTED',
+        date: input.date,
+        referenceId: input.refundId,
+        narration: `Refund posted: ${input.refundNumber}`,
+        lines,
+        userId: input.userId
+    }, tx);
+}
+
+// ============================================================
+// DEBIT NOTE POSTING RULES
+// ============================================================
+
+interface DebitNotePostingInput {
+    debitNoteId: string;
+    debitNoteNumber: string;
+    date: string;
+    vendorId: string;
+    expenseAccountCode: string;
+    subtotal: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    total: number;
+    userId?: string;
+}
+
+/**
+ * Post a debit note issuance (reverse of expense)
+ *
+ * Debit: Accounts Payable (2000) - Total (reducing vendor payable)
+ * Credit: Expense account (user-selected) - Subtotal
+ * Credit: Input CGST (1300) - if applicable
+ * Credit: Input SGST (1301) - if applicable
+ * Credit: Input IGST (1302) - if applicable
+ */
+export async function postDebitNote(
+    orgId: string,
+    input: DebitNotePostingInput,
+    tx?: Tx
+): Promise<PostingResult> {
+    const lines: JournalLineInput[] = [
+        {
+            accountCode: '2000',
+            debit: input.total,
+            partyType: 'vendor',
+            partyId: input.vendorId,
+            narration: `Debit Note ${input.debitNoteNumber}`
+        },
+        {
+            accountCode: input.expenseAccountCode,
+            credit: input.subtotal,
+            narration: `Debit Note ${input.debitNoteNumber}`
+        }
+    ];
+
+    if (input.cgst > 0) {
+        lines.push({
+            accountCode: '1300',
+            credit: input.cgst,
+            narration: `CGST reversal on Debit Note ${input.debitNoteNumber}`
+        });
+    }
+
+    if (input.sgst > 0) {
+        lines.push({
+            accountCode: '1301',
+            credit: input.sgst,
+            narration: `SGST reversal on Debit Note ${input.debitNoteNumber}`
+        });
+    }
+
+    if (input.igst > 0) {
+        lines.push({
+            accountCode: '1302',
+            credit: input.igst,
+            narration: `IGST reversal on Debit Note ${input.debitNoteNumber}`
+        });
+    }
+
+    return post(orgId, {
+        type: 'DEBIT_NOTE_ISSUED',
+        date: input.date,
+        referenceId: input.debitNoteId,
+        narration: `Debit Note issued: ${input.debitNoteNumber}`,
         lines,
         userId: input.userId
     }, tx);

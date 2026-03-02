@@ -77,6 +77,12 @@ function fmtQty(value: number | null | undefined): string {
     return qty.toFixed(3).replace(/\.?0+$/, '');
 }
 
+function fmtPercent(value: number | null | undefined): string {
+    const amount = Number(value || 0);
+    if (!Number.isFinite(amount) || amount <= 0) return '0';
+    return amount.toFixed(4).replace(/\.?0+$/, '');
+}
+
 function buildMetaTable(pairs: Array<[string, string]>): Content {
     const rows: TableCell[][] = pairs
         .filter(([, value]) => clean(value).length > 0)
@@ -206,53 +212,53 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 
     const headerRows: TableCell[][] = isIntra
         ? [
-              [
-                  { text: '#', style: 'itemHead', alignment: 'center', rowSpan: 2 },
-                  { text: 'Item & Description', style: 'itemHead', rowSpan: 2 },
-                  { text: 'HSN/SAC', style: 'itemHead', alignment: 'center', rowSpan: 2 },
-                  { text: 'Qty', style: 'itemHead', alignment: 'center', rowSpan: 2 },
-                  { text: 'Rate', style: 'itemHead', alignment: 'right', rowSpan: 2 },
-                  { text: 'CGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
-                  {} as TableCell,
-                  { text: 'SGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
-                  {} as TableCell,
-                  { text: 'Amount', style: 'itemHead', alignment: 'right', rowSpan: 2 }
-              ],
-              [
-                  {} as TableCell,
-                  {} as TableCell,
-                  {} as TableCell,
-                  {} as TableCell,
-                  {} as TableCell,
-                  { text: '%', style: 'itemSubHead', alignment: 'right' },
-                  { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
-                  { text: '%', style: 'itemSubHead', alignment: 'right' },
-                  { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
-                  {} as TableCell
-              ]
-          ]
+            [
+                { text: '#', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                { text: 'Item & Description', style: 'itemHead', rowSpan: 2 },
+                { text: 'HSN/SAC', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                { text: 'Qty', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                { text: 'Rate', style: 'itemHead', alignment: 'right', rowSpan: 2 },
+                { text: 'CGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
+                {} as TableCell,
+                { text: 'SGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
+                {} as TableCell,
+                { text: 'Amount', style: 'itemHead', alignment: 'right', rowSpan: 2 }
+            ],
+            [
+                {} as TableCell,
+                {} as TableCell,
+                {} as TableCell,
+                {} as TableCell,
+                {} as TableCell,
+                { text: '%', style: 'itemSubHead', alignment: 'right' },
+                { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
+                { text: '%', style: 'itemSubHead', alignment: 'right' },
+                { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
+                {} as TableCell
+            ]
+        ]
         : [
-              [
-                  { text: '#', style: 'itemHead', alignment: 'center', rowSpan: 2 },
-                  { text: 'Item & Description', style: 'itemHead', rowSpan: 2 },
-                  { text: 'HSN/SAC', style: 'itemHead', alignment: 'center', rowSpan: 2 },
-                  { text: 'Qty', style: 'itemHead', alignment: 'center', rowSpan: 2 },
-                  { text: 'Rate', style: 'itemHead', alignment: 'right', rowSpan: 2 },
-                  { text: 'IGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
-                  {} as TableCell,
-                  { text: 'Amount', style: 'itemHead', alignment: 'right', rowSpan: 2 }
-              ],
-              [
-                  {} as TableCell,
-                  {} as TableCell,
-                  {} as TableCell,
-                  {} as TableCell,
-                  {} as TableCell,
-                  { text: '%', style: 'itemSubHead', alignment: 'right' },
-                  { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
-                  {} as TableCell
-              ]
-          ];
+            [
+                { text: '#', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                { text: 'Item & Description', style: 'itemHead', rowSpan: 2 },
+                { text: 'HSN/SAC', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                { text: 'Qty', style: 'itemHead', alignment: 'center', rowSpan: 2 },
+                { text: 'Rate', style: 'itemHead', alignment: 'right', rowSpan: 2 },
+                { text: 'IGST', style: 'itemHead', alignment: 'center', colSpan: 2 },
+                {} as TableCell,
+                { text: 'Amount', style: 'itemHead', alignment: 'right', rowSpan: 2 }
+            ],
+            [
+                {} as TableCell,
+                {} as TableCell,
+                {} as TableCell,
+                {} as TableCell,
+                {} as TableCell,
+                { text: '%', style: 'itemSubHead', alignment: 'right' },
+                { text: 'Amt', style: 'itemSubHead', alignment: 'right' },
+                {} as TableCell
+            ]
+        ];
 
     const itemRows: TableCell[][] = items.map((item, index) => {
         const descriptionParts = clean(item.description).split('\n');
@@ -261,15 +267,15 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
 
         const descriptionCell: TableCell = itemNotes
             ? {
-                  stack: [
-                      { text: itemName, style: 'itemName' },
-                      { text: itemNotes, style: 'itemNote' }
-                  ]
-              }
+                stack: [
+                    { text: itemName, style: 'itemName' },
+                    { text: itemNotes, style: 'itemNote' }
+                ]
+            }
             : {
-                  text: itemName,
-                  style: 'itemName'
-              };
+                text: itemName,
+                style: 'itemName'
+            };
 
         if (isIntra) {
             const halfRate = Number(item.gst_rate || 0) / 2;
@@ -327,6 +333,22 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
         ]
     ];
 
+    if (Number(invoice.discount_amount || 0) > 0) {
+        const discountLabel = invoice.discount_type === 'percent' && Number(invoice.discount_value || 0) > 0
+            ? `Discount (${fmtPercent(invoice.discount_value)}%)`
+            : 'Discount';
+
+        taxRows.push([
+            { text: discountLabel, style: 'summaryLabel' },
+            { text: `(-) ${fmtMoney(invoice.discount_amount)}`, style: 'summaryValue', alignment: 'right' }
+        ]);
+    }
+
+    taxRows.push([
+        { text: 'Taxable Value', style: 'summaryLabel' },
+        { text: fmtMoney(invoice.taxable_amount), style: 'summaryValue', alignment: 'right' }
+    ]);
+
     if (isIntra) {
         taxRows.push(
             [
@@ -348,11 +370,12 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
     const roundOff =
         Math.round(
             (Number(invoice.total || 0) -
-                (Number(invoice.subtotal || 0) +
+                (Number(invoice.subtotal || 0) -
+                    Number(invoice.discount_amount || 0) +
                     Number(invoice.cgst || 0) +
                     Number(invoice.sgst || 0) +
                     Number(invoice.igst || 0))) *
-                100,
+            100,
         ) / 100;
 
     if (Math.abs(roundOff) >= 0.01) {
@@ -462,13 +485,13 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
                 { text: ' ', margin: [0, 20, 0, 0] as [number, number, number, number] },
                 ...(org?.signature_url
                     ? [
-                          {
-                              image: org.signature_url,
-                              width: 90,
-                              alignment: 'center' as const,
-                              margin: [0, 0, 0, 4] as [number, number, number, number]
-                          }
-                      ]
+                        {
+                            image: org.signature_url,
+                            width: 90,
+                            alignment: 'center' as const,
+                            margin: [0, 0, 0, 4] as [number, number, number, number]
+                        }
+                    ]
                     : []),
                 {
                     canvas: [
@@ -511,24 +534,24 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
                                 stack: [
                                     org?.logo_url
                                         ? {
-                                              columns: [
-                                                  {
-                                                      width: 58,
-                                                      image: org.logo_url,
-                                                      fit: [54, 54]
-                                                  },
-                                                  {
-                                                      width: '*',
-                                                      stack: orgLines,
-                                                      margin: [8, 0, 0, 0] as [
-                                                          number,
-                                                          number,
-                                                          number,
-                                                          number
-                                                      ]
-                                                  }
-                                              ]
-                                          }
+                                            columns: [
+                                                {
+                                                    width: 58,
+                                                    image: org.logo_url,
+                                                    fit: [54, 54]
+                                                },
+                                                {
+                                                    width: '*',
+                                                    stack: orgLines,
+                                                    margin: [8, 0, 0, 0] as [
+                                                        number,
+                                                        number,
+                                                        number,
+                                                        number
+                                                    ]
+                                                }
+                                            ]
+                                        }
                                         : { stack: orgLines }
                                 ]
                             },
@@ -542,18 +565,18 @@ export function buildInvoiceDocDefinition(data: InvoicePdfData): TDocumentDefini
                                     },
                                     ...(isPaid
                                         ? [
-                                                  {
-                                                      text: 'PAID',
-                                                      style: 'paidStamp',
-                                                      alignment: 'right' as const,
-                                                      margin: [0, 6, 0, 0] as [
-                                                          number,
-                                                          number,
-                                                      number,
-                                                      number
-                                                  ]
-                                              }
-                                          ]
+                                            {
+                                                text: 'PAID',
+                                                style: 'paidStamp',
+                                                alignment: 'right' as const,
+                                                margin: [0, 6, 0, 0] as [
+                                                    number,
+                                                    number,
+                                                    number,
+                                                    number
+                                                ]
+                                            }
+                                        ]
                                         : [])
                                 ]
                             }

@@ -27,7 +27,7 @@ export const invoices = pgTable(
 
         // Status
         status: text('status').default('draft').notNull(),
-        // draft, issued, partially_paid, paid, cancelled
+        // draft, issued, partially_paid, paid, adjusted, cancelled
 
         // Amounts
         subtotal: numeric('subtotal', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
@@ -40,6 +40,7 @@ export const invoices = pgTable(
         igst: numeric('igst', { precision: 14, scale: 2, mode: 'number' }).default(0),
         total: numeric('total', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
         amount_paid: numeric('amount_paid', { precision: 14, scale: 2, mode: 'number' }).default(0),
+        credits_applied: numeric('credits_applied', { precision: 14, scale: 2, mode: 'number' }).default(0),
         balance_due: numeric('balance_due', { precision: 14, scale: 2, mode: 'number' }).default(0).notNull(),
 
         // GST

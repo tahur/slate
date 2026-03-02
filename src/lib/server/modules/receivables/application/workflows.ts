@@ -1,13 +1,15 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import type { Tx } from '$lib/server/db';
 import {
     credit_allocations,
     credit_notes,
     customer_advances,
+    invoices,
     payment_allocations,
-    payments
+    payments,
+    refunds
 } from '$lib/server/db/schema';
-import { postCreditNote, postPaymentReceipt } from '$lib/server/services/posting-engine';
+import { postCreditNote, postPaymentReceipt, postRefund } from '$lib/server/services/posting-engine';
 import { bumpNumberSeriesIfHigher, getNextNumberTx } from '$lib/server/services/number-series';
 import { buildCustomerReceiptReason } from '$lib/server/services/statement-reasons';
 import { round2 } from '$lib/utils/currency';
@@ -22,6 +24,7 @@ import {
     findInvoiceForSettlementInTx,
     findOpenInvoicesByIdsInTx,
     findPaymentMethodByKeyInTx,
+    increaseCustomerBalanceInTx,
     isPaymentMethodMappedToAccountInTx,
     setInvoiceSettlementStateInTx
 } from '../infra/queries';
@@ -243,6 +246,7 @@ interface InvoiceRow {
     customer_id: string;
     total: number;
     amount_paid: number | null;
+    credits_applied: number | null;
     balance_due: number;
     status: string;
 }
@@ -283,7 +287,7 @@ export async function recordInvoicePaymentInTx(
 ): Promise<{ paymentNumber: string; paymentId: string }> {
     const amount = round2(input.amount);
 
-    if (input.invoice.status === 'paid' || input.invoice.status === 'cancelled') {
+    if (input.invoice.status === 'paid' || input.invoice.status === 'adjusted' || input.invoice.status === 'cancelled') {
         throw new ValidationError('Invoice is already paid or cancelled');
     }
     if (amount <= MONEY_EPSILON) {
@@ -344,14 +348,15 @@ export async function recordInvoicePaymentInTx(
     });
 
     const newAmountPaid = round2((input.invoice.amount_paid || 0) + amount);
-    const newBalanceDue = round2(input.invoice.total - newAmountPaid);
+    const newCreditsApplied = round2(input.invoice.credits_applied || 0);
     const nowIso = new Date().toISOString();
 
     await setInvoiceSettlementStateInTx(
         tx,
         input.invoice.id,
         input.invoice.total,
-        newBalanceDue,
+        newAmountPaid,
+        newCreditsApplied,
         MONEY_EPSILON,
         nowIso
     );
@@ -377,13 +382,13 @@ interface ApplyCreditsToInvoiceInTxInput {
 export async function applyCreditsToInvoiceInTx(
     tx: Tx,
     input: ApplyCreditsToInvoiceInTxInput
-): Promise<{ totalApplied: number; newStatus: 'paid' | 'partially_paid' }> {
+): Promise<{ totalApplied: number; newStatus: 'issued' | 'partially_paid' | 'paid' | 'adjusted' }> {
     const invoice = await findInvoiceForSettlementInTx(tx, input.orgId, input.invoiceId);
 
     if (!invoice) {
         throw new NotFoundError('Invoice not found');
     }
-    if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+    if (invoice.status === 'paid' || invoice.status === 'adjusted' || invoice.status === 'cancelled') {
         throw new ValidationError('Invoice is already paid or cancelled');
     }
     if (invoice.balance_due <= MONEY_EPSILON) {
@@ -407,7 +412,8 @@ export async function applyCreditsToInvoiceInTx(
         tx,
         input.invoiceId,
         invoice.total,
-        applied.remainingBalanceDue,
+        round2(invoice.amount_paid || 0),
+        round2((invoice.credits_applied || 0) + totalApplied),
         MONEY_EPSILON,
         new Date().toISOString()
     );
@@ -441,14 +447,14 @@ export async function settleInvoiceInTx(
     totalSettled: number;
     creditSettled: number;
     paymentSettled: number;
-    resultingStatus: 'paid' | 'partially_paid';
+    resultingStatus: 'issued' | 'partially_paid' | 'paid' | 'adjusted';
 }> {
     const invoice = await findInvoiceForSettlementInTx(tx, input.orgId, input.invoiceId);
 
     if (!invoice) {
         throw new NotFoundError('Invoice not found');
     }
-    if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+    if (invoice.status === 'paid' || invoice.status === 'adjusted' || invoice.status === 'cancelled') {
         throw new ValidationError('Invoice is already paid or cancelled');
     }
     if (invoice.balance_due <= MONEY_EPSILON) {
@@ -458,6 +464,8 @@ export async function settleInvoiceInTx(
     let currentBalanceDue = round2(invoice.balance_due);
     let creditSettled = 0;
     let paymentSettled = 0;
+    let newAmountPaid = round2(invoice.amount_paid || 0);
+    let newCreditsApplied = round2(invoice.credits_applied || 0);
 
     if (input.requestedCredits.length > 0) {
         const appliedCredits = await applyRequestedCreditsInTx(tx, {
@@ -470,6 +478,7 @@ export async function settleInvoiceInTx(
 
         creditSettled = round2(appliedCredits.totalApplied);
         currentBalanceDue = round2(appliedCredits.remainingBalanceDue);
+        newCreditsApplied = round2(newCreditsApplied + creditSettled);
     }
 
     if (input.paymentAmount > MONEY_EPSILON) {
@@ -543,6 +552,7 @@ export async function settleInvoiceInTx(
 
         paymentSettled = paymentAmount;
         currentBalanceDue = round2(currentBalanceDue - paymentAmount);
+        newAmountPaid = round2(newAmountPaid + paymentAmount);
     }
 
     const totalSettled = round2(creditSettled + paymentSettled);
@@ -554,7 +564,8 @@ export async function settleInvoiceInTx(
         tx,
         input.invoiceId,
         invoice.total,
-        currentBalanceDue,
+        newAmountPaid,
+        newCreditsApplied,
         MONEY_EPSILON,
         new Date().toISOString()
     );
@@ -622,6 +633,7 @@ export async function createCustomerPaymentInTx(
             invoice_number: string;
             total: number;
             amount_paid: number | null;
+            credits_applied: number | null;
             balance_due: number;
         }
     >();
@@ -708,7 +720,8 @@ export async function createCustomerPaymentInTx(
             tx,
             allocation.invoice_id,
             invoice.total,
-            invoice.balance_due - allocation.amount,
+            round2((invoice.amount_paid || 0) + allocation.amount),
+            round2(invoice.credits_applied || 0),
             MONEY_EPSILON,
             new Date().toISOString()
         );
@@ -751,7 +764,12 @@ interface CreateCreditNoteInTxInput {
     orgId: string;
     userId: string;
     customerId: string;
-    amount: number;
+    invoiceId?: string | null;
+    subtotal: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    total: number;
     reason: string;
     notes?: string;
     date: string;
@@ -759,10 +777,145 @@ interface CreateCreditNoteInTxInput {
     idempotencyKey?: string | null;
 }
 
+type CreditNoteReason = 'return' | 'damaged' | 'discount' | 'writeoff' | 'cancellation' | 'other';
+
+const CREDIT_NOTE_REASON_MAP: Record<string, CreditNoteReason> = {
+    return: 'return',
+    returned: 'return',
+    damaged: 'damaged',
+    damage: 'damaged',
+    discount: 'discount',
+    writeoff: 'writeoff',
+    write_off: 'writeoff',
+    'write-off': 'writeoff',
+    cancellation: 'cancellation',
+    cancel: 'cancellation',
+    other: 'other'
+};
+
+function normalizeCreditNoteReason(rawReason: string): CreditNoteReason {
+    const reasonKey = rawReason.trim().toLowerCase().replace(/\s+/g, '_');
+    const normalized = CREDIT_NOTE_REASON_MAP[reasonKey];
+    if (!normalized) {
+        throw new ValidationError('Invalid credit note reason');
+    }
+    return normalized;
+}
+
+async function assertInvoiceCreditCapInTx(
+    tx: Tx,
+    orgId: string,
+    customerId: string,
+    invoiceId: string,
+    creditTotal: number
+) {
+    const invoice = await tx.query.invoices.findFirst({
+        where: and(
+            eq(invoices.id, invoiceId),
+            eq(invoices.org_id, orgId),
+            eq(invoices.customer_id, customerId)
+        ),
+        columns: {
+            id: true,
+            total: true,
+            status: true
+        }
+    });
+
+    if (!invoice) {
+        throw new ValidationError('Linked invoice not found for this customer');
+    }
+    if (invoice.status === 'draft' || invoice.status === 'cancelled') {
+        throw new ValidationError('Cannot issue a credit note for draft or cancelled invoice');
+    }
+
+    const existingCreditRows = await tx
+        .select({
+            total: sql<number>`COALESCE(SUM(${credit_notes.total}), 0)`
+        })
+        .from(credit_notes)
+        .where(
+            and(
+                eq(credit_notes.org_id, orgId),
+                eq(credit_notes.invoice_id, invoiceId),
+                ne(credit_notes.status, 'cancelled')
+            )
+        );
+
+    const existingCredits = Number(existingCreditRows[0]?.total) || 0;
+    const remainingCap = round2((invoice.total || 0) - existingCredits);
+    if (creditTotal > remainingCap + MONEY_EPSILON) {
+        throw new ValidationError('Credit note exceeds remaining value on linked invoice');
+    }
+}
+
+async function assertCustomerGlobalCreditCapInTx(
+    tx: Tx,
+    orgId: string,
+    customerId: string,
+    creditTotal: number
+) {
+    const [invoiceRows, creditRows] = await Promise.all([
+        tx
+            .select({
+                total: sql<number>`COALESCE(SUM(${invoices.total}), 0)`
+            })
+            .from(invoices)
+            .where(
+                and(
+                    eq(invoices.org_id, orgId),
+                    eq(invoices.customer_id, customerId),
+                    ne(invoices.status, 'draft'),
+                    ne(invoices.status, 'cancelled')
+                )
+            ),
+        tx
+            .select({
+                total: sql<number>`COALESCE(SUM(${credit_notes.total}), 0)`
+            })
+            .from(credit_notes)
+            .where(
+                and(
+                    eq(credit_notes.org_id, orgId),
+                    eq(credit_notes.customer_id, customerId),
+                    ne(credit_notes.status, 'cancelled')
+                )
+            )
+    ]);
+
+    const totalInvoices = Number(invoiceRows[0]?.total) || 0;
+    const existingCredits = Number(creditRows[0]?.total) || 0;
+    if (existingCredits + creditTotal > totalInvoices + MONEY_EPSILON) {
+        throw new ValidationError('Credit note exceeds total invoice value for this customer');
+    }
+}
+
 export async function createCreditNoteInTx(
     tx: Tx,
     input: CreateCreditNoteInTxInput
 ): Promise<{ creditNoteId: string; creditNoteNumber: string; total: number }> {
+    const invoiceId = input.invoiceId?.trim() || null;
+    const subtotal = round2(input.subtotal);
+    const cgst = round2(input.cgst);
+    const sgst = round2(input.sgst);
+    const igst = round2(input.igst);
+    const total = round2(input.total);
+    const expectedTotal = round2(subtotal + cgst + sgst + igst);
+    const normalizedReason = normalizeCreditNoteReason(input.reason);
+
+    if (subtotal < 0 || cgst < 0 || sgst < 0 || igst < 0 || total <= MONEY_EPSILON) {
+        throw new ValidationError('Credit note totals are invalid');
+    }
+    if (Math.abs(total - expectedTotal) > MONEY_EPSILON) {
+        throw new ValidationError('Credit note total does not match tax breakdown');
+    }
+
+    if (invoiceId) {
+        await assertInvoiceCreditCapInTx(tx, input.orgId, input.customerId, invoiceId, total);
+    } else {
+        await assertCustomerGlobalCreditCapInTx(tx, input.orgId, input.customerId, total);
+    }
+
     const creditNoteId = crypto.randomUUID();
     let creditNoteNumber = (input.providedNumber || '').trim();
 
@@ -788,11 +941,11 @@ export async function createCreditNoteInTx(
             creditNoteNumber,
             date: input.date,
             customerId: input.customerId,
-            subtotal: input.amount,
-            cgst: 0,
-            sgst: 0,
-            igst: 0,
-            total: input.amount,
+            subtotal,
+            cgst,
+            sgst,
+            igst,
+            total,
             userId: input.userId
         },
         tx
@@ -802,12 +955,16 @@ export async function createCreditNoteInTx(
         id: creditNoteId,
         org_id: input.orgId,
         customer_id: input.customerId,
+        invoice_id: invoiceId,
         credit_note_number: creditNoteNumber,
         credit_note_date: input.date,
-        subtotal: input.amount,
-        total: input.amount,
-        balance: input.amount,
-        reason: input.reason,
+        subtotal,
+        cgst,
+        sgst,
+        igst,
+        total,
+        balance: total,
+        reason: normalizedReason,
         notes: input.notes || '',
         status: 'issued',
         journal_entry_id: postingResult.journalEntryId,
@@ -815,7 +972,7 @@ export async function createCreditNoteInTx(
         created_by: input.userId
     });
 
-    await decreaseCustomerBalanceInTx(tx, input.customerId, input.amount, new Date().toISOString());
+    await decreaseCustomerBalanceInTx(tx, input.customerId, total, new Date().toISOString());
 
     await bumpNumberSeriesIfHigher(input.orgId, 'credit_note', creditNoteNumber, tx);
 
@@ -824,12 +981,374 @@ export async function createCreditNoteInTx(
         customerId: input.customerId,
         creditNoteId,
         creditNoteNumber,
-        total: input.amount
+        total,
+        reason: normalizedReason,
+        invoiceId
     });
 
     return {
         creditNoteId,
         creditNoteNumber,
-        total: input.amount
+        total
+    };
+}
+
+interface RecordRefundInTxInput {
+    orgId: string;
+    userId: string;
+    creditNoteId: string;
+    refundDate: string;
+    amount: number;
+    paymentMode: string;
+    sourceAccountId: string;
+    reference?: string;
+    notes?: string;
+    idempotencyKey?: string | null;
+}
+
+export async function recordRefundInTx(
+    tx: Tx,
+    input: RecordRefundInTxInput
+): Promise<{ refundId: string; refundNumber: string; remainingBalance: number }> {
+    const amount = round2(input.amount);
+    if (amount <= MONEY_EPSILON) {
+        throw new ValidationError('Refund amount must be positive');
+    }
+
+    const creditNote = await tx.query.credit_notes.findFirst({
+        where: and(
+            eq(credit_notes.id, input.creditNoteId),
+            eq(credit_notes.org_id, input.orgId)
+        ),
+        columns: {
+            id: true,
+            customer_id: true,
+            credit_note_number: true,
+            balance: true,
+            status: true
+        }
+    });
+
+    if (!creditNote) {
+        throw new NotFoundError('Credit note not found');
+    }
+    if (creditNote.status === 'cancelled') {
+        throw new ValidationError('Cancelled credit note cannot be refunded');
+    }
+
+    const availableBalance = round2(creditNote.balance || 0);
+    if (amount > availableBalance + MONEY_EPSILON) {
+        throw new ValidationError('Refund amount exceeds available credit balance');
+    }
+
+    const { paymentMethod, depositAccount } = await resolvePaymentSelectionInTx(
+        tx,
+        input.orgId,
+        input.paymentMode,
+        input.sourceAccountId
+    );
+
+    const refundId = crypto.randomUUID();
+    const refundNumber = await getNextNumberTx(tx, input.orgId, 'refund');
+    const postingResult = await postRefund(
+        input.orgId,
+        {
+            refundId,
+            refundNumber,
+            date: input.refundDate,
+            customerId: creditNote.customer_id,
+            amount,
+            sourceAccountCode: depositAccount.account_code,
+            userId: input.userId
+        },
+        tx
+    );
+
+    await tx.insert(refunds).values({
+        id: refundId,
+        org_id: input.orgId,
+        customer_id: creditNote.customer_id,
+        credit_note_id: creditNote.id,
+        refund_number: refundNumber,
+        refund_date: input.refundDate,
+        amount,
+        payment_mode: input.paymentMode,
+        source_account_id: depositAccount.id,
+        payment_method_id: paymentMethod.id,
+        reference: input.reference || '',
+        notes: input.notes || '',
+        status: 'posted',
+        journal_entry_id: postingResult.journalEntryId,
+        idempotency_key: input.idempotencyKey || null,
+        created_by: input.userId
+    });
+
+    const remainingBalance = round2(availableBalance - amount);
+    await tx
+        .update(credit_notes)
+        .set({
+            balance: remainingBalance,
+            status: remainingBalance <= MONEY_EPSILON ? 'applied' : 'issued'
+        })
+        .where(eq(credit_notes.id, creditNote.id));
+
+    await increaseCustomerBalanceInTx(tx, creditNote.customer_id, amount, new Date().toISOString());
+
+    logDomainEvent('receivables.refund_posted', {
+        orgId: input.orgId,
+        creditNoteId: creditNote.id,
+        creditNoteNumber: creditNote.credit_note_number,
+        refundId,
+        refundNumber,
+        amount
+    });
+
+    return {
+        refundId,
+        refundNumber,
+        remainingBalance
+    };
+}
+
+interface CancelInvoiceWithCreditNoteInTxInput {
+    orgId: string;
+    userId: string;
+    invoiceId: string;
+    nowIso: string;
+    refundNow?: boolean;
+    refundDate?: string;
+    refundAmount?: number;
+    refundPaymentMode?: string;
+    refundSourceAccountId?: string;
+    refundReference?: string;
+    refundNotes?: string;
+    refundIdempotencyKey?: string | null;
+}
+
+function buildCancellationCreditNoteTotals(invoice: {
+    total: number;
+    cgst: number | null;
+    sgst: number | null;
+    igst: number | null;
+}, cancellationTotal: number) {
+    const invoiceTotal = round2(invoice.total || 0);
+    if (invoiceTotal <= MONEY_EPSILON) {
+        return {
+            subtotal: cancellationTotal,
+            cgst: 0,
+            sgst: 0,
+            igst: 0,
+            total: cancellationTotal
+        };
+    }
+
+    const ratio = Math.min(1, cancellationTotal / invoiceTotal);
+    const cgst = round2((invoice.cgst || 0) * ratio);
+    const sgst = round2((invoice.sgst || 0) * ratio);
+    const igst = round2((invoice.igst || 0) * ratio);
+    const subtotal = round2(Math.max(0, cancellationTotal - cgst - sgst - igst));
+
+    return {
+        subtotal,
+        cgst,
+        sgst,
+        igst,
+        total: cancellationTotal
+    };
+}
+
+export async function cancelInvoiceWithCreditNoteInTx(
+    tx: Tx,
+    input: CancelInvoiceWithCreditNoteInTxInput
+): Promise<{
+    cancellationCreditNoteId: string | null;
+    cancellationCreditNoteNumber: string | null;
+    refundId: string | null;
+}> {
+    const invoice = await tx.query.invoices.findFirst({
+        where: and(
+            eq(invoices.id, input.invoiceId),
+            eq(invoices.org_id, input.orgId)
+        ),
+        columns: {
+            id: true,
+            customer_id: true,
+            invoice_number: true,
+            subtotal: true,
+            cgst: true,
+            sgst: true,
+            igst: true,
+            total: true,
+            amount_paid: true,
+            credits_applied: true,
+            balance_due: true,
+            status: true
+        }
+    });
+
+    if (!invoice) {
+        throw new NotFoundError('Invoice not found');
+    }
+    if (invoice.status === 'cancelled') {
+        throw new ValidationError('Invoice is already cancelled');
+    }
+    if (invoice.status === 'draft') {
+        throw new ValidationError('Draft invoices should be deleted instead of cancelled');
+    }
+
+    // Fetch individual credit allocation rows so we can unwind them
+    const [cnAllocRows, advAllocRows] = await Promise.all([
+        tx
+            .select({
+                id: credit_allocations.id,
+                credit_note_id: credit_allocations.credit_note_id,
+                amount: credit_allocations.amount
+            })
+            .from(credit_allocations)
+            .where(
+                and(
+                    eq(credit_allocations.invoice_id, invoice.id),
+                    sql`${credit_allocations.credit_note_id} IS NOT NULL`
+                )
+            ),
+        tx
+            .select({
+                id: credit_allocations.id,
+                advance_id: credit_allocations.advance_id,
+                amount: credit_allocations.amount
+            })
+            .from(credit_allocations)
+            .where(
+                and(
+                    eq(credit_allocations.invoice_id, invoice.id),
+                    sql`${credit_allocations.advance_id} IS NOT NULL`
+                )
+            )
+    ]);
+
+    const cashPaid = round2(invoice.amount_paid || 0);
+    const appliedCreditNotesTotal = round2(cnAllocRows.reduce((s, r) => s + (r.amount || 0), 0));
+    const appliedAdvancesTotal = round2(advAllocRows.reduce((s, r) => s + (r.amount || 0), 0));
+
+    // Unwind credit note allocations: restore balance on each source CN
+    for (const row of cnAllocRows) {
+        if (!row.credit_note_id) continue;
+        const amt = round2(row.amount || 0);
+        await tx
+            .update(credit_notes)
+            .set({
+                balance: sql`${credit_notes.balance} + ${amt}`,
+                status: 'issued'
+            })
+            .where(eq(credit_notes.id, row.credit_note_id));
+    }
+
+    // Unwind advance allocations: restore balance on each source advance
+    for (const row of advAllocRows) {
+        if (!row.advance_id) continue;
+        const amt = round2(row.amount || 0);
+        await tx
+            .update(customer_advances)
+            .set({
+                balance: sql`${customer_advances.balance} + ${amt}`
+            })
+            .where(eq(customer_advances.id, row.advance_id));
+    }
+
+    // Delete all credit allocation rows for this invoice
+    if (cnAllocRows.length > 0 || advAllocRows.length > 0) {
+        await tx
+            .delete(credit_allocations)
+            .where(eq(credit_allocations.invoice_id, invoice.id));
+    }
+
+    // After unwinding, cancellation CN covers the full invoice total
+    const cancellationTotal = round2(invoice.total);
+
+    if (cancellationTotal < -MONEY_EPSILON) {
+        throw new ValidationError('Invoice cancellation integrity check failed');
+    }
+
+    let cancellationCreditNoteId: string | null = null;
+    let cancellationCreditNoteNumber: string | null = null;
+    let refundId: string | null = null;
+
+    if (cancellationTotal > MONEY_EPSILON) {
+        const cancellationCredit = await createCreditNoteInTx(tx, {
+            orgId: input.orgId,
+            userId: input.userId,
+            customerId: invoice.customer_id,
+            invoiceId: invoice.id,
+            reason: 'cancellation',
+            notes: `Cancellation of invoice ${invoice.invoice_number}`,
+            date: input.nowIso.split('T')[0],
+            ...buildCancellationCreditNoteTotals(invoice, cancellationTotal)
+        });
+
+        cancellationCreditNoteId = cancellationCredit.creditNoteId;
+        cancellationCreditNoteNumber = cancellationCredit.creditNoteNumber;
+
+        // After unwinding credits, actual balance_due = total - cashPaid (no credits applied)
+        const actualBalanceDue = round2(invoice.total - cashPaid);
+        const autoOffset = round2(Math.min(actualBalanceDue, cancellationTotal));
+        const remainingBalance = round2(cancellationTotal - autoOffset);
+
+        await tx
+            .update(credit_notes)
+            .set({
+                balance: remainingBalance,
+                status: remainingBalance <= MONEY_EPSILON ? 'applied' : 'issued'
+            })
+            .where(eq(credit_notes.id, cancellationCredit.creditNoteId));
+
+        if (input.refundNow && remainingBalance > MONEY_EPSILON) {
+            if (!input.refundPaymentMode || !input.refundSourceAccountId) {
+                throw new ValidationError('Refund payment mode and source account are required');
+            }
+
+            const refund = await recordRefundInTx(tx, {
+                orgId: input.orgId,
+                userId: input.userId,
+                creditNoteId: cancellationCredit.creditNoteId,
+                refundDate: input.refundDate || input.nowIso.split('T')[0],
+                amount: round2(input.refundAmount || remainingBalance),
+                paymentMode: input.refundPaymentMode,
+                sourceAccountId: input.refundSourceAccountId,
+                reference: input.refundReference,
+                notes: input.refundNotes || `Refund for cancelled invoice ${invoice.invoice_number}`,
+                idempotencyKey: input.refundIdempotencyKey || null
+            });
+
+            refundId = refund.refundId;
+        }
+    }
+
+    await tx
+        .update(invoices)
+        .set({
+            status: 'cancelled',
+            balance_due: 0,
+            cancelled_at: input.nowIso,
+            updated_at: input.nowIso,
+            updated_by: input.userId
+        })
+        .where(eq(invoices.id, invoice.id));
+
+    logDomainEvent('receivables.invoice_cancelled_with_credit_note', {
+        orgId: input.orgId,
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        previousStatus: invoice.status,
+        cashPaid,
+        appliedCreditNotesTotal,
+        appliedAdvancesTotal,
+        cancellationCreditNoteId,
+        refundId
+    });
+
+    return {
+        cancellationCreditNoteId,
+        cancellationCreditNoteNumber,
+        refundId
     };
 }

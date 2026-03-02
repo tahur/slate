@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, ne, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, sql } from 'drizzle-orm';
 import { db, type Tx } from '$lib/server/db';
 import {
     credit_notes,
@@ -17,6 +17,7 @@ export type InvoiceSettlementRow = {
     customer_id: string;
     total: number;
     amount_paid: number | null;
+    credits_applied: number | null;
     balance_due: number;
     status: string;
 };
@@ -26,6 +27,7 @@ export type OpenCustomerInvoiceRow = {
     invoice_number: string;
     total: number;
     amount_paid: number | null;
+    credits_applied: number | null;
     balance_due: number;
 };
 
@@ -139,6 +141,7 @@ export async function findInvoiceForSettlementInTx(
             customer_id: true,
             total: true,
             amount_paid: true,
+            credits_applied: true,
             balance_due: true,
             status: true
         }
@@ -229,6 +232,7 @@ export async function findOpenInvoicesByIdsInTx(
             invoice_number: invoices.invoice_number,
             total: invoices.total,
             amount_paid: invoices.amount_paid,
+            credits_applied: invoices.credits_applied,
             balance_due: invoices.balance_due
         })
         .from(invoices)
@@ -237,9 +241,7 @@ export async function findOpenInvoicesByIdsInTx(
                 eq(invoices.org_id, orgId),
                 eq(invoices.customer_id, customerId),
                 inArray(invoices.id, invoiceIds),
-                ne(invoices.status, 'paid'),
-                ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'draft')
+                inArray(invoices.status, ['issued', 'partially_paid'])
             )
         );
 }
@@ -248,18 +250,33 @@ export async function setInvoiceSettlementStateInTx(
     tx: Tx,
     invoiceId: string,
     invoiceTotal: number,
-    newBalanceDue: number,
+    newAmountPaid: number,
+    newCreditsApplied: number,
     epsilon: number,
     nowIso: string
 ) {
-    const normalizedBalanceDue = round2(Math.max(0, newBalanceDue));
-    const normalizedAmountPaid = round2(invoiceTotal - normalizedBalanceDue);
-    const newStatus = normalizedBalanceDue <= epsilon ? 'paid' : 'partially_paid';
+    const normalizedTotal = round2(Math.max(0, invoiceTotal));
+    const normalizedAmountPaid = round2(Math.min(Math.max(0, newAmountPaid), normalizedTotal));
+    const maxCredits = round2(Math.max(0, normalizedTotal - normalizedAmountPaid));
+    const normalizedCreditsApplied = round2(Math.min(Math.max(0, newCreditsApplied), maxCredits));
+    const normalizedBalanceDue = round2(Math.max(0, normalizedTotal - normalizedAmountPaid - normalizedCreditsApplied));
+
+    let newStatus: 'issued' | 'partially_paid' | 'paid' | 'adjusted' = 'issued';
+    if (normalizedBalanceDue <= epsilon) {
+        if (normalizedAmountPaid > epsilon) {
+            newStatus = 'paid';
+        } else if (normalizedCreditsApplied > epsilon) {
+            newStatus = 'adjusted';
+        }
+    } else if (normalizedAmountPaid > epsilon || normalizedCreditsApplied > epsilon) {
+        newStatus = 'partially_paid';
+    }
 
     await tx
         .update(invoices)
         .set({
             amount_paid: normalizedAmountPaid,
+            credits_applied: normalizedCreditsApplied,
             balance_due: normalizedBalanceDue,
             status: newStatus,
             updated_at: nowIso
@@ -268,8 +285,9 @@ export async function setInvoiceSettlementStateInTx(
 
     return {
         amountPaid: normalizedAmountPaid,
+        creditsApplied: normalizedCreditsApplied,
         balanceDue: normalizedBalanceDue,
-        status: newStatus as 'paid' | 'partially_paid'
+        status: newStatus
     };
 }
 
@@ -278,6 +296,16 @@ export async function decreaseCustomerBalanceInTx(tx: Tx, customerId: string, am
         .update(customers)
         .set({
             balance: sql`${customers.balance} - ${amount}`,
+            updated_at: nowIso
+        })
+        .where(eq(customers.id, customerId));
+}
+
+export async function increaseCustomerBalanceInTx(tx: Tx, customerId: string, amount: number, nowIso: string) {
+    await tx
+        .update(customers)
+        .set({
+            balance: sql`${customers.balance} + ${amount}`,
             updated_at: nowIso
         })
         .where(eq(customers.id, customerId));
@@ -505,9 +533,7 @@ export async function listUnpaidCustomerInvoices(orgId: string, customerId: stri
             and(
                 eq(invoices.org_id, orgId),
                 eq(invoices.customer_id, customerId),
-                ne(invoices.status, 'paid'),
-                ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'draft')
+                inArray(invoices.status, ['issued', 'partially_paid'])
             )
         )
         .orderBy(invoices.invoice_date);

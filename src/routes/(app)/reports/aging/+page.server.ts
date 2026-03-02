@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { invoices, customers } from '$lib/server/db/schema';
-import { eq, and, ne, sql } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 interface AgingBucket {
@@ -44,9 +44,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .where(
             and(
                 eq(invoices.org_id, orgId),
-                ne(invoices.status, 'paid'),
-                ne(invoices.status, 'cancelled'),
-                ne(invoices.status, 'draft')
+                inArray(invoices.status, ['issued', 'partially_paid'])
             )
         );
 

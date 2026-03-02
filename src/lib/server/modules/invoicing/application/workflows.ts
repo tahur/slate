@@ -6,7 +6,12 @@ import {
 } from '$lib/server/db/schema';
 import { postInvoiceIssuance, reverse } from '$lib/server/services/posting-engine';
 import { bumpNumberSeriesIfHigher, getNextNumberTx } from '$lib/server/services/number-series';
-import { calculateInvoiceTaxTotals, resolvePricesIncludeGst } from '$lib/tax/gst';
+import { resolvePricesIncludeGst } from '$lib/tax/gst';
+import {
+    calculateInvoicePricing,
+    type InvoiceDiscountInput,
+    type InvoiceDiscountType
+} from '$lib/tax/invoice-pricing';
 import { ConflictError, InvariantError, NotFoundError, ValidationError } from '$lib/server/platform/errors';
 import { logDomainEvent } from '$lib/server/platform/observability';
 import {
@@ -36,6 +41,32 @@ export function parsePricesIncludeGst(formData: FormData): ParsedPricesIncludeGs
     if (value === 'true' || value === 'on' || value === '1') return true;
     if (value === 'false' || value === 'off' || value === '0') return false;
     return null;
+}
+
+export function parseInvoiceDiscount(formData: FormData): InvoiceDiscountInput {
+    const rawType = String(formData.get('discount_type') ?? '')
+        .trim()
+        .toLowerCase();
+    const rawValue = String(formData.get('discount_value') ?? '').trim();
+    const value = rawValue === '' ? 0 : Number(rawValue);
+
+    if (!Number.isFinite(value) || value < 0) {
+        throw new ValidationError('Discount must be zero or positive');
+    }
+
+    if (!rawType || value <= 0) {
+        return { type: null, value: 0 };
+    }
+
+    if (rawType !== 'percent' && rawType !== 'amount') {
+        throw new ValidationError('Invalid discount type');
+    }
+
+    if (rawType === 'percent' && value > 100) {
+        throw new ValidationError('Discount percentage cannot exceed 100');
+    }
+
+    return { type: rawType as InvoiceDiscountType, value };
 }
 
 export function parseInvoiceLineItemsFromFormData(formData: FormData): InvoiceLineInput[] {
@@ -93,15 +124,27 @@ async function resolveTaxContextInTx(
     return { isInterState, pricesIncludeGst };
 }
 
-function calculateTotals(lineItems: InvoiceLineInput[], isInterState: boolean, pricesIncludeGst: boolean) {
-    return calculateInvoiceTaxTotals(
+function calculateTotals(
+    lineItems: InvoiceLineInput[],
+    isInterState: boolean,
+    pricesIncludeGst: boolean,
+    discount: InvoiceDiscountInput
+) {
+    const totals = calculateInvoicePricing(
         lineItems.map((item) => ({
             quantity: item.quantity,
             rate: item.rate,
             gstRate: item.gst_rate
         })),
-        { isInterState, pricesIncludeGst }
+        { isInterState, pricesIncludeGst },
+        discount
     );
+
+    if (totals.subtotal > 0 && discount.type === 'amount' && discount.value > totals.subtotal) {
+        throw new ValidationError('Discount amount cannot exceed invoice subtotal');
+    }
+
+    return totals;
 }
 
 export interface CreateInvoiceInTxInput {
@@ -117,6 +160,7 @@ export interface CreateInvoiceInTxInput {
     invoiceNumberMode: 'auto' | 'manual';
     providedInvoiceNumber: string;
     requestedPricesIncludeGst: ParsedPricesIncludeGst;
+    discount: InvoiceDiscountInput;
     idempotencyKey?: string | null;
     lineItems: InvoiceLineInput[];
 }
@@ -141,7 +185,7 @@ export async function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): 
         input.customerId,
         input.requestedPricesIncludeGst
     );
-    const totals = calculateTotals(input.lineItems, isInterState, pricesIncludeGst);
+    const totals = calculateTotals(input.lineItems, isInterState, pricesIncludeGst, input.discount);
 
     const invoiceId = crypto.randomUUID();
     let invoiceNumber = input.providedInvoiceNumber.trim();
@@ -174,6 +218,9 @@ export async function createInvoiceInTx(tx: Tx, input: CreateInvoiceInTxInput): 
         order_number: input.orderNumber || null,
         status: input.issue ? 'issued' : 'draft',
         subtotal: totals.subtotal,
+        discount_type: totals.discountType,
+        discount_value: totals.discountValue,
+        discount_amount: totals.discountAmount,
         taxable_amount: totals.taxableAmount,
         cgst: totals.cgst,
         sgst: totals.sgst,
@@ -279,6 +326,7 @@ export interface UpdateDraftInvoiceInTxInput {
     notes?: string | null;
     terms?: string | null;
     requestedPricesIncludeGst: ParsedPricesIncludeGst;
+    discount: InvoiceDiscountInput;
     lineItems: InvoiceLineInput[];
 }
 
@@ -303,7 +351,7 @@ export async function updateDraftInvoiceInTx(
         input.customerId,
         input.requestedPricesIncludeGst
     );
-    const totals = calculateTotals(input.lineItems, isInterState, pricesIncludeGst);
+    const totals = calculateTotals(input.lineItems, isInterState, pricesIncludeGst, input.discount);
 
     await tx
         .update(invoices)
@@ -313,6 +361,9 @@ export async function updateDraftInvoiceInTx(
             due_date: input.dueDate,
             order_number: input.orderNumber || null,
             subtotal: totals.subtotal,
+            discount_type: totals.discountType,
+            discount_value: totals.discountValue,
+            discount_amount: totals.discountAmount,
             taxable_amount: totals.taxableAmount,
             cgst: totals.cgst,
             sgst: totals.sgst,

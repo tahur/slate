@@ -7,6 +7,7 @@ export type EntityType =
     | 'payment'
     | 'expense'
     | 'credit_note'
+    | 'debit_note'
     | 'customer'
     | 'vendor'
     | 'journal_entry'
@@ -22,6 +23,7 @@ export type ActionType =
     | 'cancelled'
     | 'paid'
     | 'partially_paid'
+    | 'adjusted'
     | 'applied'
     | 'voided'
     | 'activated'
@@ -101,6 +103,8 @@ export function formatActivityDescription(
             return `Marked ${entityLabel}${ref} as paid`;
         case 'partially_paid':
             return `Recorded partial payment for ${entityLabel}${ref}`;
+        case 'adjusted':
+            return `Adjusted ${entityLabel}${ref} with credits`;
         case 'applied':
             return `Applied ${entityLabel}${ref}`;
         case 'voided':

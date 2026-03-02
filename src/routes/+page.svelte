@@ -6,12 +6,16 @@
 		Check,
 		Github,
 		Database,
-		Shield,
 		Globe,
 		Zap,
 		Layers,
 		BarChart3,
 		Plug,
+		BookOpen,
+		Fingerprint,
+		ScrollText,
+		Calculator,
+		KeyRound,
 	} from "lucide-svelte";
 	const currentYear = new Date().getFullYear();
 </script>
@@ -53,7 +57,7 @@
 		<section class="relative overflow-hidden px-5 pt-16 pb-20 lg:pt-24 lg:pb-28">
 			<div class="hero-glow"></div>
 
-			<div class="relative mx-auto max-w-5xl">
+			<div class="relative mx-auto max-w-5xl lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
 				<div class="max-w-2xl">
 					<p class="inline-flex rounded-full border border-blue-200 bg-blue-50/80 px-3 py-1 text-xs font-medium text-blue-600">
 						Free & open source
@@ -80,6 +84,115 @@
 						<li class="flex items-center gap-2"><Check class="size-4 shrink-0 text-blue-500" /> Free and open source — your data, your server</li>
 					</ul>
 				</div>
+
+				<!-- Workflow illustration -->
+				<div class="hidden lg:flex items-center justify-center" aria-hidden="true">
+					<div class="hero-flow-shell">
+						<div class="hero-flow">
+							<span class="hero-flow__connector hero-flow__connector--one"></span>
+							<span class="hero-flow__connector hero-flow__connector--two"></span>
+
+							<div
+								class="hero-flow__card hero-flow__card--invoice min-h-[154px] rounded-xl border border-slate-200 bg-white p-4 shadow-lg"
+							>
+								<p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+									Create Invoice
+								</p>
+								<div class="mt-2.5 space-y-2">
+									<div>
+										<p class="text-[9px] text-slate-400">Customer</p>
+										<div
+											class="mt-0.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-700"
+										>
+											Acme Corp
+										</div>
+									</div>
+									<div class="grid grid-cols-2 gap-1.5">
+										<div>
+											<p class="text-[9px] text-slate-400">Amount</p>
+											<div
+												class="mt-0.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-700"
+											>
+												10,000
+											</div>
+										</div>
+										<div>
+											<p class="text-[9px] text-slate-400">GST</p>
+											<div
+												class="mt-0.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-700"
+											>
+												18%
+											</div>
+										</div>
+									</div>
+									<div
+										class="rounded-md bg-[#111] px-2.5 py-1.5 text-center text-[10px] font-semibold text-white"
+									>
+										Save Invoice
+									</div>
+								</div>
+							</div>
+
+							<div
+								class="hero-flow__card hero-flow__card--journal min-h-[154px] rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-lg"
+							>
+								<p class="text-[10px] font-semibold uppercase tracking-wider text-blue-500">
+									Journal Entry
+								</p>
+								<div class="mt-2.5 space-y-1.5">
+									<div class="flex items-center gap-1.5 text-[10px] text-blue-700">
+										<span
+											class="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[9px] font-semibold"
+											>Dr</span
+										>
+										<span>Accounts Receivable</span>
+										<span class="ml-auto font-medium">11,800</span>
+									</div>
+									<div class="flex items-center gap-1.5 text-[10px] text-blue-700">
+										<span
+											class="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[9px] font-semibold"
+											>Cr</span
+										>
+										<span>Sales Revenue</span>
+										<span class="ml-auto font-medium">10,000</span>
+									</div>
+									<div class="flex items-center gap-1.5 text-[10px] text-blue-700">
+										<span
+											class="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[9px] font-semibold"
+											>Cr</span
+										>
+										<span>CGST + SGST</span>
+										<span class="ml-auto font-medium">1,800</span>
+									</div>
+								</div>
+							</div>
+
+							<div
+								class="hero-flow__card hero-flow__card--ledger min-h-[154px] rounded-xl border border-slate-700 bg-[#111] p-4 shadow-xl"
+							>
+								<p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+									Ledger
+								</p>
+								<div class="mt-2.5 space-y-0">
+									<div
+										class="grid grid-cols-3 border-b border-slate-700 py-1.5 text-[9px] font-medium text-slate-500"
+									>
+										<span>Account</span><span class="text-right">Dr</span><span class="text-right">Cr</span>
+									</div>
+									<div class="grid grid-cols-3 border-b border-slate-800 py-1.5 text-[9px] text-slate-300">
+										<span>Receivables</span><span class="text-right">11,800</span><span class="text-right">—</span>
+									</div>
+									<div class="grid grid-cols-3 border-b border-slate-800 py-1.5 text-[9px] text-slate-300">
+										<span>Sales</span><span class="text-right">—</span><span class="text-right">10,000</span>
+									</div>
+									<div class="grid grid-cols-3 py-1.5 text-[9px] text-slate-300">
+										<span>CGST Out</span><span class="text-right">—</span><span class="text-right">900</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</section>
 
@@ -93,64 +206,119 @@
 					Simple for you, proper accounting underneath.
 				</p>
 
-				<div class="mt-10 grid gap-px bg-slate-200 rounded-xl overflow-hidden border border-slate-200 sm:grid-cols-2 lg:grid-cols-3">
-					<article class="bg-white p-6">
-						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-							<FileText class="size-4" />
+				<div class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+					<!-- Row 1: GST hero + Payments -->
+					<article class="sm:col-span-2 rounded-xl border border-slate-200 bg-white p-7">
+						<div class="flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+							<FileText class="size-5" />
 						</div>
-						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">GST Invoicing</h3>
-						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
-							Add line items, pick the GST rate, and send. CGST/SGST or IGST calculated automatically based on your customer's state.
+						<h3 class="mt-4 text-lg font-semibold text-[#111]">GST Invoicing</h3>
+						<p class="mt-2 max-w-md text-sm text-slate-500 leading-relaxed">
+							Add line items with HSN/SAC codes, pick the GST rate, and send. CGST/SGST or IGST is calculated automatically based on your customer's state.
 						</p>
+						<div class="mt-4 flex flex-wrap gap-2">
+							<span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">CGST + SGST</span>
+							<span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">IGST</span>
+							<span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">Multi-rate (0–28%)</span>
+							<span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">PDF export</span>
+						</div>
 					</article>
 
-					<article class="bg-white p-6">
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
 						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
 							<Wallet class="size-4" />
 						</div>
 						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Payment Tracking</h3>
 						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
-							Record payments against invoices. Track outstanding balances, partial payments, and aging — updated in real time.
+							Record payments against invoices. Track outstanding balances, partial payments, and aging.
 						</p>
 					</article>
 
-					<article class="bg-white p-6">
+					<!-- Row 2: Expenses + Reports + Made for India -->
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
 						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
 							<Receipt class="size-4" />
 						</div>
 						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Expense Tracking</h3>
 						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
-							Log expenses by category, supplier, and payment method. Input tax is tracked automatically for filing time.
+							Log expenses by category, supplier, and payment method. Input tax is tracked for GST filing.
 						</p>
 					</article>
 
-					<article class="bg-white p-6">
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
 						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
 							<BarChart3 class="size-4" />
 						</div>
 						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Reports</h3>
 						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
-							Cashbook, receivables, and tax summaries. The reports you need without the ones you don't.
+							Cashbook, ledger, receivables, and tax summaries. The reports you need without the ones you don't.
 						</p>
 					</article>
 
-					<article class="bg-white p-6">
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
 						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
 							<Globe class="size-4" />
 						</div>
 						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Made for India</h3>
 						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
-							HSN/SAC codes, multi-rate GST (0–28%), inter/intra-state tax handling, and INR formatting built in.
+							HSN/SAC codes, inter/intra-state tax, GSTIN validation, and INR formatting — all built in.
 						</p>
 					</article>
 
-					<article class="bg-white p-6">
-						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-							<Shield class="size-4" />
+					<!-- Row 3: Double-entry dark hero + Auth -->
+					<article class="sm:col-span-2 rounded-xl border border-slate-200 bg-[#111] p-7">
+						<div class="flex size-10 items-center justify-center rounded-lg bg-white/10 text-white">
+							<BookOpen class="size-5" />
 						</div>
-						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Reliable</h3>
+						<h3 class="mt-4 text-lg font-semibold text-white">Double-Entry Bookkeeping</h3>
+						<p class="mt-2 max-w-md text-sm text-slate-400 leading-relaxed">
+							Every transaction creates balanced journal entries — debits always equal credits. 7 invariants enforced on every write. Atomic transactions ensure nothing saves partially.
+						</p>
+						<div class="mt-4 flex flex-wrap gap-2">
+							<span class="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-slate-300">Debits = Credits</span>
+							<span class="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-slate-300">Immutable entries</span>
+							<span class="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-slate-300">Atomic transactions</span>
+						</div>
+					</article>
+
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<KeyRound class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Better Auth</h3>
 						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
-							Every action saves completely or not at all. Double-entry bookkeeping ensures your numbers always balance.
+							Secure session-based authentication. Email/password today, OAuth providers coming soon.
+						</p>
+					</article>
+
+					<!-- Row 4: Idempotency + Decimal + Audit -->
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<Fingerprint class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Idempotency Keys</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Every write carries a unique key. Double-submits are caught — no duplicate invoices or payments, ever.
+						</p>
+					</article>
+
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<Calculator class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Decimal Precision</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							All money math uses decimal.js — no floating point errors. Server-side validation on every form.
+						</p>
+					</article>
+
+					<article class="rounded-xl border border-slate-200 bg-white p-6">
+						<div class="flex size-8 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+							<ScrollText class="size-4" />
+						</div>
+						<h3 class="mt-3 text-[15px] font-semibold text-[#111]">Full Audit Trail</h3>
+						<p class="mt-1.5 text-sm text-slate-500 leading-relaxed">
+							Every action is logged — who did what, when. Changed fields tracked for complete traceability.
 						</p>
 					</article>
 				</div>
@@ -283,5 +451,148 @@
 		border-radius: 50%;
 		background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
 		pointer-events: none;
+	}
+
+	.hero-flow-shell {
+		position: relative;
+		border: 1px solid rgb(148 163 184 / 0.3);
+		border-radius: 1rem;
+		padding: 0.9rem 1rem 1rem;
+		background: linear-gradient(180deg, rgb(255 255 255 / 0.82), rgb(248 250 252 / 0.72));
+		box-shadow:
+			0 10px 30px rgb(15 23 42 / 0.08),
+			inset 0 1px 0 rgb(255 255 255 / 0.9);
+	}
+
+	.hero-flow-shell::before {
+		content: "";
+		position: absolute;
+		inset: 12px 14px;
+		border-radius: 0.85rem;
+		border: 1px dashed rgb(148 163 184 / 0.35);
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.hero-flow-shell > * {
+		position: relative;
+		z-index: 1;
+	}
+
+	.hero-flow {
+		position: relative;
+		width: 468px;
+		height: 332px;
+	}
+
+	.hero-flow::before {
+		content: "";
+		position: absolute;
+		left: 42px;
+		bottom: 22px;
+		width: 386px;
+		height: 68px;
+		background: radial-gradient(
+			ellipse at center,
+			rgb(15 23 42 / 0.22) 0%,
+			rgb(15 23 42 / 0.11) 44%,
+			transparent 74%
+		);
+		filter: blur(8px);
+		opacity: 0.62;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.hero-flow::after {
+		content: "";
+		position: absolute;
+		left: 16px;
+		top: 236px;
+		width: 434px;
+		border-top: 1px solid rgb(148 163 184 / 0.48);
+		border-radius: 999px;
+		transform: rotate(-8deg);
+		pointer-events: none;
+		z-index: 5;
+	}
+
+	.hero-flow__card {
+		position: absolute;
+		width: 220px;
+		transform: rotate(-8deg);
+		transform-origin: center;
+		box-shadow: 0 14px 28px rgb(15 23 42 / 0.14);
+		outline: 1px solid rgb(148 163 184 / 0.15);
+		outline-offset: -1px;
+		transition:
+			transform var(--motion-base) var(--ease-standard),
+			box-shadow var(--motion-fast) var(--ease-standard);
+	}
+
+	.hero-flow__card--invoice {
+		left: 0;
+		top: 12px;
+		z-index: 30;
+	}
+
+	.hero-flow__card--journal {
+		left: 124px;
+		top: 90px;
+		z-index: 20;
+	}
+
+	.hero-flow__card--ledger {
+		left: 248px;
+		top: 168px;
+		z-index: 10;
+		box-shadow: 0 16px 32px rgb(2 6 23 / 0.35);
+		outline-color: rgb(148 163 184 / 0.24);
+	}
+
+	.hero-flow__connector {
+		position: absolute;
+		height: 2px;
+		border-radius: 999px;
+		background: linear-gradient(90deg, rgba(147, 197, 253, 0.55), rgba(96, 165, 250, 0.95));
+		z-index: 15;
+	}
+
+	.hero-flow__connector::after {
+		content: "";
+		position: absolute;
+		right: -2px;
+		top: 50%;
+		width: 7px;
+		height: 7px;
+		border-top: 2px solid rgba(96, 165, 250, 0.95);
+		border-right: 2px solid rgba(96, 165, 250, 0.95);
+		transform: translateY(-50%) rotate(45deg);
+	}
+
+	.hero-flow__connector--one {
+		left: 192px;
+		top: 88px;
+		width: 84px;
+		transform: rotate(34deg);
+	}
+
+	.hero-flow__connector--two {
+		left: 316px;
+		top: 166px;
+		width: 84px;
+		transform: rotate(34deg);
+	}
+
+	.hero-flow:hover .hero-flow__card--invoice {
+		transform: translate3d(-3px, -2px, 0) rotate(-8deg);
+	}
+
+	.hero-flow:hover .hero-flow__card--journal {
+		transform: translate3d(0, -3px, 0) rotate(-8deg);
+	}
+
+	.hero-flow:hover .hero-flow__card--ledger {
+		transform: translate3d(3px, -4px, 0) rotate(-8deg);
 	}
 </style>

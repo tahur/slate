@@ -15,11 +15,11 @@
  */
 
 import { db } from '../db';
-import { invoices, payments, expenses, credit_notes, supplier_payments } from '../db/schema';
+import { invoices, payments, expenses, credit_notes, debit_notes, supplier_payments } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '$lib/server/platform/observability';
 
-export type IdempotentTable = 'invoices' | 'payments' | 'expenses' | 'credit_notes' | 'supplier_payments';
+export type IdempotentTable = 'invoices' | 'payments' | 'expenses' | 'credit_notes' | 'debit_notes' | 'supplier_payments';
 
 interface IdempotencyResult<T> {
     isDuplicate: boolean;
@@ -74,6 +74,15 @@ export async function checkIdempotency<T>(
                 where: and(
                     eq(credit_notes.org_id, orgId),
                     eq(credit_notes.idempotency_key, idempotencyKey)
+                )
+            });
+            break;
+
+        case 'debit_notes':
+            existingRecord = await db.query.debit_notes.findFirst({
+                where: and(
+                    eq(debit_notes.org_id, orgId),
+                    eq(debit_notes.idempotency_key, idempotencyKey)
                 )
             });
             break;

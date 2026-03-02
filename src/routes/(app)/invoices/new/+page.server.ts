@@ -18,6 +18,7 @@ import { runInTx } from '$lib/server/platform/db/tx';
 import { failActionFromError } from '$lib/server/platform/errors';
 import {
     createInvoiceInTx,
+    parseInvoiceDiscount,
     parseInvoiceLineItemsFromFormData,
     parsePricesIncludeGst
 } from '$lib/server/modules/invoicing/application/workflows';
@@ -124,6 +125,13 @@ export const actions: Actions = {
         const invoiceNumberMode = (formData.get('invoice_number_mode') as string || 'auto').trim();
         const providedInvoiceNumber = (formData.get('invoice_number') as string || '').trim();
         const requestedPricesIncludeGst = parsePricesIncludeGst(formData);
+        let discount: ReturnType<typeof parseInvoiceDiscount>;
+
+        try {
+            discount = parseInvoiceDiscount(formData);
+        } catch (error) {
+            return failActionFromError(error, 'Invoice creation failed');
+        }
 
 
         // Validation
@@ -164,6 +172,7 @@ export const actions: Actions = {
                     invoiceNumberMode: invoiceNumberMode === 'manual' ? 'manual' : 'auto',
                     providedInvoiceNumber,
                     requestedPricesIncludeGst,
+                    discount,
                     idempotencyKey: idempotencyKey || null,
                     lineItems
                 });

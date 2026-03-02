@@ -59,6 +59,12 @@ export const actions: Actions = {
 
         const customer_id = formData.get('customer_id') as string;
         const amount = round2(parseFloat(formData.get('amount') as string) || 0);
+        const subtotal = round2(parseFloat(formData.get('subtotal') as string) || amount);
+        const cgst = round2(parseFloat(formData.get('cgst') as string) || 0);
+        const sgst = round2(parseFloat(formData.get('sgst') as string) || 0);
+        const igst = round2(parseFloat(formData.get('igst') as string) || 0);
+        const total = round2(parseFloat(formData.get('total') as string) || round2(subtotal + cgst + sgst + igst));
+        const invoice_id = ((formData.get('invoice_id') as string) || '').trim() || null;
         const reason = formData.get('reason') as string;
         const notes = formData.get('notes') as string;
         const date = formData.get('date') as string;
@@ -67,7 +73,7 @@ export const actions: Actions = {
         if (!customer_id || !reason || !date) {
             return fail(400, { error: 'Missing required fields' });
         }
-        if (!amount || amount <= 0) {
+        if (!total || total <= 0) {
             return fail(400, { error: 'Amount must be greater than zero' });
         }
 
@@ -79,7 +85,12 @@ export const actions: Actions = {
                     orgId,
                     userId: locals.user!.id,
                     customerId: customer_id,
-                    amount,
+                    invoiceId: invoice_id,
+                    subtotal,
+                    cgst,
+                    sgst,
+                    igst,
+                    total,
                     reason,
                     notes,
                     date,
@@ -99,7 +110,7 @@ export const actions: Actions = {
                 action: 'created',
                 changedFields: {
                     credit_note_number: { new: number },
-                    total: { new: amount },
+                    total: { new: total },
                     reason: { new: reason }
                 }
             });

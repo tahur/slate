@@ -1,14 +1,15 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import type { Tx } from '$lib/server/db';
 import {
+    debit_notes,
     expenses,
     supplier_credits,
     supplier_payment_allocations,
     supplier_payments,
     vendors
 } from '$lib/server/db/schema';
-import { postVendorPayment } from '$lib/server/services/posting-engine';
-import { getNextNumberTx } from '$lib/server/services/number-series';
+import { postVendorPayment, postDebitNote } from '$lib/server/services/posting-engine';
+import { bumpNumberSeriesIfHigher, getNextNumberTx } from '$lib/server/services/number-series';
 import { buildSupplierPaymentReason } from '$lib/server/services/statement-reasons';
 import { round2 } from '$lib/utils/currency';
 import { NotFoundError, ValidationError } from '$lib/server/platform/errors';
@@ -322,4 +323,195 @@ export async function applySupplierCreditToExpenseInTx(
     }
 
     return consumeSupplierCreditsInTx(tx, orgId, vendorId, requested);
+}
+
+// ============================================================
+// DEBIT NOTE WORKFLOWS
+// ============================================================
+
+interface CreateDebitNoteInTxInput {
+    orgId: string;
+    userId: string;
+    vendorId: string;
+    expenseId?: string | null;
+    expenseAccountId: string;
+    expenseAccountCode: string;
+    subtotal: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    total: number;
+    reason: string;
+    notes?: string;
+    date: string;
+    providedNumber?: string;
+    idempotencyKey?: string | null;
+}
+
+type DebitNoteReason = 'return' | 'damaged' | 'discount' | 'quality' | 'other';
+
+const DEBIT_NOTE_REASON_MAP: Record<string, DebitNoteReason> = {
+    return: 'return',
+    returned: 'return',
+    damaged: 'damaged',
+    damage: 'damaged',
+    discount: 'discount',
+    quality: 'quality',
+    other: 'other'
+};
+
+function normalizeDebitNoteReason(rawReason: string): DebitNoteReason {
+    const reasonKey = rawReason.trim().toLowerCase().replace(/\s+/g, '_');
+    const normalized = DEBIT_NOTE_REASON_MAP[reasonKey];
+    if (!normalized) {
+        throw new ValidationError('Invalid debit note reason');
+    }
+    return normalized;
+}
+
+async function assertVendorDebitCapInTx(
+    tx: Tx,
+    orgId: string,
+    vendorId: string,
+    debitTotal: number
+) {
+    const [expenseRows, debitRows] = await Promise.all([
+        tx
+            .select({
+                total: sql<number>`COALESCE(SUM(${expenses.total}), 0)`
+            })
+            .from(expenses)
+            .where(
+                and(
+                    eq(expenses.org_id, orgId),
+                    eq(expenses.vendor_id, vendorId)
+                )
+            ),
+        tx
+            .select({
+                total: sql<number>`COALESCE(SUM(${debit_notes.total}), 0)`
+            })
+            .from(debit_notes)
+            .where(
+                and(
+                    eq(debit_notes.org_id, orgId),
+                    eq(debit_notes.vendor_id, vendorId),
+                    ne(debit_notes.status, 'cancelled')
+                )
+            )
+    ]);
+
+    const totalExpenses = Number(expenseRows[0]?.total) || 0;
+    const existingDebits = Number(debitRows[0]?.total) || 0;
+    if (existingDebits + debitTotal > totalExpenses + MONEY_EPSILON) {
+        throw new ValidationError('Debit note exceeds total expense value for this supplier');
+    }
+}
+
+export async function createDebitNoteInTx(
+    tx: Tx,
+    input: CreateDebitNoteInTxInput
+): Promise<{ debitNoteId: string; debitNoteNumber: string; total: number }> {
+    const expenseId = input.expenseId?.trim() || null;
+    const subtotal = round2(input.subtotal);
+    const cgst = round2(input.cgst);
+    const sgst = round2(input.sgst);
+    const igst = round2(input.igst);
+    const total = round2(input.total);
+    const expectedTotal = round2(subtotal + cgst + sgst + igst);
+    const normalizedReason = normalizeDebitNoteReason(input.reason);
+
+    if (subtotal < 0 || cgst < 0 || sgst < 0 || igst < 0 || total <= MONEY_EPSILON) {
+        throw new ValidationError('Debit note totals are invalid');
+    }
+    if (Math.abs(total - expectedTotal) > MONEY_EPSILON) {
+        throw new ValidationError('Debit note total does not match tax breakdown');
+    }
+
+    await assertVendorDebitCapInTx(tx, input.orgId, input.vendorId, total);
+
+    const debitNoteId = crypto.randomUUID();
+    let debitNoteNumber = (input.providedNumber || '').trim();
+
+    if (debitNoteNumber) {
+        const existing = await tx.query.debit_notes.findFirst({
+            where: and(
+                eq(debit_notes.org_id, input.orgId),
+                eq(debit_notes.debit_note_number, debitNoteNumber)
+            )
+        });
+
+        if (existing) {
+            debitNoteNumber = await getNextNumberTx(tx, input.orgId, 'debit_note');
+        }
+    } else {
+        debitNoteNumber = await getNextNumberTx(tx, input.orgId, 'debit_note');
+    }
+
+    const postingResult = await postDebitNote(
+        input.orgId,
+        {
+            debitNoteId,
+            debitNoteNumber,
+            date: input.date,
+            vendorId: input.vendorId,
+            expenseAccountCode: input.expenseAccountCode,
+            subtotal,
+            cgst,
+            sgst,
+            igst,
+            total,
+            userId: input.userId
+        },
+        tx
+    );
+
+    await tx.insert(debit_notes).values({
+        id: debitNoteId,
+        org_id: input.orgId,
+        vendor_id: input.vendorId,
+        expense_id: expenseId,
+        expense_account_id: input.expenseAccountId,
+        debit_note_number: debitNoteNumber,
+        debit_note_date: input.date,
+        subtotal,
+        cgst,
+        sgst,
+        igst,
+        total,
+        balance: total,
+        reason: normalizedReason,
+        notes: input.notes || '',
+        status: 'issued',
+        journal_entry_id: postingResult.journalEntryId,
+        idempotency_key: input.idempotencyKey || null,
+        created_by: input.userId
+    });
+
+    // Reduce vendor balance (we owe them less)
+    await tx
+        .update(vendors)
+        .set({
+            balance: sql`ROUND((${vendors.balance})::numeric - (${total})::numeric, 2)`,
+            updated_at: new Date().toISOString()
+        })
+        .where(and(eq(vendors.id, input.vendorId), eq(vendors.org_id, input.orgId)));
+
+    await bumpNumberSeriesIfHigher(input.orgId, 'debit_note', debitNoteNumber, tx);
+
+    logDomainEvent('payables.debit_note_issued', {
+        orgId: input.orgId,
+        vendorId: input.vendorId,
+        debitNoteId,
+        debitNoteNumber,
+        total,
+        reason: normalizedReason,
+        expenseId
+    });
+
+    return {
+        debitNoteId,
+        debitNoteNumber,
+        total
+    };
 }

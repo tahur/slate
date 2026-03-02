@@ -13,6 +13,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             credit_note_date: credit_notes.credit_note_date,
             status: credit_notes.status,
             total: credit_notes.total,
+            balance: credit_notes.balance,
             reason: credit_notes.reason,
             customer_name: customers.name,
         })

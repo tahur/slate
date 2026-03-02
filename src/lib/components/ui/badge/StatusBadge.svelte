@@ -29,6 +29,10 @@
                 variant = "success";
                 Icon = CheckCircle2;
                 break;
+            case "adjusted":
+                variant = "secondary";
+                Icon = CheckCircle2;
+                break;
             case "partially_paid":
                 variant = "warning";
                 Icon = Clock; // Or a specific icon like PieChart

@@ -17,15 +17,16 @@ import { logActivity } from '$lib/server/services';
 import { runInTx } from '$lib/server/platform/db/tx';
 import { failActionFromError } from '$lib/server/platform/errors';
 import {
-    cancelInvoiceInTx,
     deleteDraftInvoiceInTx,
     issueDraftInvoiceInTx,
+    parseInvoiceDiscount,
     parseInvoiceLineItemsFromFormData,
     parsePricesIncludeGst,
     updateDraftInvoiceInTx
 } from '$lib/server/modules/invoicing/application/workflows';
 import {
     applyCreditsToInvoiceInTx,
+    cancelInvoiceWithCreditNoteInTx,
     MONEY_EPSILON,
     parseRequestedCredits,
     recordInvoicePaymentInTx,
@@ -266,12 +267,13 @@ export const actions: Actions = {
         }
     },
 
-    cancel: async ({ locals, params }) => {
+    cancel: async ({ request, locals, params }) => {
         if (!locals.user) {
             return fail(401, { error: 'Unauthorized' });
         }
 
         const orgId = locals.user.orgId;
+        const formData = await request.formData();
 
         const invoice = await db.query.invoices.findFirst({
             where: and(
@@ -288,19 +290,40 @@ export const actions: Actions = {
             return fail(400, { error: 'Invoice is already cancelled' });
         }
 
-        if (invoice.status === 'paid') {
-            return fail(400, { error: 'Cannot cancel a paid invoice' });
-        }
-
-        if (invoice.status === 'partially_paid' || (invoice.amount_paid || 0) > MONEY_EPSILON) {
-            return fail(400, { error: 'Cannot cancel an invoice with payments. Reverse settlement first.' });
-        }
-
         try {
             const now = new Date().toISOString();
+            const refundNow = ['true', '1', 'on'].includes(String(formData.get('refund_now') || '').toLowerCase());
+            const refundDate = (formData.get('refund_date') as string) || now.split('T')[0];
+            const refundAmountRaw = round2(parseFloat(formData.get('refund_amount') as string) || 0);
+            const refundAmount = refundNow
+                ? (refundAmountRaw > MONEY_EPSILON ? refundAmountRaw : undefined)
+                : undefined;
+            const refundPaymentMode = (formData.get('refund_payment_mode') as string) || '';
+            const refundSourceAccountId = (formData.get('refund_source_account_id') as string) || '';
+            const refundReference = (formData.get('refund_reference') as string) || '';
+            const refundNotes = (formData.get('refund_notes') as string) || '';
+            const refundIdempotencyKey = (formData.get('refund_idempotency_key') as string) || null;
 
             await runInTx(async (tx) => {
-                await cancelInvoiceInTx(tx, orgId, locals.user!.id, invoice, now);
+                if (invoice.status === 'draft') {
+                    await deleteDraftInvoiceInTx(tx, invoice.id);
+                    return;
+                }
+
+                await cancelInvoiceWithCreditNoteInTx(tx, {
+                    orgId,
+                    userId: locals.user!.id,
+                    invoiceId: invoice.id,
+                    nowIso: now,
+                    refundNow,
+                    refundDate,
+                    refundAmount,
+                    refundPaymentMode: refundPaymentMode || undefined,
+                    refundSourceAccountId: refundSourceAccountId || undefined,
+                    refundReference,
+                    refundNotes,
+                    refundIdempotencyKey
+                });
             });
 
             void logActivity({
@@ -308,9 +331,9 @@ export const actions: Actions = {
                 userId: locals.user.id,
                 entityType: 'invoice',
                 entityId: params.id,
-                action: 'cancelled',
+                action: invoice.status === 'draft' ? 'deleted' : 'cancelled',
                 changedFields: {
-                    status: { old: invoice.status, new: 'cancelled' }
+                    status: { old: invoice.status, new: invoice.status === 'draft' ? 'deleted' : 'cancelled' }
                 }
             });
 
@@ -390,7 +413,7 @@ export const actions: Actions = {
         });
 
         if (!invoice) return fail(404, { error: 'Invoice not found' });
-        if (invoice.status === 'paid' || invoice.status === 'cancelled') {
+        if (invoice.status === 'paid' || invoice.status === 'adjusted' || invoice.status === 'cancelled') {
             return fail(400, { error: 'Invoice is already paid or cancelled' });
         }
         if (amount > invoice.balance_due + MONEY_EPSILON) {
@@ -410,6 +433,7 @@ export const actions: Actions = {
                         customer_id: invoice.customer_id,
                         total: invoice.total,
                         amount_paid: invoice.amount_paid,
+                        credits_applied: invoice.credits_applied,
                         balance_due: invoice.balance_due,
                         status: invoice.status
                     },
@@ -470,7 +494,7 @@ export const actions: Actions = {
         let totalSettled = 0;
         let creditSettled = 0;
         let paymentSettled = 0;
-        let resultingStatus: 'paid' | 'partially_paid' = 'partially_paid';
+        let resultingStatus: 'issued' | 'partially_paid' | 'paid' | 'adjusted' = 'partially_paid';
 
         try {
             await runInTx(async (tx) => {
@@ -544,6 +568,13 @@ export const actions: Actions = {
         const notes = formData.get('notes') as string;
         const terms = formData.get('terms') as string;
         const requestedPricesIncludeGst = parsePricesIncludeGst(formData);
+        let discount: ReturnType<typeof parseInvoiceDiscount>;
+
+        try {
+            discount = parseInvoiceDiscount(formData);
+        } catch (error) {
+            return failActionFromError(error, 'Invoice update failed');
+        }
 
         // Validation
         if (!customer_id) return fail(400, { error: 'Customer is required' });
@@ -571,6 +602,7 @@ export const actions: Actions = {
                     notes: notes || null,
                     terms: terms || null,
                     requestedPricesIncludeGst,
+                    discount,
                     lineItems
                 });
 

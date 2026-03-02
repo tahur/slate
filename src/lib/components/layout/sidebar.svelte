@@ -4,6 +4,7 @@
         LayoutDashboard,
         FileText,
         FileCheck,
+        FileMinus2,
         Banknote,
         Wallet,
         Users,
@@ -61,6 +62,7 @@
             title: "PURCHASE",
             items: [
                 { href: "/expenses", label: "Expenses", icon: Wallet },
+                { href: "/debit-notes", label: "Debit Notes", icon: FileMinus2 },
                 { href: "/vendors", label: "Suppliers", icon: Briefcase },
             ],
         },
